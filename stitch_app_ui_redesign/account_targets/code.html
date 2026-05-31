@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
+<title>FitNotes 2 - Account &amp; Targets</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        body {
+            font-family: 'Hanken Grotesk', sans-serif;
+            background-color: #051424;
+            color: #d4e4fa;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .category-glow-cyan { box-shadow: 0 0 20px -5px rgba(93, 230, 255, 0.2); }
+        .category-glow-orange { box-shadow: 0 0 20px -5px rgba(255, 183, 131, 0.2); }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        input:checked + .toggle-bg { background-color: #5de6ff; }
+        input:checked + .toggle-bg .toggle-dot { transform: translateX(100%); }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-primary-fixed-variant": "#45474b",
+                        "surface-container-highest": "#273647",
+                        "outline": "#909095",
+                        "primary-fixed-dim": "#c6c6cc",
+                        "on-background": "#d4e4fa",
+                        "on-tertiary-fixed": "#301400",
+                        "on-primary": "#2f3035",
+                        "on-tertiary": "#4f2500",
+                        "inverse-primary": "#5d5e63",
+                        "outline-variant": "#45474b",
+                        "surface-bright": "#2c3a4c",
+                        "secondary-fixed": "#a2eeff",
+                        "tertiary": "#ffb783",
+                        "surface-variant": "#273647",
+                        "on-primary-fixed": "#1a1c20",
+                        "on-secondary-container": "#00515d",
+                        "on-surface-variant": "#c6c6cb",
+                        "primary-container": "#0f1115",
+                        "background": "#051424",
+                        "inverse-surface": "#d4e4fa",
+                        "surface-dim": "#051424",
+                        "inverse-on-surface": "#233143",
+                        "tertiary-container": "#200b00",
+                        "on-primary-container": "#7b7c82",
+                        "tertiary-fixed": "#ffdcc5",
+                        "surface": "#051424",
+                        "error-container": "#93000a",
+                        "surface-container-lowest": "#010f1f",
+                        "secondary-fixed-dim": "#2fd9f4",
+                        "error": "#ffb4ab",
+                        "on-error": "#690005",
+                        "surface-tint": "#c6c6cc",
+                        "primary-fixed": "#e2e2e8",
+                        "surface-container-low": "#0d1c2d",
+                        "on-error": "#690005",
+                        "surface-tint": "#c6c6cc",
+                        "primary-fixed": "#e2e2e8",
+                        "surface-container-high": "#1c2b3c",
+                        "on-error-container": "#ffdad6",
+                        "on-secondary-fixed-variant": "#004e5a",
+                        "tertiary-fixed-dim": "#ffb783",
+                        "on-surface": "#d4e4fa",
+                        "on-secondary": "#00363e",
+                        "secondary": "#5de6ff",
+                        "on-tertiary-container": "#c06409",
+                        "on-secondary-fixed": "#001f25",
+                        "secondary-container": "#00cbe6",
+                        "surface-container": "#122131"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "1rem",
+                        "lg": "2rem",
+                        "xl": "3rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "stack-gap-md": "24px",
+                        "section-margin": "48px",
+                        "container-padding-mobile": "20px",
+                        "stack-gap-sm": "12px",
+                        "container-padding-desktop": "40px",
+                        "base": "8px"
+                    },
+                    "fontFamily": {
+                        "label-caps": ["Hanken Grotesk"],
+                        "headline-lg-mobile": ["Hanken Grotesk"],
+                        "body-sm": ["Hanken Grotesk"],
+                        "body-lg": ["Hanken Grotesk"],
+                        "display-lg": ["Hanken Grotesk"],
+                        "headline-lg": ["Hanken Grotesk"],
+                        "title-md": ["Hanken Grotesk"]
+                    },
+                    "fontSize": {
+                        "label-caps": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "700" }],
+                        "headline-lg-mobile": ["28px", { "lineHeight": "36px", "fontWeight": "700" }],
+                        "body-sm": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "800" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "700" }],
+                        "title-md": ["20px", { "lineHeight": "28px", "fontWeight": "600" }]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface min-h-screen pb-32">
+<!-- Top App Bar -->
+<header class="bg-surface/80 dark:bg-surface/80 backdrop-blur-xl border-b border-white/10 flex justify-between items-center w-full px-container-padding-mobile h-16 fixed top-0 z-50">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full overflow-hidden border-2 border-secondary/30">
+<img alt="User profile photo" class="w-full h-full object-cover" data-alt="A professional close-up portrait of a fitness enthusiast with athletic build, set against a blurred modern gym background. The lighting is dramatic and high-contrast, highlighting determination. The overall aesthetic is clean and high-tech, fitting a premium health application's dark mode interface with subtle cyan and deep blue tones." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCoqjP7BFZ5G58JZ9dWkY7i2nuxlXG22yw4_kp_tZDq9_LFlGpDXZN7CW3mbIisWHeikqi3HAtRW3GIE3Yv25gBdC20K-f5kYqQWbCYwr59BI8F9VS5Px2JuUIN1vtuKG2z93p-pIAb6Ea3-53UcUQzDXCzvR9Ar7P2inSnzRzOu5DHjU442uippjL0VveOFZ3BBk_TEVeMPIfcupH3xh7AswuFV2aHm9hmqFljLzwDutvFMQRHy3SZzrRekzi82S15S4nTDmbypbM"/>
+</div>
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile font-extrabold text-secondary dark:text-secondary">FitNotes 2</h1>
+</div>
+<div class="flex items-center gap-2">
+<span class="font-label-caps text-label-caps text-secondary px-3 py-1 bg-secondary/10 rounded-full">7🔥</span>
+</div>
+</header>
+<main class="pt-24 px-container-padding-mobile max-w-2xl mx-auto space-y-stack-gap-md">
+<!-- Profile Header Section -->
+<section class="text-center py-6">
+<h2 class="font-headline-lg text-headline-lg text-on-surface mb-1">Alex Morgan</h2>
+<p class="font-body-lg text-body-lg text-on-surface-variant">Elite Athlete • Premium Member</p>
+</section>
+<!-- Personal Metrics Bento -->
+<section class="grid grid-cols-2 gap-4">
+<div class="col-span-1 glass-panel p-6 rounded-lg flex flex-col items-center justify-center text-center space-y-2 category-glow-cyan hover:opacity-80 transition-opacity active:scale-95 duration-200">
+<div class="w-12 h-12 rounded-full bg-secondary/10 flex items-center justify-center mb-2">
+<span class="material-symbols-outlined text-secondary" style="font-size: 24px;">weight</span>
+</div>
+<span class="font-label-caps text-label-caps text-on-surface-variant uppercase">Weight</span>
+<span class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface">78.5<span class="text-body-sm font-normal text-on-surface-variant ml-1">kg</span></span>
+</div>
+<div class="col-span-1 glass-panel p-6 rounded-lg flex flex-col items-center justify-center text-center space-y-2 hover:opacity-80 transition-opacity active:scale-95 duration-200">
+<div class="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-2">
+<span class="material-symbols-outlined text-primary" style="font-size: 24px;">straighten</span>
+</div>
+<span class="font-label-caps text-label-caps text-on-surface-variant uppercase">Height</span>
+<span class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface">182<span class="text-body-sm font-normal text-on-surface-variant ml-1">cm</span></span>
+</div>
+<div class="col-span-2 glass-panel p-6 rounded-lg flex items-center justify-between hover:opacity-80 transition-opacity active:scale-95 duration-200">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-full bg-tertiary/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-tertiary" style="font-size: 24px;">cake</span>
+</div>
+<div class="text-left">
+<span class="font-label-caps text-label-caps text-on-surface-variant block uppercase">Age &amp; Gender</span>
+<span class="font-title-md text-title-md text-on-surface">28 Years • Male</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline">chevron_right</span>
+</div>
+</section>
+<!-- Targets Section -->
+<section class="space-y-4">
+<h3 class="font-title-md text-title-md text-secondary px-2">Daily Targets</h3>
+<!-- Calories -->
+<div class="glass-panel p-5 rounded-lg space-y-4 relative overflow-hidden group">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-secondary/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-secondary">local_fire_department</span>
+</div>
+<div>
+<span class="font-title-md text-body-lg font-bold block">Calories</span>
+<span class="font-body-sm text-on-surface-variant">2,400 kcal daily goal</span>
+</div>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-surface-container-highest rounded-full peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-secondary"></div>
+</label>
+</div>
+<div class="h-2 w-full bg-white/5 rounded-full overflow-hidden">
+<div class="h-full bg-secondary rounded-full" style="width: 65%;"></div>
+</div>
+<div class="flex justify-between font-label-caps text-label-caps">
+<span class="text-secondary">1,560 consumed</span>
+<span class="text-outline">840 left</span>
+</div>
+</div>
+<!-- Protein -->
+<div class="glass-panel p-5 rounded-lg space-y-4">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-tertiary/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-tertiary">nutrition</span>
+</div>
+<div>
+<span class="font-title-md text-body-lg font-bold block">Protein</span>
+<span class="font-body-sm text-on-surface-variant">160g daily goal</span>
+</div>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-surface-container-highest rounded-full peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-tertiary"></div>
+</label>
+</div>
+<div class="h-2 w-full bg-white/5 rounded-full overflow-hidden">
+<div class="h-full bg-tertiary rounded-full" style="width: 80%;"></div>
+</div>
+<div class="flex justify-between font-label-caps text-label-caps">
+<span class="text-tertiary">128g consumed</span>
+<span class="text-outline">32g left</span>
+</div>
+</div>
+<!-- Hydration -->
+<div class="glass-panel p-5 rounded-lg space-y-4">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-blue-400">water_drop</span>
+</div>
+<div>
+<span class="font-title-md text-body-lg font-bold block">Hydration</span>
+<span class="font-body-sm text-on-surface-variant">3.5L daily goal</span>
+</div>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-surface-container-highest rounded-full peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-400"></div>
+</label>
+</div>
+<div class="h-2 w-full bg-white/5 rounded-full overflow-hidden">
+<div class="h-full bg-blue-400 rounded-full" style="width: 45%;"></div>
+</div>
+<div class="flex justify-between font-label-caps text-label-caps">
+<span class="text-blue-400">1.6L consumed</span>
+<span class="text-outline">1.9L left</span>
+</div>
+</div>
+</section>
+<!-- Reminders Section -->
+<section class="space-y-4">
+<h3 class="font-title-md text-title-md text-secondary px-2">Reminders &amp; Notifications</h3>
+<div class="glass-panel rounded-lg overflow-hidden divide-y divide-white/5">
+<!-- Workout Reminder -->
+<div class="p-5 flex items-center justify-between">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-secondary">fitness_center</span>
+<div>
+<span class="font-body-lg font-bold block">Workout Alert</span>
+<span class="font-body-sm text-on-surface-variant">Daily at 07:30 AM</span>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<span class="font-label-caps text-label-caps bg-surface-container-high px-3 py-1 rounded-md cursor-pointer hover:bg-surface-bright transition-colors">07:30</span>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-surface-container-highest rounded-full peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-secondary"></div>
+</label>
+</div>
+</div>
+<!-- Hydration Reminder -->
+<div class="p-5 flex items-center justify-between">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-blue-400">notifications_active</span>
+<div>
+<span class="font-body-lg font-bold block">Water Log</span>
+<span class="font-body-sm text-on-surface-variant">Every 2 hours</span>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<span class="font-label-caps text-label-caps bg-surface-container-high px-3 py-1 rounded-md cursor-pointer hover:bg-surface-bright transition-colors">Interval</span>
+<label class="relative inline-flex items-center cursor-pointer">
+<input class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-surface-container-highest rounded-full peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-secondary"></div>
+</label>
+</div>
+</div>
+<!-- Sleep Reminder -->
+<div class="p-5 flex items-center justify-between">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-tertiary">bedtime</span>
+<div>
+<span class="font-body-lg font-bold block">Wind Down</span>
+<span class="font-body-sm text-on-surface-variant">Daily at 10:00 PM</span>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<span class="font-label-caps text-label-caps bg-surface-container-high px-3 py-1 rounded-md cursor-pointer hover:bg-surface-bright transition-colors">22:00</span>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-surface-container-highest rounded-full peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-secondary"></div>
+</label>
+</div>
+</div>
+</div>
+</section>
+<!-- Log Out Button -->
+<button class="w-full bg-error-container/20 border border-error/20 text-error font-title-md py-4 rounded-lg active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+<span class="material-symbols-outlined">logout</span>
+            Sign Out
+        </button>
+</main>
+<!-- Bottom Nav Bar -->
+<nav class="bg-surface-container/80 dark:bg-surface-container/80 backdrop-blur-xl border-t border-white/10 fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 py-3 pb-safe shadow-lg shadow-secondary/10 rounded-t-lg">
+<a class="flex flex-col items-center justify-center text-outline dark:text-outline hover:text-secondary/80 transition-colors active:scale-90 duration-150" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="font-label-caps text-label-caps">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-outline dark:text-outline hover:text-secondary/80 transition-colors active:scale-90 duration-150" href="#">
+<span class="material-symbols-outlined">fitness_center</span>
+<span class="font-label-caps text-label-caps">Workouts</span>
+</a>
+<a class="flex flex-col items-center justify-center text-outline dark:text-outline hover:text-secondary/80 transition-colors active:scale-90 duration-150" href="#">
+<span class="material-symbols-outlined">barcode_scanner</span>
+<span class="font-label-caps text-label-caps">Scan</span>
+</a>
+<a class="flex flex-col items-center justify-center text-outline dark:text-outline hover:text-secondary/80 transition-colors active:scale-90 duration-150" href="#">
+<span class="material-symbols-outlined">insights</span>
+<span class="font-label-caps text-label-caps">Progress</span>
+</a>
+<a class="flex flex-col items-center justify-center text-secondary dark:text-secondary bg-secondary/10 rounded-xl px-3 py-1 active:scale-90 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined">person</span>
+<span class="font-label-caps text-label-caps">Profile</span>
+</a>
+</nav>
+<script>
+        // Simple micro-interaction for toggles and progress
+        document.querySelectorAll('input[type="checkbox"]').forEach(toggle => {
+            toggle.addEventListener('change', function() {
+                const parent = this.closest('.glass-panel');
+                if (parent) {
+                    if (this.checked) {
+                        parent.style.opacity = '1';
+                    } else {
+                        parent.style.opacity = '0.6';
+                    }
+                }
+            });
+        });
+    </script>
+</body></html>

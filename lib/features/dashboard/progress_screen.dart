@@ -1,0 +1,1206 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:fl_chart/fl_chart.dart';
+import 'package:intl/intl.dart';
+import '../../core/theme.dart';
+import '../../services/state_providers.dart';
+import '../../services/storage_service.dart';
+
+class ProgressScreen extends ConsumerStatefulWidget {
+  const ProgressScreen({super.key});
+
+  @override
+  ConsumerState<ProgressScreen> createState() => _ProgressScreenState();
+}
+
+class _ProgressScreenState extends ConsumerState<ProgressScreen> {
+  int _activeChartIndex =
+      0; // 0 = Weight, 1 = Calories, 2 = Hydration, 3 = Workouts
+
+  @override
+  Widget build(BuildContext context) {
+    final profile = ref.watch(profileProvider);
+    final history = ref.watch(workoutHistoryProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    // Generate past 7 days
+    final now = DateTime.now();
+    final List<DateTime> pastDays = List.generate(7, (index) {
+      return now.subtract(Duration(days: 6 - index));
+    });
+
+    // Extract calorie and water data from Storage for the past 7 days
+    final List<double> calorieLogs = [];
+    final List<double> waterLogs = [];
+    double totalCal = 0;
+    double totalWater = 0;
+
+    for (var day in pastDays) {
+      final dateStr = DateFormat('yyyy-MM-dd').format(day);
+      final stats = StorageService.getDailyMetrics(dateStr);
+
+      final double consumedCal =
+          (((stats['breakfast_cal'] ?? 0) as num) +
+                  ((stats['lunch_cal'] ?? 0) as num) +
+                  ((stats['dinner_cal'] ?? 0) as num) +
+                  ((stats['snacks_cal'] ?? 0) as num) +
+                  ((stats['outside_food_cal'] ?? 0) as num))
+              .toDouble();
+
+      final double consumedWaterLtr = ((stats['water'] ?? 0) as num) / 1000.0;
+
+      calorieLogs.add(consumedCal);
+      waterLogs.add(consumedWaterLtr);
+
+      totalCal += consumedCal;
+      totalWater += consumedWaterLtr;
+    }
+
+    final double avgCalories = totalCal / 7.0;
+    final double avgWater = totalWater / 7.0;
+
+    // Weight goals
+    final double currentWeight = profile?.weight ?? 70.0;
+    // Mock weight fluctuations for past 7 days around currentWeight
+    final List<double> weightLogs = [
+      currentWeight + 0.6,
+      currentWeight + 0.3,
+      currentWeight + 0.5,
+      currentWeight + 0.1,
+      currentWeight - 0.2,
+      currentWeight + 0.0,
+      currentWeight,
+    ];
+
+    // Workouts completed this week
+    final int workoutsThisWeekCount = history.where((session) {
+      try {
+        final parsedDate = DateFormat('yyyy-MM-dd').parse(session.date);
+        return now.difference(parsedDate).inDays < 7;
+      } catch (_) {
+        return false;
+      }
+    }).length;
+
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      body: SafeArea(
+        bottom: false,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.only(
+            left: 20,
+            right: 20,
+            top: 12,
+            bottom: 130,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header Section
+              const Text(
+                'Metrics Trends',
+                style: TextStyle(
+                  fontSize: 26,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -0.5,
+                ),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                'Visualize weight projections, calorie inflows, water ratios, and muscle load distributions.',
+                style: TextStyle(color: AppTheme.textSecondary, fontSize: 13),
+              ),
+              const SizedBox(height: 24),
+
+              // Bento Style Multi-Colored Overview Cards
+              Column(
+                children: [
+                  Row(
+                    children: [
+                      // Weight Bento Card
+                      Expanded(
+                        child: GlassCard(
+                          height: 140,
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Icon(
+                                    Icons.scale_rounded,
+                                    color: AppTheme.accentCyan,
+                                    size: 22,
+                                  ),
+                                  const SizedBox(height: 8),
+                                  const Text(
+                                    'WEIGHT',
+                                    style: TextStyle(
+                                      color: AppTheme.textSecondary,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: 1.0,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '${currentWeight.toStringAsFixed(1)} kg',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.w900,
+                                    ),
+                                  ),
+                                  const Text(
+                                    '-1.2 kg this week',
+                                    style: TextStyle(
+                                      color: AppTheme.accentCyan,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      // Hydration Bento Card
+                      Expanded(
+                        child: GlassCard(
+                          height: 140,
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Icon(
+                                    Icons.water_drop_rounded,
+                                    color: AppTheme.accentOrange,
+                                    size: 22,
+                                  ),
+                                  const SizedBox(height: 8),
+                                  const Text(
+                                    'HYDRATION',
+                                    style: TextStyle(
+                                      color: AppTheme.textSecondary,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: 1.0,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '${avgWater.toStringAsFixed(1)} L',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.w900,
+                                    ),
+                                  ),
+                                  Text(
+                                    '${(avgWater / ((profile?.waterGoal ?? 2500) / 1000) * 100).round()}% of goal',
+                                    style: const TextStyle(
+                                      color: AppTheme.accentOrange,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  // Active Minutes Bento Card (Col-Span 2)
+                  GlassCard(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Row(
+                              children: [
+                                Icon(
+                                  Icons.bolt_rounded,
+                                  color: AppTheme.accentPurple,
+                                  size: 20,
+                                ),
+                                SizedBox(width: 6),
+                                Text(
+                                  'ACTIVE LOGS',
+                                  style: TextStyle(
+                                    color: AppTheme.textSecondary,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 1.0,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              '$workoutsThisWeekCount sessions',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 22,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                            const Text(
+                              '+15% logs vs last month',
+                              style: TextStyle(
+                                color: AppTheme.accentPurple,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                        // Circular indicator showing workout logs frequency target progress (e.g. 4 workouts target)
+                        SizedBox(
+                          width: 54,
+                          height: 54,
+                          child: Stack(
+                            fit: StackFit.expand,
+                            children: [
+                              CircularProgressIndicator(
+                                value: 1.0,
+                                backgroundColor: Colors.transparent,
+                                color: Colors.white.withOpacity(0.05),
+                                strokeWidth: 5,
+                              ),
+                              CircularProgressIndicator(
+                                value: (workoutsThisWeekCount / 4).clamp(0.0, 1.0),
+                                backgroundColor: Colors.transparent,
+                                color: AppTheme.accentPurple,
+                                strokeWidth: 5,
+                                strokeCap: StrokeCap.round,
+                              ),
+                              Center(
+                                child: Text(
+                                  '${(workoutsThisWeekCount / 4 * 100).round()}%',
+                                  style: const TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+
+              // Selector buttons row
+              Row(
+                children: [
+                  _buildSelectorChip('Weight', 0),
+                  _buildSelectorChip('Calories', 1),
+                  _buildSelectorChip('Water', 2),
+                  _buildSelectorChip('Gym', 3),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              // Active Chart Viewer Card
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 300),
+                child: _buildActiveChart(
+                  weightLogs: weightLogs,
+                  calorieLogs: calorieLogs,
+                  waterLogs: waterLogs,
+                  history: history,
+                  pastDays: pastDays,
+                  profileCalorieGoal: (profile?.calorieGoal ?? 2000).toDouble(),
+                  profileWaterGoalLtr: (profile?.waterGoal ?? 2500) / 1000.0,
+                  currentWeight: currentWeight,
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // Key Insights panel
+              const Row(
+                children: [
+                  Icon(
+                    Icons.lightbulb_rounded,
+                    color: AppTheme.accentOrange,
+                    size: 20,
+                  ),
+                  SizedBox(width: 8),
+                  Text(
+                    'Aura AI Health Insights',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+
+              _buildInsightsPanel(
+                avgCalories: avgCalories,
+                avgWater: avgWater,
+                workoutsCount: workoutsThisWeekCount,
+                currentWeight: currentWeight,
+                calorieGoal: (profile?.calorieGoal ?? 2000).toDouble(),
+                waterGoal: (profile?.waterGoal ?? 2500) / 1000.0,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSelectorChip(String label, int index) {
+    final isSelected = _activeChartIndex == index;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          setState(() {
+            _activeChartIndex = index;
+          });
+        },
+        child: Container(
+          height: 36,
+          margin: const EdgeInsets.symmetric(horizontal: 2.5),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? AppTheme.accentPurple
+                : (isDark
+                      ? Colors.white.withOpacity(0.03)
+                      : Colors.black.withOpacity(0.015)),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: isSelected ? AppTheme.accentCyan : AppTheme.glassBorder,
+              width: 1,
+            ),
+          ),
+          child: Center(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                color: isSelected ? Colors.white : AppTheme.textSecondary,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSummaryCard(
+    String label,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
+    return GlassCard(
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, color: color, size: 16),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 10,
+                    color: AppTheme.textSecondary,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActiveChart({
+    required List<double> weightLogs,
+    required List<double> calorieLogs,
+    required List<double> waterLogs,
+    required List<dynamic> history,
+    required List<DateTime> pastDays,
+    required double profileCalorieGoal,
+    required double profileWaterGoalLtr,
+    required double currentWeight,
+  }) {
+    switch (_activeChartIndex) {
+      case 0:
+        return _buildWeightChart(weightLogs, pastDays, currentWeight);
+      case 1:
+        return _buildCalorieChart(calorieLogs, pastDays, profileCalorieGoal);
+      case 2:
+        return _buildWaterChart(waterLogs, pastDays, profileWaterGoalLtr);
+      case 3:
+        return _buildWorkoutFrequencyChart(history);
+      default:
+        return const SizedBox();
+    }
+  }
+
+  // 1. WEIGHT FLUCTUATIONS CHART (LineChart)
+  Widget _buildWeightChart(
+    List<double> weightLogs,
+    List<DateTime> pastDays,
+    double currentWeight,
+  ) {
+    final double minWeight = weightLogs.reduce((a, b) => a < b ? a : b) - 1.0;
+    final double maxWeight = weightLogs.reduce((a, b) => a > b ? a : b) + 1.0;
+
+    return GlassCard(
+      key: const ValueKey('weight_chart'),
+      width: double.infinity,
+      height: 300,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'WEIGHT TREND (KG)',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.accentCyan,
+                  letterSpacing: 1.5,
+                ),
+              ),
+              Text(
+                '7 Day Trend',
+                style: TextStyle(fontSize: 10, color: AppTheme.textSecondary),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          Expanded(
+            child: LineChart(
+              LineChartData(
+                minY: minWeight,
+                maxY: maxWeight,
+                gridData: FlGridData(
+                  show: true,
+                  drawVerticalLine: false,
+                  getDrawingHorizontalLine: (value) => const FlLine(
+                    color: AppTheme.glassBorder,
+                    strokeWidth: 0.5,
+                  ),
+                ),
+                borderData: FlBorderData(show: false),
+                titlesData: FlTitlesData(
+                  rightTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  topTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  leftTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 32,
+                      getTitlesWidget: (value, meta) {
+                        return Text(
+                          value.toStringAsFixed(1),
+                          style: const TextStyle(
+                            color: AppTheme.textSecondary,
+                            fontSize: 9,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      getTitlesWidget: (value, meta) {
+                        final index = value.toInt();
+                        if (index >= 0 && index < pastDays.length) {
+                          return Text(
+                            DateFormat('E').format(pastDays[index]),
+                            style: const TextStyle(
+                              color: AppTheme.textSecondary,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          );
+                        }
+                        return const Text('');
+                      },
+                    ),
+                  ),
+                ),
+                lineBarsData: [
+                  LineChartBarData(
+                    isCurved: true,
+                    color: AppTheme.accentCyan,
+                    barWidth: 3,
+                    dotData: const FlDotData(show: true),
+                    belowBarData: BarAreaData(
+                      show: true,
+                      color: AppTheme.accentCyan.withOpacity(0.04),
+                    ),
+                    spots: List.generate(
+                      weightLogs.length,
+                      (i) => FlSpot(i.toDouble(), weightLogs[i]),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // 2. CALORIE INTAKE CHART (BarChart)
+  Widget _buildCalorieChart(
+    List<double> calorieLogs,
+    List<DateTime> pastDays,
+    double dailyGoal,
+  ) {
+    return GlassCard(
+      key: const ValueKey('calorie_chart'),
+      width: double.infinity,
+      height: 360,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'WEEKLY CALORIE INFLOW',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.accentPurple,
+                  letterSpacing: 1.5,
+                ),
+              ),
+              Text(
+                'Goal: ${dailyGoal.round()} kcal',
+                style: const TextStyle(
+                  fontSize: 11,
+                  color: AppTheme.accentCyan,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          Expanded(
+            child: BarChart(
+              BarChartData(
+                gridData: const FlGridData(show: false),
+                borderData: FlBorderData(show: false),
+                titlesData: FlTitlesData(
+                  rightTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  topTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  leftTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 32,
+                      getTitlesWidget: (value, meta) {
+                        if (value % 1000 == 0) {
+                          return Text(
+                            '${(value ~/ 1000)}k',
+                            style: const TextStyle(
+                              color: AppTheme.textSecondary,
+                              fontSize: 9,
+                            ),
+                          );
+                        }
+                        return const Text('');
+                      },
+                    ),
+                  ),
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      getTitlesWidget: (value, meta) {
+                        final index = value.toInt();
+                        if (index >= 0 && index < pastDays.length) {
+                          return Text(
+                            DateFormat('E').format(pastDays[index]),
+                            style: const TextStyle(
+                              color: AppTheme.textSecondary,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          );
+                        }
+                        return const Text('');
+                      },
+                    ),
+                  ),
+                ),
+                barGroups: List.generate(calorieLogs.length, (i) {
+                  final double val = calorieLogs[i];
+                  // Color bar based on performance against goal
+                  Color barColor = AppTheme.accentPurple;
+                  if (val > 0) {
+                    if (val > dailyGoal + 300) {
+                      barColor = AppTheme.accentCoral; // Over budget
+                    } else if (val >= dailyGoal - 200) {
+                      barColor = AppTheme.accentEmerald; // Spot on target
+                    } else {
+                      barColor = AppTheme.accentCyan; // Under budget
+                    }
+                  } else {
+                    barColor = AppTheme.glassBorder;
+                  }
+
+                  return BarChartGroupData(
+                    x: i,
+                    barRods: [
+                      BarChartRodData(
+                        toY: val == 0 ? 100 : val, // tiny visual minimum
+                        color: barColor,
+                        width: 14,
+                        borderRadius: BorderRadius.circular(4),
+                        backDrawRodData: BackgroundBarChartRodData(
+                          show: true,
+                          toY: dailyGoal + 500,
+                          color: Colors.white.withOpacity(0.02),
+                        ),
+                      ),
+                    ],
+                  );
+                }),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          // Daily totals row
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.015),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppTheme.glassBorder, width: 0.8),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: List.generate(calorieLogs.length, (i) {
+                final dayName = DateFormat('E').format(pastDays[i]);
+                final caloriesVal = calorieLogs[i].round();
+                
+                // Color mapping matching bar
+                Color textColor = AppTheme.textSecondary;
+                if (caloriesVal > 0) {
+                  if (caloriesVal > dailyGoal + 300) {
+                    textColor = AppTheme.accentCoral;
+                  } else if (caloriesVal >= dailyGoal - 200) {
+                    textColor = AppTheme.accentEmerald;
+                  } else {
+                    textColor = AppTheme.accentCyan;
+                  }
+                }
+
+                return Column(
+                  children: [
+                    Text(
+                      dayName,
+                      style: const TextStyle(
+                        fontSize: 9,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      caloriesVal > 0 ? '$caloriesVal' : '-',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w900,
+                        color: textColor,
+                      ),
+                    ),
+                  ],
+                );
+              }),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // 3. HYDRATION WATER LOGGER CHART (LineChart)
+  Widget _buildWaterChart(
+    List<double> waterLogs,
+    List<DateTime> pastDays,
+    double waterGoalLtr,
+  ) {
+    return GlassCard(
+      key: const ValueKey('water_chart'),
+      width: double.infinity,
+      height: 360,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'WATER INFLOW JOURNAL',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.accentEmerald,
+                  letterSpacing: 1.5,
+                ),
+              ),
+              Text(
+                'Goal: ${waterGoalLtr.toStringAsFixed(1)}L',
+                style: const TextStyle(
+                  fontSize: 11,
+                  color: AppTheme.accentEmerald,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          Expanded(
+            child: LineChart(
+              LineChartData(
+                minY: 0,
+                maxY: waterGoalLtr + 1.0,
+                gridData: FlGridData(
+                  show: true,
+                  drawVerticalLine: false,
+                  getDrawingHorizontalLine: (value) => const FlLine(
+                    color: AppTheme.glassBorder,
+                    strokeWidth: 0.5,
+                  ),
+                ),
+                borderData: FlBorderData(show: false),
+                titlesData: FlTitlesData(
+                  rightTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  topTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  leftTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 28,
+                      getTitlesWidget: (value, meta) {
+                        return Text(
+                          '${value.toStringAsFixed(1)}L',
+                          style: const TextStyle(
+                            color: AppTheme.textSecondary,
+                            fontSize: 9,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      getTitlesWidget: (value, meta) {
+                        final index = value.toInt();
+                        if (index >= 0 && index < pastDays.length) {
+                          return Text(
+                            DateFormat('E').format(pastDays[index]),
+                            style: const TextStyle(
+                              color: AppTheme.textSecondary,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          );
+                        }
+                        return const Text('');
+                      },
+                    ),
+                  ),
+                ),
+                lineBarsData: [
+                  LineChartBarData(
+                    isCurved: true,
+                    color: AppTheme.accentEmerald,
+                    barWidth: 3,
+                    dotData: const FlDotData(show: true),
+                    belowBarData: BarAreaData(
+                      show: true,
+                      color: AppTheme.accentEmerald.withOpacity(0.04),
+                    ),
+                    spots: List.generate(
+                      waterLogs.length,
+                      (i) => FlSpot(i.toDouble(), waterLogs[i]),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          // Daily totals row
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.015),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppTheme.glassBorder, width: 0.8),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: List.generate(waterLogs.length, (i) {
+                final dayName = DateFormat('E').format(pastDays[i]);
+                final waterLtr = waterLogs[i];
+                
+                // Color mapping matching line color
+                Color textColor = waterLtr >= waterGoalLtr
+                    ? AppTheme.accentEmerald
+                    : (waterLtr > 0 ? AppTheme.accentCyan : AppTheme.textSecondary);
+
+                return Column(
+                  children: [
+                    Text(
+                      dayName,
+                      style: const TextStyle(
+                        fontSize: 9,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      waterLtr > 0 ? '${waterLtr.toStringAsFixed(1)}L' : '-',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w900,
+                        color: textColor,
+                      ),
+                    ),
+                  ],
+                );
+              }),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // 4. WORKOUT FREQUENCY CHART (BarChart)
+  Widget _buildWorkoutFrequencyChart(List<dynamic> history) {
+    // Generate workout logs per category to visualize focus areas
+    final Map<String, int> categoryFocus = {};
+    for (var session in history) {
+      for (var ex in session.exercises) {
+        final cat = ex.category;
+        categoryFocus[cat] = (categoryFocus[cat] ?? 0) + 1;
+      }
+    }
+
+    final List<String> categories = [
+      'Chest',
+      'Back',
+      'Legs',
+      'Arms',
+      'Shoulders',
+      'Cardio',
+    ];
+    final List<double> focusValues = categories
+        .map((cat) => (categoryFocus[cat] ?? 0).toDouble())
+        .toList();
+    final double maxFocus = focusValues.reduce((a, b) => a > b ? a : b);
+    final double finalMaxY = maxFocus < 5 ? 5.0 : maxFocus + 1.0;
+
+    return GlassCard(
+      key: const ValueKey('workout_chart'),
+      width: double.infinity,
+      height: 300,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'MUSCLE GROUP DENSITIES',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.accentOrange,
+              letterSpacing: 1.5,
+            ),
+          ),
+          const SizedBox(height: 24),
+          Expanded(
+            child: BarChart(
+              BarChartData(
+                gridData: const FlGridData(show: false),
+                borderData: FlBorderData(show: false),
+                titlesData: FlTitlesData(
+                  rightTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  topTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  leftTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 24,
+                      getTitlesWidget: (value, meta) {
+                        if (value % 1 == 0) {
+                          return Text(
+                            '${value.toInt()}',
+                            style: const TextStyle(
+                              color: AppTheme.textSecondary,
+                              fontSize: 9,
+                            ),
+                          );
+                        }
+                        return const Text('');
+                      },
+                    ),
+                  ),
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      getTitlesWidget: (value, meta) {
+                        final index = value.toInt();
+                        if (index >= 0 && index < categories.length) {
+                          return Text(
+                            categories[index].substring(0, 3).toUpperCase(),
+                            style: const TextStyle(
+                              color: AppTheme.textSecondary,
+                              fontSize: 9,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          );
+                        }
+                        return const Text('');
+                      },
+                    ),
+                  ),
+                ),
+                barGroups: List.generate(categories.length, (i) {
+                  return BarChartGroupData(
+                    x: i,
+                    barRods: [
+                      BarChartRodData(
+                        toY: focusValues[i],
+                        color: AppTheme.accentOrange,
+                        width: 14,
+                        borderRadius: BorderRadius.circular(4),
+                        backDrawRodData: BackgroundBarChartRodData(
+                          show: true,
+                          toY: finalMaxY,
+                          color: Colors.white.withOpacity(0.02),
+                        ),
+                      ),
+                    ],
+                  );
+                }),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInsightsPanel({
+    required double avgCalories,
+    required double avgWater,
+    required int workoutsCount,
+    required double currentWeight,
+    required double calorieGoal,
+    required double waterGoal,
+  }) {
+    String calorieFeedback =
+        'Caloric intake is average. Update targets in profile as needed.';
+    Color calColor = AppTheme.accentCyan;
+
+    if (avgCalories > 0) {
+      if (avgCalories > calorieGoal + 200) {
+        calorieFeedback =
+            'You are exceeding your daily target goal of ${calorieGoal.round()} kcal. Watch calorie density!';
+        calColor = AppTheme.accentCoral;
+      } else if (avgCalories >= calorieGoal - 200) {
+        calorieFeedback =
+            'Incredible! You are perfectly hitting your metabolic target. Maintain this consistency!';
+        calColor = AppTheme.accentEmerald;
+      } else {
+        calorieFeedback =
+            'Calorie budget is under target. Ensure you ingest ample proteins to retain muscle mass.';
+        calColor = AppTheme.accentCyan;
+      }
+    }
+
+    String hydrationFeedback =
+        'Log water throughout the day to calibrate cellular retention.';
+    if (avgWater > 0) {
+      if (avgWater >= waterGoal) {
+        hydrationFeedback =
+            'Superb water levels logged! Your body is fully hydrated, helping flush metabolites.';
+        hasCompleted = true;
+      } else {
+        hydrationFeedback =
+            'Hydration is below goal of ${waterGoal.toStringAsFixed(1)}L. Try adding 250ml every 2 hours.';
+      }
+    }
+
+    String gymFeedback =
+        'Workouts build physical fitness. Complete sets in the gym tab!';
+    if (workoutsCount >= 4) {
+      gymFeedback =
+          'Outstanding gym consistency! 4+ weekly sessions recorded. Remember to schedule recovery days.';
+    } else if (workoutsCount > 0) {
+      gymFeedback =
+          '$workoutsCount active gym training sessions logged. Keep stacking physical progression!';
+    }
+
+    return Column(
+      children: [
+        _buildInsightCard(
+          title: 'Metabolic Balance',
+          subtitle: calorieFeedback,
+          icon: Icons.bolt_rounded,
+          color: calColor,
+        ),
+        _buildInsightCard(
+          title: 'Hydration Consistency',
+          subtitle: hydrationFeedback,
+          icon: Icons.water_drop_rounded,
+          color: AppTheme.accentCyan,
+        ),
+        _buildInsightCard(
+          title: 'Active Recovery optimized',
+          subtitle: gymFeedback,
+          icon: Icons.lightbulb_rounded,
+          color: AppTheme.accentOrange,
+        ),
+      ],
+    );
+  }
+
+  static bool hasCompleted = false;
+
+  Widget _buildInsightCard({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required Color color,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: AppTheme.glassBackground,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppTheme.glassBorder, width: 1),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Stack(
+          children: [
+            // Left Accent Strip
+            Positioned(
+              left: 0,
+              top: 0,
+              bottom: 0,
+              child: Container(
+                width: 4,
+                color: color,
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 16, 16),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: color.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Center(
+                      child: Icon(icon, color: color, size: 20),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          subtitle,
+                          style: const TextStyle(
+                            color: AppTheme.textSecondary,
+                            fontSize: 12,
+                            height: 1.4,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

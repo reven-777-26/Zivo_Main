@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
+<title>FitNotes 2 - Workout Tracker</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind Config -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                "on-primary-fixed-variant": "#45474b",
+                "surface-container-highest": "#273647",
+                "outline": "#909095",
+                "primary-fixed-dim": "#c6c6cc",
+                "on-background": "#d4e4fa",
+                "on-tertiary-fixed": "#301400",
+                "on-primary": "#2f3035",
+                "on-tertiary": "#4f2500",
+                "inverse-primary": "#5d5e63",
+                "outline-variant": "#45474b",
+                "surface-bright": "#2c3a4c",
+                "secondary-fixed": "#a2eeff",
+                "tertiary": "#ffb783",
+                "surface-variant": "#273647",
+                "on-primary-fixed": "#1a1c20",
+                "on-secondary-container": "#00515d",
+                "on-surface-variant": "#c6c6cb",
+                "primary-container": "#0f1115",
+                "background": "#051424",
+                "inverse-surface": "#d4e4fa",
+                "surface-dim": "#051424",
+                "inverse-on-surface": "#233143",
+                "tertiary-container": "#200b00",
+                "on-primary-container": "#7b7c82",
+                "tertiary-fixed": "#ffdcc5",
+                "surface": "#051424",
+                "error-container": "#93000a",
+                "surface-container-lowest": "#010f1f",
+                "secondary-fixed-dim": "#2fd9f4",
+                "error": "#ffb4ab",
+                "on-error": "#690005",
+                "surface-tint": "#c6c6cc",
+                "primary-fixed": "#e2e2e8",
+                "surface-container-low": "#0d1c2d",
+                "on-error-container": "#ffdad6",
+                "on-secondary-fixed-variant": "#004e5a",
+                "tertiary-fixed-dim": "#ffb783",
+                "on-surface": "#d4e4fa",
+                "on-secondary": "#00363e",
+                "secondary": "#5de6ff",
+                "on-tertiary-container": "#c06409",
+                "on-secondary-fixed": "#001f25",
+                "secondary-container": "#00cbe6",
+                "surface-container": "#122131"
+            },
+            "borderRadius": {
+                "DEFAULT": "1rem",
+                "lg": "2rem",
+                "xl": "3rem",
+                "full": "9999px"
+            },
+            "spacing": {
+                "stack-gap-md": "24px",
+                "section-margin": "48px",
+                "container-padding-mobile": "20px",
+                "stack-gap-sm": "12px",
+                "container-padding-desktop": "40px",
+                "base": "8px"
+            },
+            "fontFamily": {
+                "label-caps": ["Hanken Grotesk"],
+                "headline-lg-mobile": ["Hanken Grotesk"],
+                "body-sm": ["Hanken Grotesk"],
+                "body-lg": ["Hanken Grotesk"],
+                "display-lg": ["Hanken Grotesk"],
+                "headline-lg": ["Hanken Grotesk"],
+                "title-md": ["Hanken Grotesk"]
+            },
+            "fontSize": {
+                "label-caps": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "700"}],
+                "headline-lg-mobile": ["28px", {"lineHeight": "36px", "fontWeight": "700"}],
+                "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "800"}],
+                "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                "title-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+      body {
+        background-color: #051424;
+        color: #d4e4fa;
+        -webkit-font-smoothing: antialiased;
+      }
+      .glass-card {
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+      .vibrant-gradient {
+        background: linear-gradient(135deg, #5de6ff 0%, #a855f7 100%);
+      }
+      .glow-secondary {
+        box-shadow: 0 0 20px rgba(93, 230, 255, 0.2);
+      }
+      ::-webkit-scrollbar {
+        display: none;
+      }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="font-body-lg text-body-lg">
+<!-- Top App Bar -->
+<nav class="flex justify-between items-center w-full px-container-padding-mobile h-16 fixed top-0 z-50 bg-surface/80 dark:bg-surface/80 backdrop-blur-xl border-b border-white/10">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-surface-container-highest flex items-center justify-center overflow-hidden border border-white/10">
+<img alt="Profile" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBqlB4GTqbOfhvBAwTSC7xgzWp717jgnm1PyH7gMLVnUOTJiEVLVu14Qvz3Li6jC7rRB9CkkV5lkLvssX-rCcNvSgzzvblxBQKBrN1o13hhtrwws-4qYqc9XrF8v4aJmNIoWM5avU_7yug3sryPAnuOoD3UhSPvW8a4Hoj-0YZkoBriGk_meWnzkUF6THNue9ZEv41xFLfMfJtK1CTMjjexX3wO6bKDy_-4J82eX3EppkaAJaL02XHUW-VMbM-3fUTrab_Ym9Vivyo"/>
+</div>
+<span class="font-headline-lg-mobile text-headline-lg-mobile font-extrabold text-secondary">FitNotes 2</span>
+</div>
+<button class="bg-surface-container-high px-4 py-2 rounded-full font-label-caps text-label-caps text-primary hover:opacity-80 transition-opacity active:scale-95 duration-200">
+            7🔥
+        </button>
+</nav>
+<!-- Main Content -->
+<main class="pt-24 pb-32 px-container-padding-mobile max-w-lg mx-auto md:max-w-none md:grid md:grid-cols-12 md:gap-stack-gap-md md:px-container-padding-desktop">
+<!-- Hero Section -->
+<section class="md:col-span-12 mb-section-margin">
+<div class="relative overflow-hidden rounded-xl p-8 min-h-[240px] flex flex-col justify-end group transition-all duration-500">
+<div class="absolute inset-0 z-0">
+<img class="w-full h-full object-cover brightness-50 group-hover:scale-105 transition-transform duration-700" data-alt="A cinematic, high-contrast photograph of a modern, dark-themed gymnasium with atmospheric blue and purple neon lighting. The equipment is sleek and black, reflecting the vibrant ambient glow. The scene captures a powerful, high-energy fitness environment with deep shadows and sharp highlights, conveying a sense of focus and peak performance." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCJDIGUIFqw7p4oAiOPD3oeBE8Tl0LB6HXpD1rSuvwvF3FCUb230JcKUtq7n-sc7a9mPKLZRo-uW0wUz4n-Lvp2Vc7pFTVctvmJT_d7HyEw6oFLCCzX119vuQJJu6s1SbXxr5vazXnDdeV8geWscHEswfWQ8cBkJ_wc8m0q0Nal35yEIoMM6EUg2e7iWODi1Fh797PdHdIYXC-A8FIRM_9uwPFDpvGEhfCwGgaN2aOmtzQIzs4pe2QLeXGPR9huSaNE2Eb45JQPt9I"/>
+<div class="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent"></div>
+</div>
+<div class="relative z-10 space-y-4">
+<h1 class="font-display-lg text-display-lg text-white leading-tight">Push Your<br/><span class="text-secondary">Limits Today</span></h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-md">Ready to beat your personal best? Track every rep and set with precision.</p>
+<button class="vibrant-gradient glow-secondary w-full md:w-auto px-8 py-4 rounded-full flex items-center justify-center gap-3 font-title-md text-title-md text-on-tertiary-fixed active:scale-95 transition-transform">
+<span class="material-symbols-outlined" data-icon="play_arrow">play_arrow</span>
+                        Start Live Session
+                    </button>
+</div>
+</div>
+</section>
+<!-- Presets Section -->
+<section class="md:col-span-12 mb-section-margin">
+<div class="flex justify-between items-end mb-stack-gap-md">
+<h2 class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface">Workout Presets</h2>
+<button class="text-secondary font-label-caps text-label-caps hover:underline">VIEW ALL</button>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-stack-gap-md">
+<!-- Push Day -->
+<div class="relative aspect-[4/3] rounded-lg overflow-hidden glass-card group cursor-pointer active:scale-95 transition-transform duration-200">
+<img class="absolute inset-0 w-full h-full object-cover opacity-30 group-hover:scale-110 group-hover:opacity-50 transition-all duration-500" data-alt="A high-resolution shot of a person's hands gripping a heavy barbell in a dark, atmospheric weight room. Vibrant cyan lighting highlights the muscular tension and the texture of the iron weights. The mood is intense and motivating, with a focus on strength and precision training." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAv88umiT4-zyXku24m6rCn_7MsRbE5r4-3LuHx27fajtASoOzUnnMYX1p-TCmsX20c-8jDePM8VuYliL6zjraF0EwQhf2SrVfZ8scHf45h5853T4-N0qwR7RJrmipfk4MBXczUS2gTnH8cwdrIUoyOZoOpKguNhWGbJ5f7moF_ByDIVb4Wiu5_IScdQzP5xw1KyXzep-VsaVa_QOn2Kr-w8tdMBpxTcWLxSA2bh_bDks_hZCg2z0VGzm3Dh6xzwR9vADpCMDVvPz0"/>
+<div class="relative h-full p-6 flex flex-col justify-between">
+<div class="w-12 h-12 rounded-lg bg-secondary/20 flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined text-3xl" data-icon="fitness_center">fitness_center</span>
+</div>
+<div>
+<h3 class="font-headline-lg text-white mb-1">Push Day</h3>
+<div class="flex gap-2">
+<span class="bg-white/10 px-2 py-0.5 rounded font-label-caps text-label-caps text-on-surface-variant">6 EXERCISES</span>
+<span class="bg-secondary/10 px-2 py-0.5 rounded font-label-caps text-label-caps text-secondary">CHEST/TRI</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Pull Day -->
+<div class="relative aspect-[4/3] rounded-lg overflow-hidden glass-card group cursor-pointer active:scale-95 transition-transform duration-200">
+<img class="absolute inset-0 w-full h-full object-cover opacity-30 group-hover:scale-110 group-hover:opacity-50 transition-all duration-500" data-alt="A dynamic, low-angle shot of a fitness athlete performing a pull-up in a dark, moody studio. Neon purple backlighting creates sharp silhouettes and emphasizes muscle definition. The image is energetic and professional, representing strength and pull-focused training movements." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA8Gl3X7nPoIbxCmF6eUCJv8vT122CItc_VzVnacZdFDYsgKn0KuhnC86aaCvcUDdEBa8kTyeNLUwCxkNyE8gdudzaugwFBJ6Pj4eRs2YAXKG4joPZNPi985mpAYemNwobD-fSQf_SBhCA5jlxpqYx-9ie1I_1Vl7UzeYCPlqxF5KF80fH2bA3Vo2Vte9IxqkDmLtgxj92Fsqqj55aQ9HqtiDU84GJ-77cHnGndz_2rER-0IvVduJCj9DJYl69oFZwcs5TaA-SN2VI"/>
+<div class="relative h-full p-6 flex flex-col justify-between">
+<div class="w-12 h-12 rounded-lg bg-tertiary/20 flex items-center justify-center text-tertiary">
+<span class="material-symbols-outlined text-3xl" data-icon="reorder">reorder</span>
+</div>
+<div>
+<h3 class="font-headline-lg text-white mb-1">Pull Day</h3>
+<div class="flex gap-2">
+<span class="bg-white/10 px-2 py-0.5 rounded font-label-caps text-label-caps text-on-surface-variant">5 EXERCISES</span>
+<span class="bg-tertiary/10 px-2 py-0.5 rounded font-label-caps text-label-caps text-tertiary">BACK/BI</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Leg Day -->
+<div class="relative aspect-[4/3] rounded-lg overflow-hidden glass-card group cursor-pointer active:scale-95 transition-transform duration-200">
+<img class="absolute inset-0 w-full h-full object-cover opacity-30 group-hover:scale-110 group-hover:opacity-50 transition-all duration-500" data-alt="A high-intensity photo of a weightlifting rack in a premium fitness facility. The lighting is dramatic and moody, with warm amber and deep blue accents. The focus is on the heavy plates and the grit of the leg training equipment, evoking a feeling of power and endurance." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDor9HYgo41CQACkt57Opwf-tLpxXZj7vGSZNwqcGAZfzew5vtF6170YQBcf0ey8SSkeyWA--IlFrOHnfZh8Ro38m8AgA8HgFu5vE9Fgn76_n0i6cOHMjH9sBzwTy-irH8H9VVjo7LOPHUWEXFVn7e6mEHV4ZfmbxUkJEcqDGZIoWmXWrh1eGwSg9de6K0KvNGAS_ZBmTBl0rH9586nvlozSnwIcAf7BGCMaXqcl7ksPIn2oQ4juNyAKrmXhWkIuSLaqptG5yXOcT0"/>
+<div class="relative h-full p-6 flex flex-col justify-between">
+<div class="w-12 h-12 rounded-lg bg-on-secondary-container/20 flex items-center justify-center text-on-secondary-container">
+<span class="material-symbols-outlined text-3xl" data-icon="legs">foot_bones</span>
+</div>
+<div>
+<h3 class="font-headline-lg text-white mb-1">Leg Day</h3>
+<div class="flex gap-2">
+<span class="bg-white/10 px-2 py-0.5 rounded font-label-caps text-label-caps text-on-surface-variant">7 EXERCISES</span>
+<span class="bg-secondary-container/20 px-2 py-0.5 rounded font-label-caps text-label-caps text-secondary">QUADS/GLUTES</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Recent History -->
+<section class="md:col-span-12 mb-section-margin">
+<h2 class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface mb-stack-gap-md">Recent History</h2>
+<div class="space-y-stack-gap-sm">
+<!-- History Item 1 -->
+<div class="glass-card rounded-lg p-5 flex items-center justify-between hover:bg-white/5 transition-colors cursor-pointer">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-full border-2 border-secondary/50 flex items-center justify-center">
+<span class="material-symbols-outlined text-secondary" data-icon="check_circle" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+<div>
+<h4 class="font-title-md text-white">Full Body Power</h4>
+<p class="font-body-sm text-on-surface-variant">Yesterday • 1h 12m</p>
+</div>
+</div>
+<div class="flex flex-col items-end gap-2">
+<span class="bg-secondary/10 text-secondary px-3 py-1 rounded-full font-label-caps text-label-caps">HIGH INTENSITY</span>
+<div class="flex gap-1 text-on-surface-variant font-body-sm">
+<span class="font-bold text-white">450</span>kcal
+                        </div>
+</div>
+</div>
+<!-- History Item 2 -->
+<div class="glass-card rounded-lg p-5 flex items-center justify-between hover:bg-white/5 transition-colors cursor-pointer">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-full border-2 border-tertiary/50 flex items-center justify-center">
+<span class="material-symbols-outlined text-tertiary" data-icon="check_circle" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+<div>
+<h4 class="font-title-md text-white">Upper Body Split</h4>
+<p class="font-body-sm text-on-surface-variant">Monday • 55m</p>
+</div>
+</div>
+<div class="flex flex-col items-end gap-2">
+<span class="bg-tertiary/10 text-tertiary px-3 py-1 rounded-full font-label-caps text-label-caps">MEDIUM INTENSITY</span>
+<div class="flex gap-1 text-on-surface-variant font-body-sm">
+<span class="font-bold text-white">320</span>kcal
+                        </div>
+</div>
+</div>
+<!-- History Item 3 -->
+<div class="glass-card rounded-lg p-5 flex items-center justify-between hover:bg-white/5 transition-colors cursor-pointer">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-full border-2 border-secondary-container/50 flex items-center justify-center">
+<span class="material-symbols-outlined text-secondary-container" data-icon="check_circle" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+<div>
+<h4 class="font-title-md text-white">Mobility &amp; Core</h4>
+<p class="font-body-sm text-on-surface-variant">Saturday • 30m</p>
+</div>
+</div>
+<div class="flex flex-col items-end gap-2">
+<span class="bg-secondary-container/10 text-secondary-container px-3 py-1 rounded-full font-label-caps text-label-caps">RECOVERY</span>
+<div class="flex gap-1 text-on-surface-variant font-body-sm">
+<span class="font-bold text-white">120</span>kcal
+                        </div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Bottom Nav Bar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 py-3 pb-safe bg-surface-container/80 dark:bg-surface-container/80 backdrop-blur-xl border-t border-white/10 rounded-t-lg shadow-lg shadow-secondary/10">
+<a class="flex flex-col items-center justify-center text-outline dark:text-outline hover:text-secondary/80 transition-colors active:scale-90 duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="font-label-caps text-label-caps mt-1">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-secondary dark:text-secondary bg-secondary/10 rounded-xl px-3 py-1 active:scale-90 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="fitness_center" style="font-variation-settings: 'FILL' 1;">fitness_center</span>
+<span class="font-label-caps text-label-caps mt-1">Workouts</span>
+</a>
+<a class="flex flex-col items-center justify-center text-outline dark:text-outline hover:text-secondary/80 transition-colors active:scale-90 duration-150" href="#">
+<div class="w-12 h-12 rounded-full vibrant-gradient flex items-center justify-center text-on-tertiary-fixed -mt-8 shadow-xl">
+<span class="material-symbols-outlined" data-icon="barcode_scanner">barcode_scanner</span>
+</div>
+<span class="font-label-caps text-label-caps mt-1">Scan</span>
+</a>
+<a class="flex flex-col items-center justify-center text-outline dark:text-outline hover:text-secondary/80 transition-colors active:scale-90 duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="insights">insights</span>
+<span class="font-label-caps text-label-caps mt-1">Progress</span>
+</a>
+<a class="flex flex-col items-center justify-center text-outline dark:text-outline hover:text-secondary/80 transition-colors active:scale-90 duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="font-label-caps text-label-caps mt-1">Profile</span>
+</a>
+</nav>
+<script>
+        // Simple micro-interaction for cards
+        document.querySelectorAll('.glass-card').forEach(card => {
+            card.addEventListener('mouseenter', () => {
+                card.style.transform = 'translateY(-4px)';
+                card.style.transition = 'all 0.3s ease-out';
+            });
+            card.addEventListener('mouseleave', () => {
+                card.style.transform = 'translateY(0)';
+            });
+        });
+
+        // Background canvas effect for atmospheric energy
+        const createParticle = () => {
+            const particle = document.createElement('div');
+            particle.className = 'fixed rounded-full pointer-events-none opacity-20';
+            const size = Math.random() * 200 + 100;
+            particle.style.width = `${size}px`;
+            particle.style.height = `${size}px`;
+            particle.style.background = Math.random() > 0.5 ? 'radial-gradient(circle, #5de6ff 0%, transparent 70%)' : 'radial-gradient(circle, #a855f7 0%, transparent 70%)';
+            particle.style.left = `${Math.random() * 100}vw`;
+            particle.style.top = `${Math.random() * 100}vh`;
+            particle.style.zIndex = '-1';
+            particle.style.filter = 'blur(40px)';
+            document.body.appendChild(particle);
+            
+            setTimeout(() => {
+                particle.style.transition = 'all 10s linear';
+                particle.style.transform = `translate(${Math.random() * 200 - 100}px, ${Math.random() * 200 - 100}px)`;
+            }, 100);
+
+            setTimeout(() => {
+                particle.remove();
+                createParticle();
+            }, 10000);
+        };
+
+        for(let i=0; i<4; i++) createParticle();
+    </script>
+</body></html>

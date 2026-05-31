@@ -1,0 +1,1433 @@
+import 'dart:async';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
+import '../../core/theme.dart';
+import '../../models/user_profile.dart';
+import '../../models/reminder_setting.dart';
+import '../../services/state_providers.dart';
+import '../../services/storage_service.dart';
+import 'dashboard_screen.dart';
+import 'workout_screen.dart';
+import 'scanner_screen.dart';
+import 'progress_screen.dart';
+
+class MainShell extends ConsumerStatefulWidget {
+  const MainShell({super.key});
+
+  @override
+  ConsumerState<MainShell> createState() => _MainShellState();
+}
+
+class _MainShellState extends ConsumerState<MainShell> {
+  final List<Widget> _screens = [
+    const DashboardScreen(),
+    const WorkoutScreen(),
+    const ScannerScreen(),
+    const ProgressScreen(),
+    const ProfilePlaceholderScreen(),
+  ];
+
+  StreamSubscription? _notificationSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Listen for global notification triggers and display a premium custom overlay alert card
+    _notificationSubscription = NotificationManager.controller.stream.listen((notif) {
+      if (mounted) {
+        _showInAppNotification(notif['title'] ?? 'Notification', notif['body'] ?? '');
+      }
+    });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      showWebNotification(
+        '💪 FitNotes 2 Active & Ready!',
+        'Push reminders and notification systems are fully integrated. Stay on track!',
+      );
+    });
+  }
+
+  @override
+  void dispose() {
+    _notificationSubscription?.cancel();
+    super.dispose();
+  }
+
+  void _showInAppNotification(String title, String body) {
+    late OverlayEntry overlayEntry;
+    overlayEntry = OverlayEntry(
+      builder: (overlayContext) => Positioned(
+        top: MediaQuery.of(context).padding.top + 16,
+        left: 20,
+        right: 20,
+        child: Material(
+          color: Colors.transparent,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: BoxDecoration(
+              color: AppTheme.glassBackground.withOpacity(0.98),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: AppTheme.accentCyan.withOpacity(0.4), width: 1.5),
+              boxShadow: [
+                BoxShadow(
+                  color: AppTheme.accentCyan.withOpacity(0.25),
+                  blurRadius: 20,
+                  spreadRadius: 2,
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppTheme.accentCyan.withOpacity(0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.notifications_active_rounded,
+                    color: AppTheme.accentCyan,
+                    size: 22,
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        body,
+                        style: const TextStyle(
+                          color: AppTheme.textSecondary,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close_rounded, color: Colors.white, size: 18),
+                  onPressed: () {
+                    overlayEntry.remove();
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    Overlay.of(context).insert(overlayEntry);
+
+    // Auto-remove after 4 seconds
+    Future.delayed(const Duration(seconds: 4), () {
+      if (overlayEntry.mounted) {
+        overlayEntry.remove();
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final currentIndex = ref.watch(activeTabProvider);
+    final bgColor = isDark ? AppTheme.obsidianBackground : const Color(0xFFF1F5F9);
+
+    return Scaffold(
+      extendBody: true, // Show floating glassmorphism behind the navbar
+      backgroundColor: bgColor,
+      body: Container(
+        color: bgColor,
+        child: IndexedStack(index: currentIndex, children: _screens),
+      ),
+      bottomNavigationBar: _buildGlassNavigationBar(currentIndex),
+    );
+  }
+
+  Widget _buildGlassNavigationBar(int currentIndex) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 12, right: 12, bottom: 20),
+      child: GlassCard(
+        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+        borderRadius: BorderRadius.circular(28),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            _buildNavItem(Icons.home_rounded, 'Home', 0, currentIndex),
+            _buildNavItem(Icons.fitness_center_rounded, 'Workout', 1, currentIndex),
+            _buildNavItem(Icons.qr_code_scanner_rounded, 'Scan', 2, currentIndex),
+            _buildNavItem(Icons.analytics_rounded, 'Progress', 3, currentIndex),
+            _buildNavItem(Icons.person_rounded, 'Profile', 4, currentIndex),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavItem(IconData icon, String label, int index, int currentIndex) {
+    final isSelected = currentIndex == index;
+    final activeColor = isSelected
+        ? AppTheme.accentCyan
+        : AppTheme.textSecondary;
+
+    return GestureDetector(
+      onTap: () {
+        ref.read(activeTabProvider.notifier).state = index;
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppTheme.accentPurple.withOpacity(0.08)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: activeColor, size: 22)
+                .animate(target: isSelected ? 1 : 0)
+                .scale(
+                  begin: const Offset(1, 1),
+                  end: const Offset(1.15, 1.15),
+                  duration: 200.ms,
+                ),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: TextStyle(
+                color: activeColor,
+                fontSize: 9,
+                fontWeight: isSelected ? FontWeight.w900 : FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// =========================================================================
+// PROFILE SCREEN (Equipped with Direct Budget Settings & Reminders Config)
+// =========================================================================
+class ProfilePlaceholderScreen extends ConsumerStatefulWidget {
+  const ProfilePlaceholderScreen({super.key});
+
+  @override
+  ConsumerState<ProfilePlaceholderScreen> createState() =>
+      _ProfilePlaceholderScreenState();
+}
+
+class _ProfilePlaceholderScreenState
+    extends ConsumerState<ProfilePlaceholderScreen> {
+  final _calController = TextEditingController();
+  final _protController = TextEditingController();
+  final _watController = TextEditingController();
+  String _selectedSkinType = 'Normal';
+
+  final _key1Controller = TextEditingController();
+  final _key2Controller = TextEditingController();
+  final _key3Controller = TextEditingController();
+  final _openaiKeyController = TextEditingController();
+
+  bool _obscureKey1 = true;
+  bool _obscureKey2 = true;
+  bool _obscureKey3 = true;
+  bool _obscureOpenaiKey = true;
+
+  @override
+  void initState() {
+    super.initState();
+    final profile = ref.read(profileProvider);
+    if (profile != null) {
+      _calController.text = profile.calorieGoal.toString();
+      _protController.text = profile.proteinGoal.toString();
+      _selectedSkinType = profile.skinType;
+
+      double ltr = profile.waterGoal / 1000.0;
+      String formatted = ltr.toStringAsFixed(2);
+      if (formatted.endsWith('.00')) {
+        formatted = formatted.substring(0, formatted.length - 3);
+      } else if (formatted.endsWith('0')) {
+        formatted = formatted.substring(0, formatted.length - 1);
+      }
+      _watController.text = formatted;
+    }
+
+    final geminiKeys = StorageService.getGeminiApiKeys();
+    if (geminiKeys.length >= 3) {
+      _key1Controller.text = geminiKeys[0];
+      _key2Controller.text = geminiKeys[1];
+      _key3Controller.text = geminiKeys[2];
+    } else {
+      if (geminiKeys.isNotEmpty) _key1Controller.text = geminiKeys[0];
+      if (geminiKeys.length > 1) _key2Controller.text = geminiKeys[1];
+      if (geminiKeys.length > 2) _key3Controller.text = geminiKeys[2];
+    }
+
+    _openaiKeyController.text = StorageService.getOpenAiApiKey();
+  }
+
+  @override
+  void dispose() {
+    _calController.dispose();
+    _protController.dispose();
+    _watController.dispose();
+    _key1Controller.dispose();
+    _key2Controller.dispose();
+    _key3Controller.dispose();
+    _openaiKeyController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _saveManualTargets() async {
+    final calorieInput = int.tryParse(_calController.text);
+    final proteinInput = int.tryParse(_protController.text);
+    final waterLtrInput = double.tryParse(_watController.text);
+
+    if (calorieInput == null ||
+        proteinInput == null ||
+        waterLtrInput == null ||
+        calorieInput <= 0 ||
+        proteinInput <= 0 ||
+        waterLtrInput <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter valid, positive numeric targets.'),
+        ),
+      );
+      return;
+    }
+
+    final currentProfile = ref.read(profileProvider);
+    final waterInput = (waterLtrInput * 1000).round();
+
+    final updatedProfile = UserProfile(
+      goal: currentProfile?.goal ?? 'maintain',
+      gender: currentProfile?.gender ?? 'Male',
+      age: currentProfile?.age ?? 25,
+      weight: currentProfile?.weight ?? 70.0,
+      height: currentProfile?.height ?? 170.0,
+      activityLevel: currentProfile?.activityLevel ?? 'moderate',
+      calorieGoal: calorieInput,
+      proteinGoal: proteinInput,
+      waterGoal: waterInput,
+      skinType: _selectedSkinType,
+    );
+
+    await ref.read(profileProvider.notifier).saveProfile(updatedProfile);
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Calibration targets saved! Syncing dashboard...'),
+          backgroundColor: AppTheme.accentEmerald,
+        ),
+      );
+    }
+  }
+
+  Future<void> _saveGeminiKeys() async {
+    final k1 = _key1Controller.text.trim();
+    final k2 = _key2Controller.text.trim();
+    final k3 = _key3Controller.text.trim();
+    final openai = _openaiKeyController.text.trim();
+
+    if (k1.isEmpty || k2.isEmpty || k3.isEmpty || openai.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please ensure all AI key fields are populated.'),
+          backgroundColor: AppTheme.accentCoral,
+        ),
+      );
+      return;
+    }
+
+    await StorageService.saveGeminiApiKeys([k1, k2, k3]);
+    await StorageService.saveOpenAiApiKey(openai);
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Aura AI Keys stored securely!'),
+          backgroundColor: AppTheme.accentEmerald,
+        ),
+      );
+    }
+  }
+
+  Widget _buildSecureKeyField({
+    required TextEditingController controller,
+    required String label,
+    required bool? isObscured,
+    required VoidCallback onToggle,
+    required Color iconColor,
+  }) {
+    final obscured = isObscured ?? true;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final fieldBg = isDark
+        ? AppTheme.obsidianBackground
+        : Colors.black.withOpacity(0.015);
+    final fieldBorder = isDark ? AppTheme.glassBorder : const Color(0xFFEADBFF);
+    final textColor = isDark ? Colors.white : AppTheme.textPrimary;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: fieldBg,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: fieldBorder, width: 1.0),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 1),
+      child: TextField(
+        controller: controller,
+        obscureText: obscured,
+        style: TextStyle(
+          color: textColor,
+          fontWeight: FontWeight.bold,
+          fontSize: 12,
+          letterSpacing: obscured ? 2.0 : 0.0,
+        ),
+        decoration: InputDecoration(
+          icon: Icon(Icons.key_rounded, color: iconColor, size: 16),
+          labelText: label,
+          labelStyle: const TextStyle(
+            color: AppTheme.textSecondary,
+            fontSize: 11,
+          ),
+          suffixIcon: IconButton(
+            icon: Icon(
+              obscured ? Icons.visibility_off_rounded : Icons.visibility_rounded,
+              color: AppTheme.textSecondary,
+              size: 16,
+            ),
+            onPressed: onToggle,
+          ),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(vertical: 4),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final profile = ref.watch(profileProvider);
+    final reminders = ref.watch(remindersProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    // Load today's dynamic metrics for targets progress bars
+    final todayStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
+    final todayStats = StorageService.getDailyMetrics(todayStr);
+
+    final double consumedCal = (((todayStats['breakfast_cal'] ?? 0) as num) +
+            ((todayStats['lunch_cal'] ?? 0) as num) +
+            ((todayStats['dinner_cal'] ?? 0) as num) +
+            ((todayStats['snacks_cal'] ?? 0) as num) +
+            ((todayStats['outside_food_cal'] ?? 0) as num))
+        .toDouble();
+
+    final double consumedProtein = (todayStats['protein'] ?? 0).toDouble();
+    final double consumedWaterLtr = ((todayStats['water'] ?? 0) as num) / 1000.0;
+
+    final double calorieGoal = (profile?.calorieGoal ?? 2400).toDouble();
+    final double proteinGoal = (profile?.proteinGoal ?? 160).toDouble();
+    final double waterGoalLtr = (profile?.waterGoal ?? 3500) / 1000.0;
+
+    final double currentWeight = profile?.weight ?? 78.5;
+    final double currentHeight = profile?.height ?? 182.0;
+    final int currentAge = profile?.age ?? 28;
+    final String currentGender = profile?.gender ?? 'Male';
+
+    return SafeArea(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.only(
+          left: 20,
+          right: 20,
+          top: 16,
+          bottom: 140,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Profile Header Section (Stitch layout banner)
+            Center(
+              child: Column(
+                children: [
+                  Container(
+                    width: 96,
+                    height: 96,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: AppTheme.accentCyan.withOpacity(0.3), width: 3),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppTheme.accentCyan.withOpacity(0.15),
+                          blurRadius: 24,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: ClipOval(
+                      child: Image.network(
+                        'https://lh3.googleusercontent.com/aida-public/AB6AXuCoqjP7BFZ5G58JZ9dWkY7i2nuxlXG22yw4_kp_tZDq9_LFlGpDXZN7CW3mbIisWHeikqi3HAtRW3GIE3Yv25gBdC20K-f5kYqQWbCYwr59BI8F9VS5Px2JuUIN1vtuKG2z93p-pIAb6Ea3-53UcUQzDXCzvR9Ar7P2inSnzRzOu5DHjU442uippjL0VveOFZ3BBk_TEVeMPIfcupH3xh7AswuFV2aHm9hmqFljLzwDutvFMQRHy3SZzrRekzi82S15S4nTDmbypbM',
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Alex Morgan',
+                    style: TextStyle(
+                      fontSize: 26,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.white,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Elite Athlete • Premium Member',
+                    style: TextStyle(
+                      color: AppTheme.textSecondary,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 32),
+
+            // Personal Metrics Bento Grid
+            Row(
+              children: [
+                Expanded(
+                  child: GlassCard(
+                    padding: const EdgeInsets.symmetric(vertical: 20),
+                    child: Column(
+                      children: [
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: AppTheme.accentCyan.withOpacity(0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.scale_rounded,
+                            color: AppTheme.accentCyan,
+                            size: 20,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        const Text(
+                          'WEIGHT',
+                          style: TextStyle(
+                            color: AppTheme.textSecondary,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1.0,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          '${currentWeight.toStringAsFixed(1)} kg',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: GlassCard(
+                    padding: const EdgeInsets.symmetric(vertical: 20),
+                    child: Column(
+                      children: [
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: AppTheme.accentPurple.withOpacity(0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.straighten_rounded,
+                            color: AppTheme.accentPurple,
+                            size: 20,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        const Text(
+                          'HEIGHT',
+                          style: TextStyle(
+                            color: AppTheme.textSecondary,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1.0,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          '${currentHeight.round()} cm',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            GlassCard(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              child: Row(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: AppTheme.accentOrange.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.cake_rounded,
+                      color: AppTheme.accentOrange,
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'AGE & GENDER',
+                          style: TextStyle(
+                            color: AppTheme.textSecondary,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1.0,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '$currentAge Years • $currentGender',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Icon(
+                    Icons.chevron_right_rounded,
+                    color: AppTheme.textSecondary,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 32),
+
+            // Targets Section
+            const Text(
+              'Daily Targets',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w900,
+                color: Colors.white,
+                letterSpacing: -0.5,
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Calories Progress Card
+            _buildTargetProgressCard(
+              title: 'Calories',
+              subtitle: '${calorieGoal.round()} kcal daily goal',
+              consumed: consumedCal,
+              goal: calorieGoal,
+              leftLabel: '${consumedCal.round()} consumed',
+              rightLabel: '${(calorieGoal - consumedCal).clamp(0, 9999).round()} left',
+              icon: Icons.local_fire_department_rounded,
+              color: AppTheme.accentCyan,
+            ),
+            const SizedBox(height: 12),
+
+            // Protein Progress Card
+            _buildTargetProgressCard(
+              title: 'Protein',
+              subtitle: '${proteinGoal.round()}g daily goal',
+              consumed: consumedProtein,
+              goal: proteinGoal,
+              leftLabel: '${consumedProtein.round()}g consumed',
+              rightLabel: '${(proteinGoal - consumedProtein).clamp(0, 999).round()}g left',
+              icon: Icons.fitness_center_rounded,
+              color: AppTheme.accentOrange,
+            ),
+            const SizedBox(height: 12),
+
+            // Hydration Progress Card
+            _buildTargetProgressCard(
+              title: 'Hydration',
+              subtitle: '${waterGoalLtr.toStringAsFixed(1)}L daily goal',
+              consumed: consumedWaterLtr,
+              goal: waterGoalLtr,
+              leftLabel: '${consumedWaterLtr.toStringAsFixed(1)}L consumed',
+              rightLabel: '${(waterGoalLtr - consumedWaterLtr).clamp(0.0, 99.0).toStringAsFixed(1)}L left',
+              icon: Icons.water_drop_rounded,
+              color: Colors.blueAccent,
+            ),
+            const SizedBox(height: 32),
+
+            // Target budgets editor
+            const Text(
+              'Edit Target Budgets',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w900,
+                color: Colors.white,
+                letterSpacing: -0.5,
+              ),
+            ),
+            const SizedBox(height: 16),
+            GlassCard(
+              width: double.infinity,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildEditorField(
+                    _calController,
+                    'Calorie Goal',
+                    'kcal',
+                    Icons.bolt_rounded,
+                    AppTheme.accentCyan,
+                  ),
+                  const SizedBox(height: 12),
+                  _buildEditorField(
+                    _protController,
+                    'Protein Goal',
+                    'g',
+                    Icons.fitness_center_rounded,
+                    AppTheme.accentOrange,
+                  ),
+                  const SizedBox(height: 12),
+                  _buildEditorField(
+                    _watController,
+                    'Hydration Goal',
+                    'ltr',
+                    Icons.local_drink_rounded,
+                    Colors.blueAccent,
+                  ),
+                  const SizedBox(height: 12),
+                  _buildDropdownField(
+                    value: _selectedSkinType,
+                    items: const ['Dry', 'Oily', 'Sensitive', 'Acne', 'Normal'],
+                    label: 'Skincare Skin Type',
+                    icon: Icons.face_retouching_natural_rounded,
+                    color: AppTheme.accentPurple,
+                    onChanged: (val) {
+                      if (val != null) {
+                        setState(() {
+                          _selectedSkinType = val;
+                        });
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  GestureDetector(
+                    onTap: _saveManualTargets,
+                    child: Container(
+                      width: double.infinity,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        gradient: AppTheme.primaryGradient,
+                        borderRadius: BorderRadius.circular(14),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppTheme.accentCyan.withOpacity(0.15),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: const Center(
+                        child: Text(
+                          'Save Target Budgets',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 32),
+
+            // Gemini & ChatGPT API Keys Manager
+            const Text(
+              'Aura AI Credentials Manager',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w900,
+                color: Colors.white,
+                letterSpacing: -0.5,
+              ),
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              'App securely rotates backup Gemini keys, and calls ChatGPT for rate-limit bypasses.',
+              style: TextStyle(
+                color: AppTheme.textSecondary,
+                fontSize: 12,
+              ),
+            ),
+            const SizedBox(height: 16),
+            GlassCard(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'SECURE ENDPOINT CREDENTIALS',
+                    style: TextStyle(
+                      color: AppTheme.textSecondary,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.0,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // ChatGPT Key Field (Primary High Availability)
+                  _buildSecureKeyField(
+                    controller: _openaiKeyController,
+                    label: 'ChatGPT API Key (Active)',
+                    isObscured: _obscureOpenaiKey,
+                    onToggle: () {
+                      setState(() {
+                        _obscureOpenaiKey = !_obscureOpenaiKey;
+                      });
+                    },
+                    iconColor: AppTheme.accentEmerald,
+                  ),
+                  const SizedBox(height: 16),
+                  const Divider(color: AppTheme.glassBorder, height: 1),
+                  const SizedBox(height: 16),
+
+                  const Text(
+                    'BACKUP ROTATION ENDPOINTS (GEMINI)',
+                    style: TextStyle(
+                      color: AppTheme.textSecondary,
+                      fontSize: 9,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.0,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  
+                  // Key 1 Field
+                  _buildSecureKeyField(
+                    controller: _key1Controller,
+                    label: 'Backup Gemini Key 1',
+                    isObscured: _obscureKey1,
+                    onToggle: () {
+                      setState(() {
+                        _obscureKey1 = !_obscureKey1;
+                      });
+                    },
+                    iconColor: AppTheme.accentCyan,
+                  ),
+                  const SizedBox(height: 12),
+                  
+                  // Key 2 Field
+                  _buildSecureKeyField(
+                    controller: _key2Controller,
+                    label: 'Backup Gemini Key 2',
+                    isObscured: _obscureKey2,
+                    onToggle: () {
+                      setState(() {
+                        _obscureKey2 = !_obscureKey2;
+                      });
+                    },
+                    iconColor: AppTheme.accentPurple,
+                  ),
+                  const SizedBox(height: 12),
+                  
+                  // Key 3 Field
+                  _buildSecureKeyField(
+                    controller: _key3Controller,
+                    label: 'Backup Gemini Key 3',
+                    isObscured: _obscureKey3,
+                    onToggle: () {
+                      setState(() {
+                        _obscureKey3 = !_obscureKey3;
+                      });
+                    },
+                    iconColor: AppTheme.accentOrange,
+                  ),
+                  
+                  const SizedBox(height: 20),
+                  GestureDetector(
+                    onTap: _saveGeminiKeys,
+                    child: Container(
+                      width: double.infinity,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: AppTheme.accentCyan,
+                        borderRadius: BorderRadius.circular(14),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppTheme.accentCyan.withOpacity(0.15),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: const Center(
+                        child: Text(
+                          'Save & Encrypt Keys',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 32),
+
+            // Reminders Section
+            const Text(
+              'Reminders & Notifications',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w900,
+                color: Colors.white,
+                letterSpacing: -0.5,
+              ),
+            ),
+            const SizedBox(height: 16),
+            GlassCard(
+              width: double.infinity,
+              padding: EdgeInsets.zero,
+              child: Column(
+                children: [
+                  if (reminders.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.all(20.0),
+                      child: Text(
+                        'No configured reminders.',
+                        style: TextStyle(
+                          color: AppTheme.textSecondary,
+                          fontSize: 13,
+                        ),
+                      ),
+                    )
+                  else
+                    ...reminders.entries.map((entry) {
+                      final key = entry.key;
+                      final reminder = entry.value;
+                      return Column(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            child: _buildReminderRow(key, reminder),
+                          ),
+                          if (entry.key != reminders.keys.last)
+                            const Divider(
+                              color: AppTheme.glassBorder,
+                              height: 1,
+                            ),
+                        ],
+                      );
+                    }),
+                ],
+              ),
+            ),
+            const SizedBox(height: 32),
+
+            // App Style theme toggle
+            GlassCard(
+              width: double.infinity,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Obsidian Dark Mode',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                          color: Colors.white,
+                        ),
+                      ),
+                      SizedBox(height: 2),
+                      Text(
+                        'Premium velvet midnight aesthetic',
+                        style: TextStyle(
+                          color: AppTheme.textSecondary,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Switch(
+                    value: isDark,
+                    activeColor: AppTheme.accentPurple,
+                    onChanged: (val) {
+                      ref.read(themeModeProvider.notifier).state =
+                          val ? ThemeMode.dark : ThemeMode.light;
+                    },
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // Database Reset Wiping Button (Sign Out style)
+            GestureDetector(
+              onTap: () {
+                _showResetDialog(context, ref);
+              },
+              child: Container(
+                width: double.infinity,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: AppTheme.accentCoral.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: AppTheme.accentCoral.withOpacity(0.3),
+                    width: 1.0,
+                  ),
+                ),
+                child: const Center(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.logout_rounded,
+                        color: AppTheme.accentCoral,
+                        size: 18,
+                      ),
+                      SizedBox(width: 8),
+                      Text(
+                        'Sign Out & Reset Logs',
+                        style: TextStyle(
+                          color: AppTheme.accentCoral,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTargetProgressCard({
+    required String title,
+    required String subtitle,
+    required double consumed,
+    required double goal,
+    required String leftLabel,
+    required String rightLabel,
+    required IconData icon,
+    required Color color,
+  }) {
+    final double percent = goal > 0 ? (consumed / goal).clamp(0.0, 1.0) : 0.0;
+    return GlassCard(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: color.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(icon, color: color, size: 18),
+                  ),
+                  const SizedBox(width: 12),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                          color: Colors.white,
+                        ),
+                      ),
+                      Text(
+                        subtitle,
+                        style: const TextStyle(
+                          color: AppTheme.textSecondary,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              Container(
+                width: 18,
+                height: 18,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: color, width: 2),
+                  color: color.withOpacity(0.1),
+                ),
+                child: Center(
+                  child: Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: color,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Container(
+            width: double.infinity,
+            height: 6,
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(99),
+            ),
+            child: FractionallySizedBox(
+              alignment: Alignment.centerLeft,
+              widthFactor: percent,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: color,
+                  borderRadius: BorderRadius.circular(99),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                leftLabel,
+                style: TextStyle(
+                  color: color,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              Text(
+                rightLabel,
+                style: const TextStyle(
+                  color: AppTheme.textSecondary,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReminderRow(String key, ReminderSetting reminder) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              reminder.label,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+            ),
+            const SizedBox(height: 4),
+            GestureDetector(
+              onTap: () async {
+                final parts = reminder.time.split(' ');
+                final hm = parts[0].split(':');
+                int hour = int.parse(hm[0]);
+                final int minute = int.parse(hm[1]);
+                if (parts.length > 1 && parts[1] == 'PM' && hour < 12) {
+                  hour += 12;
+                } else if (parts.length > 1 && parts[1] == 'AM' && hour == 12) {
+                  hour = 0;
+                }
+
+                final picked = await showTimePicker(
+                  context: context,
+                  initialTime: TimeOfDay(hour: hour, minute: minute),
+                );
+
+                if (picked != null) {
+                  final formattedTime = picked.format(context);
+                  await ref
+                      .read(remindersProvider.notifier)
+                      .updateReminder(key, time: formattedTime);
+                }
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppTheme.accentCyan.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.access_time_rounded,
+                      size: 12,
+                      color: AppTheme.accentCyan,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      reminder.time,
+                      style: const TextStyle(
+                        color: AppTheme.accentCyan,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+        Switch(
+          value: reminder.isEnabled,
+          activeColor: AppTheme.accentPurple,
+          onChanged: (val) {
+            ref
+                .read(remindersProvider.notifier)
+                .updateReminder(key, isEnabled: val);
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildEditorField(
+    TextEditingController ctrl,
+    String label,
+    String suffix,
+    IconData icon,
+    Color color,
+  ) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final fieldBg = isDark
+        ? AppTheme.obsidianBackground
+        : Colors.black.withOpacity(0.015);
+    final fieldBorder = isDark ? AppTheme.glassBorder : const Color(0xFFEADBFF);
+    final textColor = isDark ? Colors.white : AppTheme.textPrimary;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: fieldBg,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: fieldBorder, width: 1.0),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 1),
+      child: TextField(
+        controller: ctrl,
+        keyboardType: TextInputType.number,
+        style: TextStyle(
+          color: textColor,
+          fontWeight: FontWeight.bold,
+          fontSize: 14,
+        ),
+        decoration: InputDecoration(
+          icon: Icon(icon, color: color, size: 18),
+          labelText: label,
+          labelStyle: const TextStyle(
+            color: AppTheme.textSecondary,
+            fontSize: 11,
+          ),
+          suffixText: suffix,
+          suffixStyle: TextStyle(
+            color: color,
+            fontWeight: FontWeight.bold,
+            fontSize: 13,
+          ),
+          border: InputBorder.none,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDropdownField({
+    required String value,
+    required List<String> items,
+    required String label,
+    required IconData icon,
+    required Color color,
+    required ValueChanged<String?> onChanged,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final fieldBg = isDark
+        ? AppTheme.obsidianBackground
+        : Colors.black.withOpacity(0.015);
+    final fieldBorder = isDark ? AppTheme.glassBorder : const Color(0xFFEADBFF);
+    final textColor = isDark ? Colors.white : AppTheme.textPrimary;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: fieldBg,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: fieldBorder, width: 1.0),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+      child: DropdownButtonFormField<String>(
+        value: value,
+        dropdownColor: isDark ? AppTheme.obsidianBackground : Colors.white,
+        decoration: InputDecoration(
+          icon: Icon(icon, color: color, size: 18),
+          labelText: label,
+          labelStyle: const TextStyle(
+            color: AppTheme.textSecondary,
+            fontSize: 11,
+          ),
+          border: InputBorder.none,
+          contentPadding: EdgeInsets.zero,
+        ),
+        style: TextStyle(
+          color: textColor,
+          fontWeight: FontWeight.bold,
+          fontSize: 14,
+        ),
+        items: items.map((type) {
+          return DropdownMenuItem<String>(
+            value: type,
+            child: Text(type),
+          );
+        }).toList(),
+        onChanged: onChanged,
+      ),
+    );
+  }
+
+
+  void _showResetDialog(BuildContext context, WidgetRef ref) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final dialogBg = isDark ? AppTheme.glassBackground : Colors.white;
+    final dialogBorder = isDark ? AppTheme.glassBorder : const Color(0xFFEADBFF);
+    final textColor = isDark ? Colors.white : AppTheme.textPrimary;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: dialogBg,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(color: dialogBorder, width: 1.0),
+        ),
+        title: Text(
+          'Wipe Stored Health Logs?',
+          style: TextStyle(
+            color: textColor,
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+          ),
+        ),
+        content: const Text(
+          'This will permanently delete your stored user profile settings, daily nutrition logs, water counts, and logged gym history. You will return to the setup guide.',
+          style: TextStyle(
+            color: AppTheme.textSecondary,
+            fontSize: 13,
+            height: 1.4,
+          ),
+        ),
+        actions: [
+          TextButton(
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: AppTheme.textSecondary),
+            ),
+            onPressed: () => Navigator.of(ctx).pop(),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.accentCoral,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: const Text(
+              'Wipe Stored Logs',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            onPressed: () async {
+              Navigator.of(ctx).pop();
+              await ref.read(profileProvider.notifier).clearProfile();
+              _calController.clear();
+              _protController.clear();
+              _watController.clear();
+              if (ctx.mounted) {
+                ctx.go('/');
+              }
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
