@@ -31,6 +31,8 @@ class _MainShellState extends ConsumerState<MainShell> {
   ];
 
   StreamSubscription? _notificationSubscription;
+  Timer? _reminderTimer;
+  int _lastCheckedMinute = -1;
 
   @override
   void initState() {
@@ -39,9 +41,14 @@ class _MainShellState extends ConsumerState<MainShell> {
     // Listen for global notification triggers and display a premium custom overlay alert card
     _notificationSubscription = NotificationManager.controller.stream.listen((notif) {
       if (mounted) {
-        _showInAppNotification(notif['title'] ?? 'Notification', notif['body'] ?? '');
+        final title = notif['title'] ?? 'Notification';
+        final body = notif['body'] ?? '';
+        _showInAppNotification(title, body);
+        ref.read(notificationsProvider.notifier).addSystemNotification(title, body);
       }
     });
+
+    _startReminderEngine();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       showWebNotification(
@@ -51,9 +58,40 @@ class _MainShellState extends ConsumerState<MainShell> {
     });
   }
 
+  void _startReminderEngine() {
+    _reminderTimer?.cancel();
+    _reminderTimer = Timer.periodic(const Duration(seconds: 15), (timer) {
+      final now = DateTime.now();
+      if (now.minute == _lastCheckedMinute) return;
+      _lastCheckedMinute = now.minute;
+
+      final hourOfPeriod = now.hour % 12 == 0 ? 12 : now.hour % 12;
+      final minuteStr = now.minute.toString().padLeft(2, '0');
+      final periodStr = now.hour >= 12 ? 'PM' : 'AM';
+      final hourStr = hourOfPeriod.toString().padLeft(2, '0');
+      final currentTimeStr = '$hourStr:$minuteStr $periodStr';
+
+      final reminders = ref.read(remindersProvider);
+      reminders.forEach((key, reminder) {
+        if (reminder.isEnabled) {
+          final rTime = reminder.time.replaceAll(' ', '').toUpperCase();
+          final cTime = currentTimeStr.replaceAll(' ', '').toUpperCase();
+
+          if (rTime == cTime) {
+            showWebNotification(
+              '🔔 ${reminder.label} Reminder!',
+              'Time to log your daily ${reminder.label.toLowerCase()} metrics and stay consistent!',
+            );
+          }
+        }
+      });
+    });
+  }
+
   @override
   void dispose() {
     _notificationSubscription?.cancel();
+    _reminderTimer?.cancel();
     super.dispose();
   }
 
@@ -239,7 +277,15 @@ class _ProfilePlaceholderScreenState
   final _calController = TextEditingController();
   final _protController = TextEditingController();
   final _watController = TextEditingController();
+  final _ageController = TextEditingController();
+  final _weightController = TextEditingController();
+  final _heightController = TextEditingController();
   String _selectedSkinType = 'Normal';
+  String _selectedGoal = 'maintain';
+  String _selectedGender = 'male';
+  String _selectedActivityLevel = 'moderate';
+  bool _auraNotificationsEnabled = true;
+  bool _systemNotificationsEnabled = true;
 
   final _key1Controller = TextEditingController();
   final _key2Controller = TextEditingController();
@@ -268,7 +314,17 @@ class _ProfilePlaceholderScreenState
         formatted = formatted.substring(0, formatted.length - 1);
       }
       _watController.text = formatted;
+
+      _ageController.text = profile.age.toString();
+      _weightController.text = profile.weight.toString();
+      _heightController.text = profile.height.toString();
+      _selectedGoal = profile.goal.toLowerCase();
+      _selectedGender = profile.gender.toLowerCase();
+      _selectedActivityLevel = profile.activityLevel.toLowerCase();
     }
+
+    _auraNotificationsEnabled = StorageService.getAuraNotificationsEnabled();
+    _systemNotificationsEnabled = StorageService.getSystemNotificationsEnabled();
 
     final geminiKeys = StorageService.getGeminiApiKeys();
     if (geminiKeys.length >= 3) {
@@ -289,6 +345,9 @@ class _ProfilePlaceholderScreenState
     _calController.dispose();
     _protController.dispose();
     _watController.dispose();
+    _ageController.dispose();
+    _weightController.dispose();
+    _heightController.dispose();
     _key1Controller.dispose();
     _key2Controller.dispose();
     _key3Controller.dispose();
@@ -300,13 +359,22 @@ class _ProfilePlaceholderScreenState
     final calorieInput = int.tryParse(_calController.text);
     final proteinInput = int.tryParse(_protController.text);
     final waterLtrInput = double.tryParse(_watController.text);
+    final ageInput = int.tryParse(_ageController.text);
+    final weightInput = double.tryParse(_weightController.text);
+    final heightInput = double.tryParse(_heightController.text);
 
     if (calorieInput == null ||
         proteinInput == null ||
         waterLtrInput == null ||
+        ageInput == null ||
+        weightInput == null ||
+        heightInput == null ||
         calorieInput <= 0 ||
         proteinInput <= 0 ||
-        waterLtrInput <= 0) {
+        waterLtrInput <= 0 ||
+        ageInput <= 0 ||
+        weightInput <= 0 ||
+        heightInput <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please enter valid, positive numeric targets.'),
@@ -315,16 +383,15 @@ class _ProfilePlaceholderScreenState
       return;
     }
 
-    final currentProfile = ref.read(profileProvider);
     final waterInput = (waterLtrInput * 1000).round();
 
     final updatedProfile = UserProfile(
-      goal: currentProfile?.goal ?? 'maintain',
-      gender: currentProfile?.gender ?? 'Male',
-      age: currentProfile?.age ?? 25,
-      weight: currentProfile?.weight ?? 70.0,
-      height: currentProfile?.height ?? 170.0,
-      activityLevel: currentProfile?.activityLevel ?? 'moderate',
+      goal: _selectedGoal,
+      gender: _selectedGender,
+      age: ageInput,
+      weight: weightInput,
+      height: heightInput,
+      activityLevel: _selectedActivityLevel,
       calorieGoal: calorieInput,
       proteinGoal: proteinInput,
       waterGoal: waterInput,
@@ -332,11 +399,13 @@ class _ProfilePlaceholderScreenState
     );
 
     await ref.read(profileProvider.notifier).saveProfile(updatedProfile);
+    await StorageService.setAuraNotificationsEnabled(_auraNotificationsEnabled);
+    await StorageService.setSystemNotificationsEnabled(_systemNotificationsEnabled);
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Calibration targets saved! Syncing dashboard...'),
+          content: Text('Profile settings and calibration targets saved!'),
           backgroundColor: AppTheme.accentEmerald,
         ),
       );
@@ -431,23 +500,7 @@ class _ProfilePlaceholderScreenState
     final reminders = ref.watch(remindersProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    // Load today's dynamic metrics for targets progress bars
-    final todayStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
-    final todayStats = StorageService.getDailyMetrics(todayStr);
 
-    final double consumedCal = (((todayStats['breakfast_cal'] ?? 0) as num) +
-            ((todayStats['lunch_cal'] ?? 0) as num) +
-            ((todayStats['dinner_cal'] ?? 0) as num) +
-            ((todayStats['snacks_cal'] ?? 0) as num) +
-            ((todayStats['outside_food_cal'] ?? 0) as num))
-        .toDouble();
-
-    final double consumedProtein = (todayStats['protein'] ?? 0).toDouble();
-    final double consumedWaterLtr = ((todayStats['water'] ?? 0) as num) / 1000.0;
-
-    final double calorieGoal = (profile?.calorieGoal ?? 2400).toDouble();
-    final double proteinGoal = (profile?.proteinGoal ?? 160).toDouble();
-    final double waterGoalLtr = (profile?.waterGoal ?? 3500) / 1000.0;
 
     final double currentWeight = profile?.weight ?? 78.5;
     final double currentHeight = profile?.height ?? 182.0;
@@ -656,60 +709,9 @@ class _ProfilePlaceholderScreenState
             ),
             const SizedBox(height: 32),
 
-            // Targets Section
-            const Text(
-              'Daily Targets',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w900,
-                color: Colors.white,
-                letterSpacing: -0.5,
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Calories Progress Card
-            _buildTargetProgressCard(
-              title: 'Calories',
-              subtitle: '${calorieGoal.round()} kcal daily goal',
-              consumed: consumedCal,
-              goal: calorieGoal,
-              leftLabel: '${consumedCal.round()} consumed',
-              rightLabel: '${(calorieGoal - consumedCal).clamp(0, 9999).round()} left',
-              icon: Icons.local_fire_department_rounded,
-              color: AppTheme.accentCyan,
-            ),
-            const SizedBox(height: 12),
-
-            // Protein Progress Card
-            _buildTargetProgressCard(
-              title: 'Protein',
-              subtitle: '${proteinGoal.round()}g daily goal',
-              consumed: consumedProtein,
-              goal: proteinGoal,
-              leftLabel: '${consumedProtein.round()}g consumed',
-              rightLabel: '${(proteinGoal - consumedProtein).clamp(0, 999).round()}g left',
-              icon: Icons.fitness_center_rounded,
-              color: AppTheme.accentOrange,
-            ),
-            const SizedBox(height: 12),
-
-            // Hydration Progress Card
-            _buildTargetProgressCard(
-              title: 'Hydration',
-              subtitle: '${waterGoalLtr.toStringAsFixed(1)}L daily goal',
-              consumed: consumedWaterLtr,
-              goal: waterGoalLtr,
-              leftLabel: '${consumedWaterLtr.toStringAsFixed(1)}L consumed',
-              rightLabel: '${(waterGoalLtr - consumedWaterLtr).clamp(0.0, 99.0).toStringAsFixed(1)}L left',
-              icon: Icons.water_drop_rounded,
-              color: Colors.blueAccent,
-            ),
-            const SizedBox(height: 32),
-
             // Target budgets editor
             const Text(
-              'Edit Target Budgets',
+              'Edit Profile & Targets',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w900,
@@ -723,6 +725,76 @@ class _ProfilePlaceholderScreenState
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  _buildEditorField(
+                    _ageController,
+                    'Age',
+                    'yrs',
+                    Icons.cake_rounded,
+                    AppTheme.accentOrange,
+                  ),
+                  const SizedBox(height: 12),
+                  _buildDropdownField(
+                    value: _selectedGender,
+                    items: const ['male', 'female', 'other'],
+                    label: 'Gender',
+                    icon: Icons.person_outline_rounded,
+                    color: AppTheme.accentCyan,
+                    onChanged: (val) {
+                      if (val != null) {
+                        setState(() {
+                          _selectedGender = val;
+                        });
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  _buildEditorField(
+                    _weightController,
+                    'Weight',
+                    'kg',
+                    Icons.scale_rounded,
+                    AppTheme.accentCyan,
+                  ),
+                  const SizedBox(height: 12),
+                  _buildEditorField(
+                    _heightController,
+                    'Height',
+                    'cm',
+                    Icons.straighten_rounded,
+                    AppTheme.accentPurple,
+                  ),
+                  const SizedBox(height: 12),
+                  _buildDropdownField(
+                    value: _selectedGoal,
+                    items: const ['lose', 'gain', 'maintain'],
+                    label: 'Fitness Goal',
+                    icon: Icons.track_changes_rounded,
+                    color: AppTheme.accentOrange,
+                    onChanged: (val) {
+                      if (val != null) {
+                        setState(() {
+                          _selectedGoal = val;
+                        });
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  _buildDropdownField(
+                    value: _selectedActivityLevel,
+                    items: const ['sedentary', 'light', 'moderate', 'very'],
+                    label: 'Activity Level',
+                    icon: Icons.directions_run_rounded,
+                    color: AppTheme.accentPurple,
+                    onChanged: (val) {
+                      if (val != null) {
+                        setState(() {
+                          _selectedActivityLevel = val;
+                        });
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  const Divider(color: AppTheme.glassBorder, height: 24),
                   _buildEditorField(
                     _calController,
                     'Calorie Goal',
@@ -780,7 +852,7 @@ class _ProfilePlaceholderScreenState
                       ),
                       child: const Center(
                         child: Text(
-                          'Save Target Budgets',
+                          'Save Profile Settings',
                           style: TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
@@ -933,7 +1005,38 @@ class _ProfilePlaceholderScreenState
 
             // Reminders Section
             const Text(
-              'Reminders & Notifications',
+              'Daily Reminders',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w900,
+                color: Colors.white,
+                letterSpacing: -0.5,
+              ),
+            ),
+            const SizedBox(height: 16),
+            if (reminders.isEmpty)
+              const GlassCard(
+                width: double.infinity,
+                padding: EdgeInsets.all(20.0),
+                child: Center(
+                  child: Text(
+                    'No configured reminders.',
+                    style: TextStyle(
+                      color: AppTheme.textSecondary,
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
+              )
+            else
+              ...reminders.entries.map((entry) {
+                return _buildReminderAlarmTile(entry.key, entry.value);
+              }),
+            const SizedBox(height: 24),
+
+            // Notification Settings
+            const Text(
+              'Notification Settings',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w900,
@@ -944,38 +1047,79 @@ class _ProfilePlaceholderScreenState
             const SizedBox(height: 16),
             GlassCard(
               width: double.infinity,
-              padding: EdgeInsets.zero,
               child: Column(
                 children: [
-                  if (reminders.isEmpty)
-                    const Padding(
-                      padding: EdgeInsets.all(20.0),
-                      child: Text(
-                        'No configured reminders.',
-                        style: TextStyle(
-                          color: AppTheme.textSecondary,
-                          fontSize: 13,
-                        ),
-                      ),
-                    )
-                  else
-                    ...reminders.entries.map((entry) {
-                      final key = entry.key;
-                      final reminder = entry.value;
-                      return Column(
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                            child: _buildReminderRow(key, reminder),
-                          ),
-                          if (entry.key != reminders.keys.last)
-                            const Divider(
-                              color: AppTheme.glassBorder,
-                              height: 1,
+                          Text(
+                            'Aura AI Alerts',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                              color: Colors.white,
                             ),
+                          ),
+                          SizedBox(height: 2),
+                          Text(
+                            'Receive AI coaching and health insights',
+                            style: TextStyle(
+                              color: AppTheme.textSecondary,
+                              fontSize: 12,
+                            ),
+                          ),
                         ],
-                      );
-                    }),
+                      ),
+                      Switch(
+                        value: _auraNotificationsEnabled,
+                        activeColor: AppTheme.accentOrange,
+                        onChanged: (val) {
+                          setState(() {
+                            _auraNotificationsEnabled = val;
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+                  const Divider(color: AppTheme.glassBorder, height: 24),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'System Alerts',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                              color: Colors.white,
+                            ),
+                          ),
+                          SizedBox(height: 2),
+                          Text(
+                            'Receive reminders and log updates',
+                            style: TextStyle(
+                              color: AppTheme.textSecondary,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Switch(
+                        value: _systemNotificationsEnabled,
+                        activeColor: AppTheme.accentCyan,
+                        onChanged: (val) {
+                          setState(() {
+                            _systemNotificationsEnabled = val;
+                          });
+                        },
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),
@@ -1065,201 +1209,148 @@ class _ProfilePlaceholderScreenState
     );
   }
 
-  Widget _buildTargetProgressCard({
-    required String title,
-    required String subtitle,
-    required double consumed,
-    required double goal,
-    required String leftLabel,
-    required String rightLabel,
-    required IconData icon,
-    required Color color,
-  }) {
-    final double percent = goal > 0 ? (consumed / goal).clamp(0.0, 1.0) : 0.0;
-    return GlassCard(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: color.withOpacity(0.12),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(icon, color: color, size: 18),
-                  ),
-                  const SizedBox(width: 12),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 15,
-                          color: Colors.white,
-                        ),
-                      ),
-                      Text(
-                        subtitle,
-                        style: const TextStyle(
-                          color: AppTheme.textSecondary,
-                          fontSize: 11,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              Container(
-                width: 18,
-                height: 18,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: color, width: 2),
-                  color: color.withOpacity(0.1),
-                ),
-                child: Center(
-                  child: Container(
-                    width: 8,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: color,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          Container(
-            width: double.infinity,
-            height: 6,
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.05),
-              borderRadius: BorderRadius.circular(99),
-            ),
-            child: FractionallySizedBox(
-              alignment: Alignment.centerLeft,
-              widthFactor: percent,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: color,
-                  borderRadius: BorderRadius.circular(99),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                leftLabel,
-                style: TextStyle(
-                  color: color,
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              Text(
-                rightLabel,
-                style: const TextStyle(
-                  color: AppTheme.textSecondary,
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
+
+
+  String _formatTimeOfDay(TimeOfDay tod) {
+    final hour = tod.hourOfPeriod == 0 ? 12 : tod.hourOfPeriod;
+    final minute = tod.minute.toString().padLeft(2, '0');
+    final period = tod.period == DayPeriod.am ? 'AM' : 'PM';
+    final hourStr = hour.toString().padLeft(2, '0');
+    return '$hourStr:$minute $period'; // e.g. "08:30 AM"
   }
 
-  Widget _buildReminderRow(String key, ReminderSetting reminder) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              reminder.label,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-            ),
-            const SizedBox(height: 4),
-            GestureDetector(
-              onTap: () async {
-                final parts = reminder.time.split(' ');
-                final hm = parts[0].split(':');
-                int hour = int.parse(hm[0]);
-                final int minute = int.parse(hm[1]);
-                if (parts.length > 1 && parts[1] == 'PM' && hour < 12) {
-                  hour += 12;
-                } else if (parts.length > 1 && parts[1] == 'AM' && hour == 12) {
-                  hour = 0;
-                }
+  Widget _buildReminderAlarmTile(String key, ReminderSetting reminder) {
+    IconData icon = Icons.notifications_rounded;
+    Color color = AppTheme.accentCyan;
 
-                final picked = await showTimePicker(
-                  context: context,
-                  initialTime: TimeOfDay(hour: hour, minute: minute),
-                );
+    if (key == 'water') {
+      icon = Icons.water_drop_rounded;
+      color = AppTheme.accentCyan;
+    } else if (key == 'meal') {
+      icon = Icons.restaurant_rounded;
+      color = AppTheme.accentOrange;
+    } else if (key == 'workout') {
+      icon = Icons.fitness_center_rounded;
+      color = AppTheme.accentPurple;
+    } else if (key == 'supplement') {
+      icon = Icons.medication_rounded;
+      color = AppTheme.accentOrange;
+    } else if (key == 'sleep') {
+      icon = Icons.bedtime_rounded;
+      color = AppTheme.accentPurple;
+    }
 
-                if (picked != null) {
-                  final formattedTime = picked.format(context);
-                  await ref
-                      .read(remindersProvider.notifier)
-                      .updateReminder(key, time: formattedTime);
-                }
-              },
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+    final bool isEnabled = reminder.isEnabled;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 200),
+        opacity: isEnabled ? 1.0 : 0.55,
+        child: GlassCard(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          borderRadius: BorderRadius.circular(20),
+          child: Row(
+            children: [
+              // Icon with circular container
+              Container(
+                width: 44,
+                height: 44,
                 decoration: BoxDecoration(
-                  color: AppTheme.accentCyan.withOpacity(0.08),
-                  borderRadius: BorderRadius.circular(8),
+                  color: color.withOpacity(0.12),
+                  shape: BoxShape.circle,
                 ),
-                child: Row(
+                child: Center(
+                  child: Icon(icon, color: color, size: 22),
+                ),
+              ),
+              const SizedBox(width: 16),
+
+              // Title and Digital clock time picker trigger
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(
-                      Icons.access_time_rounded,
-                      size: 12,
-                      color: AppTheme.accentCyan,
-                    ),
-                    const SizedBox(width: 4),
                     Text(
-                      reminder.time,
+                      reminder.label,
                       style: const TextStyle(
-                        color: AppTheme.accentCyan,
-                        fontSize: 11,
                         fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    GestureDetector(
+                      onTap: () async {
+                        final parts = reminder.time.split(' ');
+                        final hm = parts[0].split(':');
+                        int hour = int.parse(hm[0]);
+                        final int minute = int.parse(hm[1]);
+                        if (parts.length > 1 && parts[1] == 'PM' && hour < 12) {
+                          hour += 12;
+                        } else if (parts.length > 1 && parts[1] == 'AM' && hour == 12) {
+                          hour = 0;
+                        }
+
+                        final picked = await showTimePicker(
+                          context: context,
+                          initialTime: TimeOfDay(hour: hour, minute: minute),
+                        );
+
+                        if (picked != null) {
+                          final formattedTime = _formatTimeOfDay(picked);
+                          await ref
+                              .read(remindersProvider.notifier)
+                              .updateReminder(key, time: formattedTime);
+                        }
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: color.withOpacity(0.08),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: color.withOpacity(0.2), width: 1.0),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.access_time_rounded,
+                              size: 14,
+                              color: Colors.white,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              reminder.time,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w900,
+                                fontFamily: 'monospace',
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ],
                 ),
               ),
-            ),
-          ],
+
+              // Toggle switch
+              Switch(
+                value: isEnabled,
+                activeColor: color,
+                onChanged: (val) {
+                  ref
+                      .read(remindersProvider.notifier)
+                      .updateReminder(key, isEnabled: val);
+                },
+              ),
+            ],
+          ),
         ),
-        Switch(
-          value: reminder.isEnabled,
-          activeColor: AppTheme.accentPurple,
-          onChanged: (val) {
-            ref
-                .read(remindersProvider.notifier)
-                .updateReminder(key, isEnabled: val);
-          },
-        ),
-      ],
+      ),
     );
   }
 
@@ -1319,6 +1410,14 @@ class _ProfilePlaceholderScreenState
     required Color color,
     required ValueChanged<String?> onChanged,
   }) {
+    String selectedVal = value;
+    if (!items.contains(selectedVal)) {
+      selectedVal = items.firstWhere(
+        (item) => item.toLowerCase() == value.toLowerCase(),
+        orElse: () => items.first,
+      );
+    }
+
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final fieldBg = isDark
         ? AppTheme.obsidianBackground
@@ -1334,7 +1433,7 @@ class _ProfilePlaceholderScreenState
       ),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
       child: DropdownButtonFormField<String>(
-        value: value,
+        value: selectedVal,
         dropdownColor: isDark ? AppTheme.obsidianBackground : Colors.white,
         decoration: InputDecoration(
           icon: Icon(icon, color: color, size: 18),

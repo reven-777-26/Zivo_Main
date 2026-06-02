@@ -4,6 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme.dart';
 import '../../services/state_providers.dart';
+import '../../services/firebase_service.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
@@ -23,6 +24,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     await Future.delayed(const Duration(milliseconds: 2000));
     if (!mounted) return;
 
+    // Bypassing authentication to run local-first/offline
     final profile = ref.read(profileProvider);
     if (profile != null) {
       context.go('/home');

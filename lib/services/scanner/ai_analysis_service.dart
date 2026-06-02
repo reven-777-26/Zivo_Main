@@ -5,6 +5,9 @@ import '../storage_service.dart';
 import 'nutrition_normalizer.dart';
 import 'ocr_service.dart';
 
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
 class AiAnalysisService {
   /// Optimization asset utility: executes simulated quality downscaling and size compression.
   static String optimizeImage(String base64Str) {
@@ -17,6 +20,41 @@ class AiAnalysisService {
     required String prompt,
     String? imageBase64,
   }) async {
+    // 1. Production Secure Path: Try querying Firebase Cloud Function Proxy first
+    try {
+      if (Firebase.apps.isNotEmpty) {
+        final user = FirebaseAuth.instance.currentUser;
+        if (user != null) {
+          final idToken = await user.getIdToken();
+          // Replace with your production Firebase Cloud Function URL
+          final proxyUrl = Uri.parse(
+            'https://us-central1-fitnotes-prod.cloudfunctions.net/geminiProxy'
+          );
+
+          final response = await http.post(
+            proxyUrl,
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $idToken',
+            },
+            body: json.encode({
+              'prompt': prompt,
+              'image': imageBase64,
+            }),
+          ).timeout(const Duration(seconds: 8));
+
+          if (response.statusCode == 200) {
+            final data = json.decode(response.body);
+            return data;
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint("Secure proxy failed (expected if backend function is not deployed yet): $e");
+      debugPrint("Falling back to local rotated key mode...");
+    }
+
+    // 2. Sandbox/Local Fallback Path: Client-side key rotation
     final List<String> apiKeys = StorageService.getGeminiApiKeys();
     if (apiKeys.isEmpty) {
       debugPrint("Gemini Service Error: No API keys configured in StorageService.");

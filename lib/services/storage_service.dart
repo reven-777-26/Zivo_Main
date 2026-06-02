@@ -510,7 +510,7 @@ class StorageService {
         'current_profile',
         UserProfile(
           goal: 'lose',
-          gender: 'Male',
+          gender: 'male',
           age: 26,
           weight: 78.4,
           height: 182.0,
@@ -812,5 +812,47 @@ class StorageService {
 
   static Future<void> saveOpenAiApiKey(String key) async {
     await _reminderBox.put('secure_openai_key', {'key': key});
+  }
+
+  /// NOTIFICATIONS SETTINGS
+  static bool getAuraNotificationsEnabled() {
+    final raw = _reminderBox.get('aura_notifications_enabled');
+    if (raw == null) return true;
+    return (raw['val'] as bool?) ?? true;
+  }
+
+  static Future<void> setAuraNotificationsEnabled(bool enabled) async {
+    await _reminderBox.put('aura_notifications_enabled', {'val': enabled});
+  }
+
+  static bool getSystemNotificationsEnabled() {
+    final raw = _reminderBox.get('system_notifications_enabled');
+    if (raw == null) return true;
+    return (raw['val'] as bool?) ?? true;
+  }
+
+  static Future<void> setSystemNotificationsEnabled(bool enabled) async {
+    await _reminderBox.put('system_notifications_enabled', {'val': enabled});
+  }
+
+  static List<Map<String, dynamic>> getSystemNotifications() {
+    final raw = _reminderBox.get('system_notifications_list');
+    if (raw == null) {
+      return [
+        {
+          'id': 'welcome_notif',
+          'category': 'system',
+          'title': '💪 FitNotes 2 Active & Ready!',
+          'body': 'Push reminders and notification systems are fully integrated. Stay on track!',
+          'timestamp': DateTime.now().toIso8601String(),
+          'isRead': false,
+        }
+      ];
+    }
+    return (raw['list'] as List?)?.map((e) => Map<String, dynamic>.from(e)).toList() ?? [];
+  }
+
+  static Future<void> saveSystemNotifications(List<Map<String, dynamic>> list) async {
+    await _reminderBox.put('system_notifications_list', {'list': list});
   }
 }

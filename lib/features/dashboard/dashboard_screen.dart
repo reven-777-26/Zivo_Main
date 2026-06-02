@@ -132,15 +132,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   const SizedBox(height: 16),
 
                   // Daily Goal Ring Section
-                  _buildDailyGoalSummaryCard(consumedCal, remainingCal, caloriePercent),
-                  const SizedBox(height: 16),
-
-                  // AI Coach Insights Section
-                  _buildAiCoachInsightsCard(
-                    consumedCal: consumedCal,
-                    pConsumed: pConsumed,
-                    proteinGoal: proteinGoal,
-                    isDark: isDark,
+                  _buildDailyGoalSummaryCard(
+                    consumed: consumedCal,
+                    remaining: remainingCal,
+                    percent: caloriePercent,
+                    waterConsumed: wConsumed,
+                    waterGoal: waterGoal,
+                    selectedDate: selectedDate,
                   ),
                   const SizedBox(height: 28),
 
@@ -213,21 +211,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   ),
                   const SizedBox(height: 20),
 
-                  // Bento Grid Section: Hydration & Steps & Sleep
-                  Row(
-                    children: [
-                      // Water Tracker
-                      Expanded(
-                        child: _buildInteractiveWaterCard(dailyStats, selectedDate, isDark),
-                      ),
-                      const SizedBox(width: 12),
-                      // Steps & Sleep Bento Card Column
-                      Expanded(
-                        child: _buildStepsAndSleepBentoColumn(dailyStats, selectedDate, isDark),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 28),
+
 
                   // Quick Actions Row (Bento Style circles)
                   _buildQuickActionsRow(selectedDate),
@@ -291,20 +275,25 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         Row(
           children: [
             // High-resolution premium profile avatar
-            Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: AppTheme.accentCyan.withOpacity(0.3),
-                  width: 2.0,
-                ),
-                image: const DecorationImage(
-                  image: NetworkImage(
-                    'https://lh3.googleusercontent.com/aida-public/AB6AXuDvTQLDMkUyYmJWBvwIdewLV0ZwujBodCYq_Ci2FVZMVhplZqTibf2hqWNADC4Po_Gy_kG9RWZHnLARwq9jymz6zRoriNAL_LQd90bTW6R7LgJKqxd16k9TMxgSBGpyF6bcnqq3ybcYAe7D12mq5urhogo8Z32HQwsnhwkzjT53CCd32X9PnTrQrFuZHLtZbXXknU_ahDBId16_uBbaggn--en1q3py_UFjUqK85z5AQawA8o7ZMA5qQ7OnQUJsYSlEuPd05l77DQY',
+            GestureDetector(
+              onTap: () {
+                ref.read(activeTabProvider.notifier).state = 4;
+              },
+              child: Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: AppTheme.accentCyan.withOpacity(0.3),
+                    width: 2.0,
                   ),
-                  fit: BoxFit.cover,
+                  image: const DecorationImage(
+                    image: NetworkImage(
+                      'https://lh3.googleusercontent.com/aida-public/AB6AXuDvTQLDMkUyYmJWBvwIdewLV0ZwujBodCYq_Ci2FVZMVhplZqTibf2hqWNADC4Po_Gy_kG9RWZHnLARwq9jymz6zRoriNAL_LQd90bTW6R7LgJKqxd16k9TMxgSBGpyF6bcnqq3ybcYAe7D12mq5urhogo8Z32HQwsnhwkzjT53CCd32X9PnTrQrFuZHLtZbXXknU_ahDBId16_uBbaggn--en1q3py_UFjUqK85z5AQawA8o7ZMA5qQ7OnQUJsYSlEuPd05l77DQY',
+                    ),
+                    fit: BoxFit.cover,
+                  ),
                 ),
               ),
             ),
@@ -359,9 +348,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             const SizedBox(width: 12),
             IconButton(
               icon: const Icon(Icons.notifications_rounded, color: AppTheme.textSecondary, size: 24),
-              onPressed: () {
-                // Notifications tapped
-              },
+              onPressed: () => _showNotificationsSheet(context),
             ),
           ],
         ),
@@ -371,22 +358,19 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   Widget _buildWeeklyCalendarBar(String selectedDate, bool isDark) {
     final now = DateTime.now();
-    // Generate the past 15 days ending at today
-    final List<DateTime> weekDays = List.generate(15, (index) {
-      return now.subtract(Duration(days: 14 - index));
-    });
 
     return SizedBox(
-      height: 72,
+      height: 80,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        itemCount: weekDays.length,
+        itemCount: 1000, // Virtually infinite past days
         itemBuilder: (context, index) {
-          final date = weekDays[index];
+          final date = now.subtract(Duration(days: index));
           final dateKey = DateFormat('yyyy-MM-dd').format(date);
           final isSelected = dateKey == selectedDate;
           final weekdayStr = DateFormat('E').format(date); // e.g. "Sun"
           final dayNumStr = DateFormat('d').format(date); // e.g. "12"
+          final monthStr = DateFormat('MMM').format(date).toUpperCase(); // e.g. "NOV"
 
           return GestureDetector(
             onTap: () {
@@ -394,7 +378,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             },
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
-              width: 48,
+              width: 50,
               margin: const EdgeInsets.only(right: 8),
               decoration: BoxDecoration(
                 color: isSelected
@@ -420,13 +404,22 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       color: isSelected ? AppTheme.accentCyan : AppTheme.textSecondary,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 2),
                   Text(
                     dayNumStr,
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: 15,
                       fontWeight: FontWeight.w900,
                       color: isSelected ? AppTheme.accentCyan : (isDark ? Colors.white : AppTheme.textPrimary),
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    monthStr,
+                    style: TextStyle(
+                      fontSize: 7.5,
+                      fontWeight: FontWeight.bold,
+                      color: isSelected ? AppTheme.accentCyan.withOpacity(0.85) : AppTheme.textSecondary.withOpacity(0.7),
                     ),
                   ),
                 ],
@@ -438,16 +431,26 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Widget _buildDailyGoalSummaryCard(int consumed, int remaining, double percent) {
+  Widget _buildDailyGoalSummaryCard({
+    required int consumed,
+    required int remaining,
+    required double percent,
+    required int waterConsumed,
+    required double waterGoal,
+    required String selectedDate,
+  }) {
     final calorieLeftText = remaining >= 0 ? '$remaining' : '${remaining.abs()}';
     final calorieLabel = remaining >= 0 ? 'KCAL REMAINING' : 'KCAL SURPLUS';
     final calorieColor = remaining >= 0 ? AppTheme.accentCyan : AppTheme.accentCoral;
+    final double waterPercent = (waterConsumed / waterGoal).clamp(0.0, 1.0);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return GlassCard(
       width: double.infinity,
       padding: const EdgeInsets.all(22),
       borderRadius: BorderRadius.circular(24),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Left side - Circular percent indicator
           CircularPercentIndicator(
@@ -486,10 +489,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ),
           const SizedBox(width: 24),
 
-          // Right side - Info headers & capsule tags
+          // Right side - Info headers & Hydration details
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 const Text(
                   'Daily Goal Completion',
@@ -499,31 +503,174 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     letterSpacing: -0.5,
                   ),
                 ),
-                const SizedBox(height: 4),
-                const Text(
-                  "You've hit a decent chunk of your targets. Keep up the high-protein streak to reach your peak performance!",
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: AppTheme.textSecondary,
-                    height: 1.4,
-                  ),
-                ),
                 const SizedBox(height: 12),
 
-                // Capsule Status tags
-                Wrap(
-                  spacing: 6,
-                  runSpacing: 6,
+                // Hydration Row wrapped in GestureDetector to manage logs
+                GestureDetector(
+                  onTap: () => _showHydrationDialog(context, selectedDate, waterConsumed, waterGoal),
+                  behavior: HitTestBehavior.opaque,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.water_drop_rounded,
+                                color: AppTheme.accentPurple,
+                                size: 14,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                'Hydration',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: isDark ? Colors.white : AppTheme.textPrimary,
+                                ),
+                              ),
+                            ],
+                          ),
+                          Text(
+                            '${(waterPercent * 100).round()}%',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: AppTheme.accentPurple,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        '$waterConsumed ml / ${waterGoal.toInt()} ml',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w900,
+                          color: isDark ? Colors.white : AppTheme.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+
+                      // Custom refreshing water bar indicator
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: Container(
+                          height: 6,
+                          width: double.infinity,
+                          color: Colors.white.withOpacity(0.04),
+                          child: Stack(
+                            children: [
+                              FractionallySizedBox(
+                                alignment: Alignment.centerLeft,
+                                widthFactor: waterPercent,
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        AppTheme.accentPurple.withOpacity(0.8),
+                                        AppTheme.accentPurple,
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 10),
+
+                // Quick tap log buttons
+                Row(
                   children: [
-                    _buildCapsuleTag(
-                      'HYDRATION: 1.5L',
-                      Icons.check_circle_rounded,
-                      AppTheme.accentCyan,
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () async {
+                          await ref
+                              .read(dailyMetricsProvider(selectedDate).notifier)
+                              .addWater(250);
+                          showWebNotification(
+                            '💧 Hydration Logged!',
+                            'Logged 250ml of clean drinking water. Total: ${waterConsumed + 250}ml.',
+                          );
+                        },
+                        child: Container(
+                          height: 26,
+                          decoration: BoxDecoration(
+                            color: AppTheme.accentPurple.withOpacity(0.08),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: AppTheme.accentPurple.withOpacity(0.2),
+                              width: 1.0,
+                            ),
+                          ),
+                          child: const Center(
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.add, size: 10, color: AppTheme.accentPurple),
+                                SizedBox(width: 2),
+                                Text(
+                                  '250 ml',
+                                  style: TextStyle(
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppTheme.accentPurple,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
-                    _buildCapsuleTag(
-                      'STEPS: 8,420',
-                      Icons.local_fire_department_rounded,
-                      AppTheme.accentOrange,
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () async {
+                          await ref
+                              .read(dailyMetricsProvider(selectedDate).notifier)
+                              .addWater(500);
+                          showWebNotification(
+                            '💧 Hydration Logged!',
+                            'Logged 500ml of clean drinking water. Total: ${waterConsumed + 500}ml.',
+                          );
+                        },
+                        child: Container(
+                          height: 26,
+                          decoration: BoxDecoration(
+                            color: AppTheme.accentPurple.withOpacity(0.08),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: AppTheme.accentPurple.withOpacity(0.2),
+                              width: 1.0,
+                            ),
+                          ),
+                          child: const Center(
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.add_circle_outline_rounded, size: 10, color: AppTheme.accentPurple),
+                                SizedBox(width: 2),
+                                Text(
+                                  '500 ml',
+                                  style: TextStyle(
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppTheme.accentPurple,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -535,34 +682,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Widget _buildCapsuleTag(String text, IconData icon, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: AppTheme.glassBorder.withOpacity(0.3),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: Colors.white.withOpacity(0.04),
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: color, size: 11),
-          const SizedBox(width: 4),
-          Text(
-            text,
-            style: const TextStyle(
-              fontSize: 8,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 0.5,
-              color: AppTheme.textPrimary,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+
 
   Widget _buildMacroCard({
     required String title,
@@ -2168,413 +2288,557 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Widget _buildAiCoachInsightsCard({
-    required int consumedCal,
-    required double pConsumed,
-    required double proteinGoal,
-    required bool isDark,
-  }) {
-    String message = "Hello Alex! You haven't logged any meals today. Logging breakfast keeps your energy levels calibrated!";
-    IconData icon = Icons.wb_sunny_rounded;
-    Color accentColor = AppTheme.accentOrange;
+  void _showNotificationsSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      barrierColor: Colors.black.withOpacity(0.55),
+      builder: (sheetContext) {
+        return Consumer(
+          builder: (context, ref, child) {
+            final profile = ref.watch(profileProvider);
+            final history = ref.watch(workoutHistoryProvider);
+            final systemNotifications = ref.watch(notificationsProvider);
+            final auraNotifications = ref.read(notificationsProvider.notifier)
+                .getAuraNotifications(profile, history);
 
-    if (consumedCal > 0) {
-      final double proteinRatio = (pConsumed / proteinGoal).clamp(0.0, 1.0);
-      if (proteinRatio < 0.35) {
-        message = "You've logged some calories, but your protein density is a bit low. Consider adding a sachet of whey or some hard-boiled eggs to hit your target!";
-        icon = Icons.bolt_rounded;
-        accentColor = AppTheme.accentOrange;
-      } else if (proteinRatio < 0.75) {
-        message = "Excellent protein intake progress so far, Alex! Keep going—you're on track to fuel muscle recovery and protein synthesis today.";
-        icon = Icons.check_circle_outline_rounded;
-        accentColor = AppTheme.accentEmerald;
-      } else {
-        message = "Incredible! You have crushed your protein goal for today. Your muscles are well-fueled. Keep hydrating to aid absorption.";
-        icon = Icons.verified_user_rounded;
-        accentColor = AppTheme.accentCyan;
-      }
-    }
+            final isAuraEnabled = StorageService.getAuraNotificationsEnabled();
+            final isSystemEnabled = StorageService.getSystemNotificationsEnabled();
 
-    return GlassCard(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      borderRadius: BorderRadius.circular(20),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: accentColor.withOpacity(0.12),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              icon,
-              color: accentColor,
-              size: 20,
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Text(
-                      'AURA HEALTH AI COACH',
-                      style: TextStyle(
-                        fontSize: 9,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1.0,
-                        color: accentColor,
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
-                      decoration: BoxDecoration(
-                        color: AppTheme.accentCyan.withOpacity(0.08),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: const Text(
-                        'LIVE',
-                        style: TextStyle(
-                          fontSize: 7,
-                          fontWeight: FontWeight.w900,
-                          color: AppTheme.accentCyan,
-                        ),
-                      ),
-                    ),
-                  ],
+            final displayAura = isAuraEnabled ? auraNotifications : <AppNotification>[];
+            final displaySystem = isSystemEnabled ? systemNotifications : <AppNotification>[];
+
+            final isEmpty = displayAura.isEmpty && displaySystem.isEmpty;
+
+            return Container(
+              height: MediaQuery.of(sheetContext).size.height * 0.75,
+              decoration: const BoxDecoration(
+                color: AppTheme.obsidianBackground,
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(30),
+                  topRight: Radius.circular(30),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  message,
-                  style: const TextStyle(
-                    fontSize: 11.5,
-                    color: AppTheme.textSecondary,
-                    height: 1.45,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.1, end: 0);
-  }
-
-  Widget _buildInteractiveWaterCard(Map<String, dynamic> dailyStats, String selectedDate, bool isDark) {
-    final int waterConsumed = dailyStats['water'] ?? 0;
-    const int waterGoal = 3000;
-    final double waterPercent = (waterConsumed / waterGoal).clamp(0.0, 1.0);
-
-    return GlassCard(
-      padding: const EdgeInsets.all(16),
-      borderRadius: BorderRadius.circular(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Row(
-                children: [
-                  Icon(
-                    Icons.water_drop_rounded,
-                    color: AppTheme.accentPurple,
-                    size: 16,
-                  ),
-                  SizedBox(width: 6),
-                  Text(
-                    'Hydration',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: -0.3,
-                    ),
-                  ),
-                ],
-              ),
-              Text(
-                '${(waterPercent * 100).round()}%',
-                style: const TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                  color: AppTheme.accentPurple,
+                border: Border(
+                  top: BorderSide(color: AppTheme.glassBorder, width: 1.5),
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          
-          // Progress wave volume log
-          Text(
-            '$waterConsumed ml',
-            style: const TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w900,
-              letterSpacing: -0.5,
-            ),
-          ),
-          const Text(
-            'Target: 3,000 ml',
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
-              color: AppTheme.textSecondary,
-            ),
-          ),
-          const SizedBox(height: 12),
-
-          // Custom refreshing water bar indicator
-          ClipRRect(
-            borderRadius: BorderRadius.circular(6),
-            child: Container(
-              height: 8,
-              width: double.infinity,
-              color: Colors.white.withOpacity(0.04),
-              child: Stack(
-                children: [
-                  FractionallySizedBox(
-                    alignment: Alignment.centerLeft,
-                    widthFactor: waterPercent,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            AppTheme.accentPurple.withOpacity(0.8),
-                            AppTheme.accentPurple,
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 14),
-
-          // Quick tap log buttons
-          Row(
-            children: [
-              Expanded(
-                child: GestureDetector(
-                  onTap: () async {
-                    await ref
-                        .read(dailyMetricsProvider(selectedDate).notifier)
-                        .addWater(250);
-                    showWebNotification(
-                      '💧 Hydration Logged!',
-                      'Logged 250ml of clean drinking water. Total: ${waterConsumed + 250}ml.',
-                    );
-                  },
-                  child: Container(
-                    height: 30,
-                    decoration: BoxDecoration(
-                      color: AppTheme.accentPurple.withOpacity(0.08),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                        color: AppTheme.accentPurple.withOpacity(0.2),
-                        width: 1.0,
-                      ),
-                    ),
-                    child: const Center(
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
+              child: Container(
+                decoration: const BoxDecoration(
+                  gradient: AppTheme.bgGradient,
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Header
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Icon(Icons.add, size: 10, color: AppTheme.accentPurple),
-                          SizedBox(width: 2),
-                          Text(
-                            '250 ml',
+                          const Text(
+                            'Notifications & Alerts',
                             style: TextStyle(
-                              fontSize: 9,
-                              fontWeight: FontWeight.bold,
-                              color: AppTheme.accentPurple,
+                              fontSize: 22,
+                              fontWeight: FontWeight.w900,
+                              color: Colors.white,
                             ),
+                          ),
+                          Row(
+                            children: [
+                              if (displaySystem.isNotEmpty)
+                                TextButton(
+                                  onPressed: () {
+                                    ref.read(notificationsProvider.notifier).clearAll();
+                                  },
+                                  child: const Text(
+                                    'CLEAR ALL',
+                                    style: TextStyle(
+                                      color: AppTheme.accentCoral,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              IconButton(
+                                icon: const Icon(Icons.close_rounded, color: Colors.white),
+                                onPressed: () => Navigator.pop(sheetContext),
+                              ),
+                            ],
                           ),
                         ],
                       ),
-                    ),
+                      const SizedBox(height: 16),
+
+                      // List
+                      Expanded(
+                        child: isEmpty
+                            ? Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.notifications_off_rounded,
+                                      color: Colors.white.withOpacity(0.15),
+                                      size: 56,
+                                    ),
+                                    const SizedBox(height: 16),
+                                    const Text(
+                                      'No notifications active.',
+                                      style: TextStyle(
+                                        color: AppTheme.textSecondary,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    const Text(
+                                      'Toggle alerts in Profile settings.',
+                                      style: TextStyle(
+                                        color: AppTheme.textTertiary,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              )
+                            : ListView(
+                                physics: const BouncingScrollPhysics(),
+                                children: [
+                                  if (displayAura.isNotEmpty) ...[
+                                    const Padding(
+                                      padding: EdgeInsets.symmetric(vertical: 10),
+                                      child: Text(
+                                        'AURA AI HEALTH INSIGHTS',
+                                        style: TextStyle(
+                                          color: AppTheme.accentOrange,
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold,
+                                          letterSpacing: 1.5,
+                                        ),
+                                      ),
+                                    ),
+                                    ...displayAura.map((notif) {
+                                      IconData icon = Icons.lightbulb_rounded;
+                                      Color color = AppTheme.accentOrange;
+
+                                      if (notif.title.contains('Metabolic')) {
+                                        icon = Icons.bolt_rounded;
+                                        color = notif.body.contains('exceeding') 
+                                            ? AppTheme.accentCoral 
+                                            : (notif.body.contains('hitting') ? AppTheme.accentEmerald : AppTheme.accentCyan);
+                                      } else if (notif.title.contains('Hydration')) {
+                                        icon = Icons.water_drop_rounded;
+                                        color = AppTheme.accentCyan;
+                                      }
+
+                                      return Container(
+                                        margin: const EdgeInsets.only(bottom: 12),
+                                        decoration: BoxDecoration(
+                                          color: AppTheme.glassBackground,
+                                          borderRadius: BorderRadius.circular(16),
+                                          border: Border.all(color: AppTheme.glassBorder, width: 1),
+                                        ),
+                                        child: ClipRRect(
+                                          borderRadius: BorderRadius.circular(16),
+                                          child: Stack(
+                                            children: [
+                                              Positioned(
+                                                left: 0,
+                                                top: 0,
+                                                bottom: 0,
+                                                child: Container(
+                                                  width: 4,
+                                                  color: color,
+                                                ),
+                                              ),
+                                              Padding(
+                                                padding: const EdgeInsets.fromLTRB(20, 14, 16, 14),
+                                                child: Row(
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  children: [
+                                                    Container(
+                                                      width: 36,
+                                                      height: 36,
+                                                      decoration: BoxDecoration(
+                                                        color: color.withOpacity(0.12),
+                                                        shape: BoxShape.circle,
+                                                      ),
+                                                      child: Center(
+                                                        child: Icon(icon, color: color, size: 18),
+                                                      ),
+                                                    ),
+                                                    const SizedBox(width: 14),
+                                                    Expanded(
+                                                      child: Column(
+                                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                                        children: [
+                                                          Text(
+                                                            notif.title,
+                                                            style: const TextStyle(
+                                                              fontWeight: FontWeight.bold,
+                                                              fontSize: 14,
+                                                              color: Colors.white,
+                                                            ),
+                                                          ),
+                                                          const SizedBox(height: 3),
+                                                          Text(
+                                                            notif.body,
+                                                            style: const TextStyle(
+                                                              color: AppTheme.textSecondary,
+                                                              fontSize: 11.5,
+                                                              height: 1.4,
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      );
+                                    }),
+                                    const SizedBox(height: 16),
+                                  ],
+                                  if (displaySystem.isNotEmpty) ...[
+                                    const Padding(
+                                      padding: EdgeInsets.symmetric(vertical: 10),
+                                      child: Text(
+                                        'SYSTEM ALERTS',
+                                        style: TextStyle(
+                                          color: AppTheme.accentCyan,
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold,
+                                          letterSpacing: 1.5,
+                                        ),
+                                      ),
+                                    ),
+                                    ...displaySystem.map((notif) {
+                                      final timeStr = DateFormat('h:mm a').format(notif.timestamp);
+                                      return Container(
+                                        margin: const EdgeInsets.only(bottom: 12),
+                                        child: GlassCard(
+                                          padding: const EdgeInsets.all(14),
+                                          child: Row(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Container(
+                                                width: 36,
+                                                height: 36,
+                                                decoration: BoxDecoration(
+                                                  color: AppTheme.accentCyan.withOpacity(0.1),
+                                                  shape: BoxShape.circle,
+                                                ),
+                                                child: const Center(
+                                                  child: Icon(
+                                                    Icons.notifications_active_rounded,
+                                                    color: AppTheme.accentCyan,
+                                                    size: 18,
+                                                  ),
+                                                ),
+                                              ),
+                                              const SizedBox(width: 14),
+                                              Expanded(
+                                                child: Column(
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  children: [
+                                                    Row(
+                                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                      children: [
+                                                        Text(
+                                                          notif.title,
+                                                          style: const TextStyle(
+                                                            fontWeight: FontWeight.bold,
+                                                            fontSize: 14,
+                                                            color: Colors.white,
+                                                          ),
+                                                        ),
+                                                        Text(
+                                                          timeStr,
+                                                          style: const TextStyle(
+                                                            color: AppTheme.textTertiary,
+                                                            fontSize: 10,
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                    const SizedBox(height: 3),
+                                                    Text(
+                                                      notif.body,
+                                                      style: const TextStyle(
+                                                        color: AppTheme.textSecondary,
+                                                        fontSize: 11.5,
+                                                        height: 1.4,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      );
+                                    }),
+                                  ],
+                                ],
+                              ),
+                      ),
+                    ],
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: GestureDetector(
-                  onTap: () async {
-                    await ref
-                        .read(dailyMetricsProvider(selectedDate).notifier)
-                        .addWater(500);
-                    showWebNotification(
-                      '💧 Hydration Logged!',
-                      'Logged 500ml of clean drinking water. Total: ${waterConsumed + 500}ml.',
-                    );
-                  },
-                  child: Container(
-                    height: 30,
-                    decoration: BoxDecoration(
-                      color: AppTheme.accentPurple.withOpacity(0.08),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                        color: AppTheme.accentPurple.withOpacity(0.2),
-                        width: 1.0,
-                      ),
-                    ),
-                    child: const Center(
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.add_circle_outline_rounded, size: 10, color: AppTheme.accentPurple),
-                          SizedBox(width: 2),
-                          Text(
-                            '500 ml',
-                            style: TextStyle(
-                              fontSize: 9,
-                              fontWeight: FontWeight.bold,
-                              color: AppTheme.accentPurple,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
+            );
+          },
+        );
+      },
     );
   }
 
-  Widget _buildStepsAndSleepBentoColumn(Map<String, dynamic> dailyStats, String selectedDate, bool isDark) {
-    // Simulated live metrics matching premium bento grids
-    const int stepCount = 8420;
-    const int stepGoal = 10000;
-    const double stepPercent = stepCount / stepGoal;
-    
-    return Column(
-      children: [
-        // Steps Card
-        GlassCard(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          borderRadius: BorderRadius.circular(16),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(7),
-                decoration: BoxDecoration(
-                  color: AppTheme.accentOrange.withOpacity(0.12),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.directions_walk_rounded,
-                  color: AppTheme.accentOrange,
-                  size: 16,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Active Steps',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        color: AppTheme.textSecondary,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    const Text(
-                      '$stepCount / $stepGoal',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(2),
-                      child: Container(
-                        height: 3,
-                        width: double.infinity,
-                        color: Colors.white.withOpacity(0.04),
-                        child: FractionallySizedBox(
-                          alignment: Alignment.centerLeft,
-                          widthFactor: stepPercent,
-                          child: Container(color: AppTheme.accentOrange),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 8),
+  void _showHydrationDialog(
+    BuildContext context,
+    String dateStr,
+    int waterConsumed,
+    double waterGoal,
+  ) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final dialogBg = isDark ? AppTheme.glassBackground : Colors.white;
+    final dialogBorder = isDark ? AppTheme.glassBorder : const Color(0xFFEADBFF);
+    final textColor = isDark ? Colors.white : AppTheme.textPrimary;
+    final controller = TextEditingController(text: waterConsumed.toString());
 
-        // Sleep Card
-        GlassCard(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          borderRadius: BorderRadius.circular(16),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(7),
-                decoration: BoxDecoration(
-                  color: AppTheme.accentEmerald.withOpacity(0.12),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.bedtime_rounded,
-                  color: AppTheme.accentEmerald,
-                  size: 16,
-                ),
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return Consumer(
+          builder: (context, ref, _) {
+            final dailyStats = ref.watch(dailyMetricsProvider(dateStr));
+            final currentWater = (dailyStats['water'] ?? 0) as int;
+            final List<int> rawHistory = List<int>.from(dailyStats['water_history'] ?? []);
+
+            return AlertDialog(
+              backgroundColor: dialogBg,
+              surfaceTintColor: Colors.transparent,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+                side: BorderSide(color: dialogBorder, width: 1),
               ),
-              const SizedBox(width: 10),
-              Expanded(
+              title: Row(
+                children: [
+                  const Icon(Icons.water_drop_rounded, color: AppTheme.accentPurple, size: 24),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Hydration Manager',
+                    style: TextStyle(
+                      color: textColor,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 20,
+                    ),
+                  ),
+                ],
+              ),
+              content: SizedBox(
+                width: 320,
                 child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    Text(
+                      'Log and adjust your daily water intake settings.',
+                      style: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
+                    ),
+                    const SizedBox(height: 20),
+                    Center(
+                      child: Column(
+                        children: [
+                          Text(
+                            '$currentWater ml',
+                            style: TextStyle(
+                              fontSize: 36,
+                              fontWeight: FontWeight.w900,
+                              color: AppTheme.accentPurple,
+                            ),
+                          ),
+                          Text(
+                            'Goal: ${waterGoal.toInt()} ml (${((currentWater / waterGoal) * 100).round()}% Completed)',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppTheme.textSecondary,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
                     const Text(
-                      'Deep Sleep',
+                      'RECENT INPUT LOGS',
                       style: TextStyle(
-                        fontSize: 11,
+                        fontSize: 10,
                         fontWeight: FontWeight.bold,
                         color: AppTheme.textSecondary,
+                        letterSpacing: 1.0,
                       ),
                     ),
-                    const SizedBox(height: 2),
-                    const Text(
-                      '7h 45m (92% Score)',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w900,
+                    const SizedBox(height: 8),
+                    Container(
+                      height: 80,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(isDark ? 0.02 : 0.015),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: dialogBorder, width: 0.8),
                       ),
+                      child: rawHistory.isEmpty
+                          ? const Center(
+                              child: Text(
+                                'No recent entries logged today',
+                                style: TextStyle(
+                                  color: AppTheme.textSecondary,
+                                  fontSize: 11,
+                                ),
+                              ),
+                            )
+                          : ListView.builder(
+                              padding: const EdgeInsets.all(8),
+                              itemCount: rawHistory.length,
+                              itemBuilder: (context, idx) {
+                                final logAmount = rawHistory[idx];
+                                return Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 2.0),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        '💧 Water Input Log #${idx + 1}',
+                                        style: TextStyle(color: textColor, fontSize: 12),
+                                      ),
+                                      Text(
+                                        '+$logAmount ml',
+                                        style: const TextStyle(
+                                          color: AppTheme.accentPurple,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppTheme.accentCoral.withOpacity(0.12),
+                              foregroundColor: AppTheme.accentCoral,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                                side: const BorderSide(color: AppTheme.accentCoral, width: 0.5),
+                              ),
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                            ),
+                            icon: const Icon(Icons.undo_rounded, size: 14),
+                            label: const Text('Undo Last Entry', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                            onPressed: rawHistory.isEmpty
+                                ? null
+                                : () async {
+                                    await ref
+                                        .read(dailyMetricsProvider(dateStr).notifier)
+                                        .removeLastWater();
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Last hydration log removed!'),
+                                        backgroundColor: AppTheme.accentCoral,
+                                      ),
+                                    );
+                                  },
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    const Divider(color: AppTheme.glassBorder, height: 1),
+                    const SizedBox(height: 16),
                     const Text(
-                      'Excellent recovery rating',
+                      'MANUAL VALUE OVERRIDE',
                       style: TextStyle(
-                        fontSize: 8,
+                        fontSize: 10,
                         fontWeight: FontWeight.bold,
-                        color: AppTheme.accentEmerald,
+                        color: AppTheme.textSecondary,
+                        letterSpacing: 1.0,
                       ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Container(
+                            height: 38,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(isDark ? 0.02 : 0.015),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: dialogBorder, width: 0.8),
+                            ),
+                            child: TextField(
+                              controller: controller,
+                              keyboardType: TextInputType.number,
+                              style: TextStyle(color: textColor, fontSize: 13, fontWeight: FontWeight.bold),
+                              decoration: const InputDecoration(
+                                suffixText: 'ml',
+                                border: InputBorder.none,
+                                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppTheme.accentPurple,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                          ),
+                          onPressed: () async {
+                            final val = int.tryParse(controller.text);
+                            if (val != null && val >= 0) {
+                              await ref
+                                  .read(dailyMetricsProvider(dateStr).notifier)
+                                  .setManualWater(val);
+                              Navigator.pop(ctx);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Hydration manually updated!'),
+                                  backgroundColor: AppTheme.accentEmerald,
+                                ),
+                              );
+                            }
+                          },
+                          child: const Text('Update', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                        ),
+                      ],
                     ),
                   ],
                 ),
               ),
-            ],
-          ),
-        ),
-      ],
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Close', style: TextStyle(color: AppTheme.textSecondary)),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 }

@@ -8,6 +8,7 @@ import '../models/user_profile.dart';
 import '../models/workout_log.dart';
 import '../models/reminder_setting.dart';
 import 'storage_service.dart';
+import 'firebase_service.dart';
 
 class NotificationManager {
   static final StreamController<Map<String, String>> controller =
@@ -42,6 +43,191 @@ void showWebNotification(String title, String body) {
   }
 }
 
+class AppNotification {
+  final String id;
+  final String category; // 'aura' or 'system'
+  final String title;
+  final String body;
+  final DateTime timestamp;
+  final bool isRead;
+
+  AppNotification({
+    required this.id,
+    required this.category,
+    required this.title,
+    required this.body,
+    required this.timestamp,
+    this.isRead = false,
+  });
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'category': category,
+    'title': title,
+    'body': body,
+    'timestamp': timestamp.toIso8601String(),
+    'isRead': isRead,
+  };
+
+  factory AppNotification.fromJson(Map<String, dynamic> json) => AppNotification(
+    id: json['id'] ?? '',
+    category: json['category'] ?? 'system',
+    title: json['title'] ?? '',
+    body: json['body'] ?? '',
+    timestamp: DateTime.tryParse(json['timestamp'] ?? '') ?? DateTime.now(),
+    isRead: json['isRead'] ?? false,
+  );
+}
+
+class NotificationsNotifier extends StateNotifier<List<AppNotification>> {
+  final Ref ref;
+  NotificationsNotifier(this.ref) : super([]) {
+    _loadSystemNotifications();
+  }
+
+  void _loadSystemNotifications() {
+    final raw = StorageService.getSystemNotifications();
+    state = raw.map((e) => AppNotification.fromJson(e)).toList();
+  }
+
+  Future<void> addSystemNotification(String title, String body) async {
+    final notif = AppNotification(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      category: 'system',
+      title: title,
+      body: body,
+      timestamp: DateTime.now(),
+    );
+    final newState = [notif, ...state];
+    state = newState;
+    await StorageService.saveSystemNotifications(newState.map((e) => e.toJson()).toList());
+  }
+
+  Future<void> markAllAsRead() async {
+    final newState = state.map((e) => AppNotification(
+      id: e.id,
+      category: e.category,
+      title: e.title,
+      body: e.body,
+      timestamp: e.timestamp,
+      isRead: true,
+    )).toList();
+    state = newState;
+    await StorageService.saveSystemNotifications(newState.map((e) => e.toJson()).toList());
+  }
+
+  Future<void> clearAll() async {
+    state = [];
+    await StorageService.saveSystemNotifications([]);
+  }
+
+  List<AppNotification> getAuraNotifications(UserProfile? profile, List<WorkoutSession> history) {
+    if (!StorageService.getAuraNotificationsEnabled()) {
+      return [];
+    }
+
+    // Generate past 7 days average stats
+    final now = DateTime.now();
+    final List<DateTime> pastDays = List.generate(7, (index) {
+      return now.subtract(Duration(days: 6 - index));
+    });
+
+    double totalCal = 0;
+    double totalWater = 0;
+
+    for (var day in pastDays) {
+      final dateStr = DateFormat('yyyy-MM-dd').format(day);
+      final stats = StorageService.getDailyMetrics(dateStr);
+
+      final double consumedCal =
+          (((stats['breakfast_cal'] ?? 0) as num) +
+                  ((stats['lunch_cal'] ?? 0) as num) +
+                  ((stats['dinner_cal'] ?? 0) as num) +
+                  ((stats['snacks_cal'] ?? 0) as num) +
+                  ((stats['outside_food_cal'] ?? 0) as num))
+              .toDouble();
+
+      final double consumedWaterLtr = ((stats['water'] ?? 0) as num) / 1000.0;
+      totalCal += consumedCal;
+      totalWater += consumedWaterLtr;
+    }
+
+    final double avgCalories = totalCal / 7.0;
+    final double avgWater = totalWater / 7.0;
+
+    final double calorieGoal = (profile?.calorieGoal ?? 2000).toDouble();
+    final double waterGoal = (profile?.waterGoal ?? 2500) / 1000.0;
+
+    final int workoutsThisWeekCount = history.where((session) {
+      try {
+        final parsedDate = DateFormat('yyyy-MM-dd').parse(session.date);
+        return now.difference(parsedDate).inDays < 7;
+      } catch (_) {
+        return false;
+      }
+    }).length;
+
+    final List<AppNotification> list = [];
+
+    // 1. Calories Insight
+    String calorieFeedback = 'Caloric intake is average. Update targets in profile as needed.';
+    if (avgCalories > 0) {
+      if (avgCalories > calorieGoal + 200) {
+        calorieFeedback = 'You are exceeding your daily target goal of ${calorieGoal.round()} kcal. Watch calorie density!';
+      } else if (avgCalories >= calorieGoal - 200) {
+        calorieFeedback = 'Incredible! You are perfectly hitting your metabolic target. Maintain this consistency!';
+      } else {
+        calorieFeedback = 'Calorie budget is under target. Ensure you ingest ample proteins to retain muscle mass.';
+      }
+    }
+    list.add(AppNotification(
+      id: 'aura_cal',
+      category: 'aura',
+      title: 'Metabolic Balance',
+      body: calorieFeedback,
+      timestamp: DateTime.now(),
+    ));
+
+    // 2. Hydration Insight
+    String hydrationFeedback = 'Log water throughout the day to calibrate cellular retention.';
+    if (avgWater > 0) {
+      if (avgWater >= waterGoal) {
+        hydrationFeedback = 'Superb water levels logged! Your body is fully hydrated, helping flush metabolites.';
+      } else {
+        hydrationFeedback = 'Hydration is below goal of ${waterGoal.toStringAsFixed(1)}L. Try adding 250ml every 2 hours.';
+      }
+    }
+    list.add(AppNotification(
+      id: 'aura_water',
+      category: 'aura',
+      title: 'Hydration Consistency',
+      body: hydrationFeedback,
+      timestamp: DateTime.now(),
+    ));
+
+    // 3. Gym Insight
+    String gymFeedback = 'Workouts build physical fitness. Complete sets in the gym tab!';
+    if (workoutsThisWeekCount >= 4) {
+      gymFeedback = 'Outstanding gym consistency! 4+ weekly sessions recorded. Remember to schedule recovery days.';
+    } else if (workoutsThisWeekCount > 0) {
+      gymFeedback = '$workoutsThisWeekCount active gym training sessions logged. Keep stacking physical progression!';
+    }
+    list.add(AppNotification(
+      id: 'aura_gym',
+      category: 'aura',
+      title: 'Active Recovery Optimized',
+      body: gymFeedback,
+      timestamp: DateTime.now(),
+    ));
+
+    return list;
+  }
+}
+
+final notificationsProvider = StateNotifierProvider<NotificationsNotifier, List<AppNotification>>((ref) {
+  return NotificationsNotifier(ref);
+});
+
 // Theme Mode Provider: Manages Light or Dark theme.
 final themeModeProvider = StateProvider<ThemeMode>((ref) {
   return ThemeMode.dark; // Default to FitMax Premium Dark UI
@@ -69,11 +255,12 @@ class ProfileNotifier extends StateNotifier<UserProfile?> {
 
   Future<void> saveProfile(UserProfile profile) async {
     await StorageService.saveUserProfile(profile);
+    await FirebaseService.saveProfileCloud(profile);
     state = profile;
   }
 
   Future<void> clearProfile() async {
-    await StorageService.clearAllData();
+    await FirebaseService.signOut();
     state = null;
   }
 }
@@ -133,9 +320,17 @@ class DailyMetricsNotifier extends StateNotifier<Map<String, dynamic>> {
     }
 
     await StorageService.saveDailyMetrics(dateStr, metrics);
+    await FirebaseService.saveDailyMetricsCloud(dateStr, metrics);
 
     // Refresh state
     state = metrics;
+  }
+
+  /// Saves a completely updated metrics map to local and cloud storage.
+  Future<void> saveMetrics(Map<String, dynamic> updatedMetrics) async {
+    await StorageService.saveDailyMetrics(dateStr, updatedMetrics);
+    await FirebaseService.saveDailyMetricsCloud(dateStr, updatedMetrics);
+    state = updatedMetrics;
   }
 
   /// Increments water intake in ml.
@@ -143,7 +338,42 @@ class DailyMetricsNotifier extends StateNotifier<Map<String, dynamic>> {
     final metrics = StorageService.getDailyMetrics(dateStr);
     metrics['water'] = (metrics['water'] ?? 0) + amountMl;
 
+    final List<int> history = List<int>.from(metrics['water_history'] ?? []);
+    history.add(amountMl);
+    metrics['water_history'] = history;
+
     await StorageService.saveDailyMetrics(dateStr, metrics);
+    await FirebaseService.saveDailyMetricsCloud(dateStr, metrics);
+
+    // Refresh state
+    state = metrics;
+  }
+
+  /// Removes last logged water entry.
+  Future<void> removeLastWater() async {
+    final metrics = StorageService.getDailyMetrics(dateStr);
+    final List<int> history = List<int>.from(metrics['water_history'] ?? []);
+    if (history.isNotEmpty) {
+      final lastAmount = history.removeLast();
+      metrics['water'] = ((metrics['water'] ?? 0) - lastAmount).clamp(0, 99999);
+      metrics['water_history'] = history;
+
+      await StorageService.saveDailyMetrics(dateStr, metrics);
+      await FirebaseService.saveDailyMetricsCloud(dateStr, metrics);
+
+      // Refresh state
+      state = metrics;
+    }
+  }
+
+  /// Sets manual override for water intake.
+  Future<void> setManualWater(int amountMl) async {
+    final metrics = StorageService.getDailyMetrics(dateStr);
+    metrics['water'] = amountMl.clamp(0, 99999);
+    metrics['water_history'] = <int>[];
+
+    await StorageService.saveDailyMetrics(dateStr, metrics);
+    await FirebaseService.saveDailyMetricsCloud(dateStr, metrics);
 
     // Refresh state
     state = metrics;
@@ -213,6 +443,7 @@ class RemindersNotifier extends StateNotifier<Map<String, ReminderSetting>> {
     // Save back to Hive
     final rawMap = newState.map((k, v) => MapEntry(k, v.toJson()));
     await StorageService.saveReminders(rawMap);
+    await FirebaseService.saveRemindersCloud(rawMap);
 
     // If enabled, trigger a real push notification to confirm functionality
     if (updated.isEnabled) {
@@ -242,6 +473,7 @@ class WorkoutHistoryNotifier extends StateNotifier<List<WorkoutSession>> {
 
   Future<void> logWorkout(WorkoutSession session) async {
     await StorageService.saveWorkout(session.toJson());
+    await FirebaseService.saveWorkoutCloud(session.toJson());
     state = [...state, session];
   }
 

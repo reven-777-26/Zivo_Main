@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'core/theme.dart';
 import 'services/storage_service.dart';
 import 'services/router_service.dart';
@@ -8,6 +9,13 @@ import 'services/state_providers.dart';
 void main() async {
   // Ensure framework services are initialized
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Firebase with fallback safety if configs are not populated yet
+  try {
+    await Firebase.initializeApp();
+  } catch (e) {
+    debugPrint("Firebase initialization warning (expected if google-services.json is missing): $e");
+  }
 
   // Initialize local Hive database box storage
   await StorageService.init();
