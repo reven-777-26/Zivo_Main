@@ -45,8 +45,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
   String? _selectedBeforeDate;
   String? _selectedAfterDate;
   double _splitPercentage = 0.5;
-  bool _isAnalyzingPhotos = false;
-  String? _aiAnalysisReport;
+
 
   // Mock Gym Exercises Library (FitNotes categories)
   final List<Map<String, String>> _exerciseLibrary = [
@@ -2175,7 +2174,6 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
     
     if (_selectedBeforeDate == dateStr) _selectedBeforeDate = null;
     if (_selectedAfterDate == dateStr) _selectedAfterDate = null;
-    _aiAnalysisReport = null;
 
     if (mounted) {
       setState(() {});
@@ -2230,79 +2228,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
     );
   }
 
-  void _runPhysiqueAnalysis(String beforeDate, String afterDate) {
-    setState(() {
-      _isAnalyzingPhotos = true;
-      _aiAnalysisReport = null;
-    });
 
-    Timer(const Duration(milliseconds: 1500), () {
-      if (!mounted) return;
-
-      final beforeMetrics = StorageService.getDailyMetrics(beforeDate);
-      final afterMetrics = StorageService.getDailyMetrics(afterDate);
-
-      int days = 0;
-      try {
-        final bDate = DateFormat('yyyy-MM-dd').parse(beforeDate);
-        final aDate = DateFormat('yyyy-MM-dd').parse(afterDate);
-        days = aDate.difference(bDate).inDays.abs();
-      } catch (_) {}
-
-      final profile = ref.read(profileProvider);
-      
-      final workouts = ref.read(workoutHistoryProvider);
-      int workoutsCount = 0;
-      final Map<String, int> categories = {};
-      
-      for (var session in workouts) {
-        try {
-          final sDate = DateFormat('yyyy-MM-dd').parse(session.date);
-          final bDate = DateFormat('yyyy-MM-dd').parse(beforeDate);
-          final aDate = DateFormat('yyyy-MM-dd').parse(afterDate);
-          
-          final isAfterBefore = sDate.isAfter(bDate) || sDate.isAtSameMomentAs(bDate);
-          final isBeforeAfter = sDate.isBefore(aDate) || sDate.isAtSameMomentAs(aDate);
-          
-          if (isAfterBefore && isBeforeAfter) {
-            workoutsCount++;
-            for (var ex in session.exercises) {
-              categories[ex.category] = (categories[ex.category] ?? 0) + 1;
-            }
-          }
-        } catch (_) {}
-      }
-
-      final String mostTrained = categories.entries.isNotEmpty
-          ? categories.entries.reduce((a, b) => a.value > b.value ? a : b).key
-          : 'Gym Training';
-
-      final String goal = profile?.goal ?? 'maintain';
-
-      String summary = '';
-      if (goal == 'lose') {
-        summary = "Based on the $days-day comparison, your muscle definition shows notable sharpening. The abdominal wall features tighter visual lines, and lateral silhouette outlines confirm a decrease in body fat percentage. Your consistent engagement in $mostTrained workouts ($workoutsCount total sessions) has preserved lean skeletal mass while running a caloric deficit. Excellent vascularity progression.";
-      } else if (goal == 'gain') {
-        summary = "Side-by-side frame analysis over $days days indicates a measurable increase in muscle density and roundness, particularly in focus areas of your $mostTrained workouts. Deltoid caps and upper lat flare show visual width extensions. Completed $workoutsCount workouts, proving high metabolic load volume. Recommend increasing protein goal by 15g to feed this hyper-trophic stage.";
-      } else {
-        summary = "Frame comparison over $days days shows optimized posture alignment and visual core stabilization. The side-profile contour demonstrates highly consistent muscle tone. With $workoutsCount gym logs logged during this phase, your skeletal structure shows balanced kinetic distribution. Highly consistent muscle conditioning observed.";
-      }
-
-      setState(() {
-        _isAnalyzingPhotos = false;
-        _aiAnalysisReport = """
-🤖 AURA AI PHYSIQUE ANALYSIS REPORT
---------------------------------------
-• Time Interval: $days Days Elapsed
-• Activity Load: $workoutsCount Gym Sessions logged
-• Primary Focus: $mostTrained Focus Area
-• Progression Index: +7.8% Muscle Conditioning
-
-$summary
-""";
-      });
-    });
-  }
 
   Widget _buildPhotoJournal() {
     final now = DateTime.now();
@@ -2448,6 +2374,22 @@ $summary
                     ),
                   ),
                   Positioned(
+                    left: 0,
+                    top: 0,
+                    bottom: 0,
+                    width: width * _splitPercentage,
+                    child: ClipRect(
+                      child: SizedBox(
+                        width: width,
+                        height: height,
+                        child: Image.memory(
+                          base64Decode(afterBase64),
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ),
+                  ),
+                  Positioned(
                     left: 12,
                     top: 12,
                     child: Container(
@@ -2457,22 +2399,8 @@ $summary
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: const Text(
-                        'BEFORE',
+                        'AFTER',
                         style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                  ),
-                  Positioned.fill(
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      widthFactor: _splitPercentage,
-                      child: SizedBox(
-                        width: width,
-                        height: height,
-                        child: Image.memory(
-                          base64Decode(afterBase64),
-                          fit: BoxFit.cover,
-                        ),
                       ),
                     ),
                   ),
@@ -2486,7 +2414,7 @@ $summary
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: const Text(
-                        'AFTER',
+                        'BEFORE',
                         style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
                       ),
                     ),
@@ -2645,7 +2573,6 @@ $summary
                               if (val != null) {
                                 setState(() {
                                   _selectedBeforeDate = val;
-                                  _aiAnalysisReport = null;
                                 });
                               }
                             },
@@ -2685,7 +2612,6 @@ $summary
                               if (val != null) {
                                 setState(() {
                                   _selectedAfterDate = val;
-                                  _aiAnalysisReport = null;
                                 });
                               }
                             },
@@ -2701,85 +2627,6 @@ $summary
 
             if (beforePic != null && afterPic != null) ...[
               _buildSplitSlider(beforePic, afterPic),
-              const SizedBox(height: 16),
-
-              GestureDetector(
-                onTap: _isAnalyzingPhotos
-                    ? null
-                    : () => _runPhysiqueAnalysis(_selectedBeforeDate!, _selectedAfterDate!),
-                child: Container(
-                  width: double.infinity,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    gradient: AppTheme.primaryGradient,
-                    borderRadius: BorderRadius.circular(14),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppTheme.accentPurple.withOpacity(0.15),
-                        blurRadius: 10,
-                        offset: const Offset(0, 3),
-                      ),
-                    ],
-                  ),
-                  child: Center(
-                    child: _isAnalyzingPhotos
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                          )
-                        : const Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.psychology_rounded, color: Colors.white, size: 18),
-                              SizedBox(width: 8),
-                              Text(
-                                'Run Aura AI Physique Scan',
-                                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
-                              ),
-                            ],
-                          ),
-                  ),
-                ),
-              ),
-
-              if (_aiAnalysisReport != null) ...[
-                const SizedBox(height: 16),
-                GlassCard(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          const Icon(Icons.analytics_rounded, color: AppTheme.accentCyan, size: 18),
-                          const SizedBox(width: 8),
-                          Text(
-                            'AURA PHYSIQUE REPORT',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                              color: isDark ? Colors.white : AppTheme.textPrimary,
-                              letterSpacing: 1.0,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        _aiAnalysisReport!,
-                        style: TextStyle(
-                          color: isDark ? Colors.white70 : AppTheme.textPrimary,
-                          fontSize: 11.5,
-                          fontFamily: 'monospace',
-                          height: 1.4,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
             ] else ...[
               const Center(
                 child: Padding(

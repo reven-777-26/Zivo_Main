@@ -2,20 +2,20 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 
 class AppTheme {
-  // Brand New Color Palette: Premium Refreshing Spring Spruce & Ocean Mint
-  static const Color obsidianBackground = Color(0xFF04100E); // Refreshing Spruce Deep Black
-  static const Color glassBackground = Color(0xFF0D2521); // Rich Spruce Dark Mint
-  static const Color glassBorder = Color(0xFF163E35); // Frosty Mint Spruce Border
+  // Brand New Color Palette: Zivo Premium Deep Space Blue Cockpit
+  static const Color obsidianBackground = Color(0xFF070B16); // Deep Obsidian Velvet Midnight
+  static const Color glassBackground = Color(0xFF121626); // Premium Dark Space Sapphire
+  static const Color glassBorder = Color(0xFF1F243B); // Subtle Frost-Slate Ice Border
 
-  static const Color accentEmerald = Color(0xFF10B981); // Crisp Active Emerald Mint
-  static const Color accentCyan = Color(0xFF20E682); // High-Contrast Cyber Mint Green
-  static const Color accentCoral = Color(0xFFFF5E7E); // Vibrant Rose Coral
-  static const Color accentOrange = Color(0xFFFBBF24); // Sunrise Gold Amber
-  static const Color accentPurple = Color(0xFF06B6D4); // Ocean Ice Cyan
+  static const Color accentEmerald = Color(0xFF00E676); // Jade Green (Success Accent)
+  static const Color accentCyan = Color(0xFF00E5FF); // Ice Cyan (Primary Accent)
+  static const Color accentCoral = Color(0xFFFF3B6F); // Rose Crimson (Warning/Danger)
+  static const Color accentOrange = Color(0xFFFF9100); // Amber Gold (Alert/Trend)
+  static const Color accentPurple = Color(0xFF8C52FF); // Electric Purple (Secondary Accent)
 
-  static const Color textPrimary = Color(0xFFF0FDF4); // Mint Cream White
-  static const Color textSecondary = Color(0xFF86A39F); // Muted Sage Slate
-  static const Color textTertiary = Color(0xFF1D3531); // Deep Charcoal Spruce
+  static const Color textPrimary = Color(0xFFF1F5F9); // Primary Text (Clear Slate-White)
+  static const Color textSecondary = Color(0xFF8F9BB3); // Secondary Text (Cool Silver-Grey)
+  static const Color textTertiary = Color(0xFF3B4867); // Muted Dark Slate
 
   // Solid flat gradients to retain compile safety while completely eliminating gradients
   static const LinearGradient primaryGradient = LinearGradient(

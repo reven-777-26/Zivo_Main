@@ -212,15 +212,16 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header Section
-              const Text(
-                'Metrics Trends',
-                style: TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: -0.5,
+
+                // Header Section
+                const Text(
+                  'Metrics Trends',
+                  style: TextStyle(
+                    fontSize: 26,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: -0.5,
+                  ),
                 ),
-              ),
               const SizedBox(height: 4),
               const Text(
                 'Visualize weight projections, calorie inflows, water ratios, and muscle load distributions.',
@@ -475,12 +476,12 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-            ],
-          ),
+          ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildSelectorChip(String label, int index) {
     final isSelected = _activeChartIndex == index;

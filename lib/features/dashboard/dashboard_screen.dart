@@ -1538,7 +1538,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       ),
                       const SizedBox(height: 16),
                       const Text(
-                        'Aura Nutrient Logger',
+                        'Zivo Nutrient Logger',
                         style: TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.w900,

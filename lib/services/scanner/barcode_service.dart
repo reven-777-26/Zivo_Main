@@ -1,7 +1,4 @@
-import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
-import '../storage_service.dart';
 
 class BarcodeService {
   /// Simulates and executes image preprocessing to prepare the barcode region.
@@ -53,16 +50,7 @@ class BarcodeService {
       }
     }
 
-    // 4. Web/Native AI-driven fallback barcode vision decoding when local engines are inconclusive
-    if (detectedBarcode == null && imageBase64 != null && imageBase64.isNotEmpty) {
-      onProgress("Using Gemini Vision to decode barcode from image...");
-      final String? geminiDecodedBarcode = await _decodeBarcodeFromImageWithGemini(
-        imageBase64: imageBase64,
-      );
-      if (geminiDecodedBarcode != null) {
-        detectedBarcode = geminiDecodedBarcode;
-      }
-    }
+
 
     if (detectedBarcode != null) {
       onProgress("Barcode Decoded Successfully: $detectedBarcode");
@@ -112,80 +100,5 @@ class BarcodeService {
     return null;
   }
 
-  /// Rotating, low-latency Gemini Vision decoder to read numeric digits off barcode lines.
-  static Future<String?> _decodeBarcodeFromImageWithGemini({
-    required String imageBase64,
-  }) async {
-    final List<String> apiKeys = StorageService.getGeminiApiKeys();
-    if (apiKeys.isEmpty) return null;
 
-    final prompt = '''
-You are a high-precision barcode scanner.
-Your task is to identify and extract the numeric barcode digits from this barcode image.
-Look at the numbers printed directly underneath or above the barcode lines.
-If you see spaces between digits (e.g. "901058 851335"), remove the spaces and return the clean, continuous number sequence.
-Return a JSON object matching this schema:
-{
-  "barcode": "string representation of clean barcode numbers" or null if not detected
-}
-Do not include any other text, markdown formatting, or HTML tags.
-''';
-
-    for (final apiKey in apiKeys) {
-      if (apiKey.isEmpty) continue;
-      try {
-        final url = Uri.parse(
-          'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=$apiKey'
-        );
-
-        final response = await http.post(
-          url,
-          headers: {'Content-Type': 'application/json'},
-          body: json.encode({
-            'contents': [
-              {
-                'parts': [
-                  {'text': prompt},
-                  {
-                    'inlineData': {
-                      'mimeType': 'image/jpeg',
-                      'data': imageBase64,
-                    }
-                  }
-                ],
-              }
-            ],
-            'generationConfig': {
-              'temperature': 0.0, // Strict, deterministic decoding
-              'responseMimeType': 'application/json',
-            }
-          }),
-        ).timeout(const Duration(seconds: 15));
-
-        if (response.statusCode == 200) {
-          final data = json.decode(response.body);
-          final String text = data['candidates'][0]['content']['parts'][0]['text'] ?? '';
-          
-          String cleanText = text.trim();
-          final startIdx = cleanText.indexOf('{');
-          final endIdx = cleanText.lastIndexOf('}');
-          if (startIdx != -1 && endIdx != -1 && endIdx > startIdx) {
-            cleanText = cleanText.substring(startIdx, endIdx + 1);
-          }
-
-          final Map<String, dynamic> result = json.decode(cleanText);
-          final String? barcode = result['barcode']?.toString();
-          if (barcode != null && barcode.isNotEmpty && barcode.toLowerCase() != 'null') {
-            final cleanBarcode = barcode.replaceAll(RegExp(r'\s+'), '').replaceAll(RegExp(r'[^0-9]'), '');
-            if (cleanBarcode.length >= 8 && cleanBarcode.length <= 15) {
-              return cleanBarcode;
-            }
-          }
-        }
-      } catch (e) {
-        debugPrint("Gemini barcode vision lookup error: $e");
-      }
-    }
-    return null;
-  }
 }

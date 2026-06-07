@@ -54,67 +54,8 @@ class AiAnalysisService {
       debugPrint("Falling back to local rotated key mode...");
     }
 
-    // 2. Sandbox/Local Fallback Path: Client-side key rotation
-    final List<String> apiKeys = StorageService.getGeminiApiKeys();
-    if (apiKeys.isEmpty) {
-      debugPrint("Gemini Service Error: No API keys configured in StorageService.");
-      return null;
-    }
-
-    for (final apiKey in apiKeys) {
-      if (apiKey.isEmpty) continue;
-      try {
-        final url = Uri.parse(
-          'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=$apiKey'
-        );
-
-        final List<Map<String, dynamic>> parts = [];
-        parts.add({'text': prompt});
-
-        if (imageBase64 != null && imageBase64.isNotEmpty) {
-          parts.add({
-            'inlineData': {
-              'mimeType': 'image/jpeg',
-              'data': imageBase64,
-            }
-          });
-        }
-
-        final response = await http.post(
-          url,
-          headers: {'Content-Type': 'application/json'},
-          body: json.encode({
-            'contents': [
-              {
-                'parts': parts,
-              }
-            ],
-            'generationConfig': {
-              'temperature': 0.1,
-              'responseMimeType': 'application/json',
-            }
-          }),
-        ).timeout(const Duration(seconds: 15));
-
-        if (response.statusCode == 200) {
-          final data = json.decode(response.body);
-          final String text = data['candidates'][0]['content']['parts'][0]['text'] ?? '';
-          
-          String cleanText = text.trim();
-          final startIdx = cleanText.indexOf('{');
-          final endIdx = cleanText.lastIndexOf('}');
-          if (startIdx != -1 && endIdx != -1 && endIdx > startIdx) {
-            cleanText = cleanText.substring(startIdx, endIdx + 1);
-          }
-
-          return json.decode(cleanText);
-        } else {
-          debugPrint("Gemini key rotation: API Key failed with status ${response.statusCode}");
-        }
-      } catch (e) {
-        debugPrint("Gemini key rotation: Exception encountered: $e");
-      }
-    }
+    // 2. Sandbox/Local Fallback Path: Client-side key rotation (Disabled)
+    debugPrint("Gemini Service Error: No API keys configured or allowed.");
     return null;
   }
 

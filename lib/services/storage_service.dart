@@ -28,13 +28,6 @@ class StorageService {
     _workoutBox = await Hive.openBox<Map>(_workoutBoxName);
     _reminderBox = await Hive.openBox<Map>(_reminderBoxName);
 
-    // Force overwrite to only use the specified Gemini API key and clear OpenAI key
-    await _reminderBox.put('secure_gemini_keys', {
-      'list': ['AIzaSyC1hlhiFKaNO8lg3FIMh757KfA8zsE-z2s']
-    });
-    await _reminderBox.put('secure_openai_key', {
-      'key': ''
-    });
 
     // Seed realistic dummy data for interactive metrics visual experience
     seedDummyData();
@@ -788,30 +781,12 @@ class StorageService {
 
   /// PERSISTENT SECURE GEMINI KEYS Rotator
   static List<String> getGeminiApiKeys() {
-    final raw = _reminderBox.get('secure_gemini_keys');
-    final defaultKeys = [
-      'AIzaSyC1hlhiFKaNO8lg3FIMh757KfA8zsE-z2s',
-    ];
-    if (raw == null) return defaultKeys;
-    final list = List<String>.from(raw['list'] ?? []);
-    return list.isEmpty ? defaultKeys : list;
-  }
-
-  static Future<void> saveGeminiApiKeys(List<String> keys) async {
-    await _reminderBox.put('secure_gemini_keys', {'list': keys});
+    return const [];
   }
 
   /// PERSISTENT SECURE OPENAI KEY
   static String getOpenAiApiKey() {
-    final raw = _reminderBox.get('secure_openai_key');
-    const defaultKey = '';
-    if (raw == null) return defaultKey;
-    final key = raw['key'] as String?;
-    return (key == null || key.isEmpty) ? defaultKey : key;
-  }
-
-  static Future<void> saveOpenAiApiKey(String key) async {
-    await _reminderBox.put('secure_openai_key', {'key': key});
+    return '';
   }
 
   /// NOTIFICATIONS SETTINGS
@@ -842,7 +817,7 @@ class StorageService {
         {
           'id': 'welcome_notif',
           'category': 'system',
-          'title': '💪 FitNotes 2 Active & Ready!',
+          'title': '💪 Zivo Active & Ready!',
           'body': 'Push reminders and notification systems are fully integrated. Stay on track!',
           'timestamp': DateTime.now().toIso8601String(),
           'isRead': false,
@@ -855,4 +830,6 @@ class StorageService {
   static Future<void> saveSystemNotifications(List<Map<String, dynamic>> list) async {
     await _reminderBox.put('system_notifications_list', {'list': list});
   }
+
+
 }

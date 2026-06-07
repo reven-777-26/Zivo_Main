@@ -290,7 +290,7 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
       });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Aura Vision Lens pipeline error. Please try again.'),
+          content: Text('Zivo Vision Lens pipeline error. Please try again.'),
           backgroundColor: AppTheme.accentCoral,
         ),
       );
@@ -356,7 +356,7 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'Aura Vision Lens',
+                    'Zivo Vision Lens',
                     style: TextStyle(
                       fontSize: 26,
                       fontWeight: FontWeight.w900,
@@ -934,7 +934,7 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
               ),
               SizedBox(width: 8),
               Text(
-                'Aura Lens Ingredients Review',
+                'Zivo Lens Ingredients Review',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
               ),
             ],

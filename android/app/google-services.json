@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "319560280591",
+    "project_id": "zivofit-firebase",
+    "storage_bucket": "zivofit-firebase.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:319560280591:android:b35e6e349b96db8a31d17a",
+        "android_client_info": {
+          "package_name": "com.healthtrack.mvp.codemvp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "319560280591-qp2ish9qgq3c47osbk3ooguinhc89rdf.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAFCjgIYAUwUf9Hv4tEaMBi1Wvfn3kVAOI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "319560280591-qp2ish9qgq3c47osbk3ooguinhc89rdf.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

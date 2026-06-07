@@ -52,7 +52,7 @@ class _MainShellState extends ConsumerState<MainShell> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       showWebNotification(
-        '💪 FitNotes 2 Active & Ready!',
+        '💪 Zivo Active & Ready!',
         'Push reminders and notification systems are fully integrated. Stay on track!',
       );
     });
@@ -287,15 +287,7 @@ class _ProfilePlaceholderScreenState
   bool _auraNotificationsEnabled = true;
   bool _systemNotificationsEnabled = true;
 
-  final _key1Controller = TextEditingController();
-  final _key2Controller = TextEditingController();
-  final _key3Controller = TextEditingController();
-  final _openaiKeyController = TextEditingController();
 
-  bool _obscureKey1 = true;
-  bool _obscureKey2 = true;
-  bool _obscureKey3 = true;
-  bool _obscureOpenaiKey = true;
 
   @override
   void initState() {
@@ -326,18 +318,7 @@ class _ProfilePlaceholderScreenState
     _auraNotificationsEnabled = StorageService.getAuraNotificationsEnabled();
     _systemNotificationsEnabled = StorageService.getSystemNotificationsEnabled();
 
-    final geminiKeys = StorageService.getGeminiApiKeys();
-    if (geminiKeys.length >= 3) {
-      _key1Controller.text = geminiKeys[0];
-      _key2Controller.text = geminiKeys[1];
-      _key3Controller.text = geminiKeys[2];
-    } else {
-      if (geminiKeys.isNotEmpty) _key1Controller.text = geminiKeys[0];
-      if (geminiKeys.length > 1) _key2Controller.text = geminiKeys[1];
-      if (geminiKeys.length > 2) _key3Controller.text = geminiKeys[2];
-    }
 
-    _openaiKeyController.text = StorageService.getOpenAiApiKey();
   }
 
   @override
@@ -348,10 +329,7 @@ class _ProfilePlaceholderScreenState
     _ageController.dispose();
     _weightController.dispose();
     _heightController.dispose();
-    _key1Controller.dispose();
-    _key2Controller.dispose();
-    _key3Controller.dispose();
-    _openaiKeyController.dispose();
+
     super.dispose();
   }
 
@@ -412,87 +390,7 @@ class _ProfilePlaceholderScreenState
     }
   }
 
-  Future<void> _saveGeminiKeys() async {
-    final k1 = _key1Controller.text.trim();
-    final k2 = _key2Controller.text.trim();
-    final k3 = _key3Controller.text.trim();
-    final openai = _openaiKeyController.text.trim();
 
-    if (k1.isEmpty || k2.isEmpty || k3.isEmpty || openai.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please ensure all AI key fields are populated.'),
-          backgroundColor: AppTheme.accentCoral,
-        ),
-      );
-      return;
-    }
-
-    await StorageService.saveGeminiApiKeys([k1, k2, k3]);
-    await StorageService.saveOpenAiApiKey(openai);
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Aura AI Keys stored securely!'),
-          backgroundColor: AppTheme.accentEmerald,
-        ),
-      );
-    }
-  }
-
-  Widget _buildSecureKeyField({
-    required TextEditingController controller,
-    required String label,
-    required bool? isObscured,
-    required VoidCallback onToggle,
-    required Color iconColor,
-  }) {
-    final obscured = isObscured ?? true;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final fieldBg = isDark
-        ? AppTheme.obsidianBackground
-        : Colors.black.withOpacity(0.015);
-    final fieldBorder = isDark ? AppTheme.glassBorder : const Color(0xFFEADBFF);
-    final textColor = isDark ? Colors.white : AppTheme.textPrimary;
-
-    return Container(
-      decoration: BoxDecoration(
-        color: fieldBg,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: fieldBorder, width: 1.0),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 1),
-      child: TextField(
-        controller: controller,
-        obscureText: obscured,
-        style: TextStyle(
-          color: textColor,
-          fontWeight: FontWeight.bold,
-          fontSize: 12,
-          letterSpacing: obscured ? 2.0 : 0.0,
-        ),
-        decoration: InputDecoration(
-          icon: Icon(Icons.key_rounded, color: iconColor, size: 16),
-          labelText: label,
-          labelStyle: const TextStyle(
-            color: AppTheme.textSecondary,
-            fontSize: 11,
-          ),
-          suffixIcon: IconButton(
-            icon: Icon(
-              obscured ? Icons.visibility_off_rounded : Icons.visibility_rounded,
-              color: AppTheme.textSecondary,
-              size: 16,
-            ),
-            onPressed: onToggle,
-          ),
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(vertical: 4),
-        ),
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -864,143 +762,7 @@ class _ProfilePlaceholderScreenState
                 ],
               ),
             ),
-            const SizedBox(height: 32),
 
-            // Gemini & ChatGPT API Keys Manager
-            const Text(
-              'Aura AI Credentials Manager',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w900,
-                color: Colors.white,
-                letterSpacing: -0.5,
-              ),
-            ),
-            const SizedBox(height: 4),
-            const Text(
-              'App securely rotates backup Gemini keys, and calls ChatGPT for rate-limit bypasses.',
-              style: TextStyle(
-                color: AppTheme.textSecondary,
-                fontSize: 12,
-              ),
-            ),
-            const SizedBox(height: 16),
-            GlassCard(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'SECURE ENDPOINT CREDENTIALS',
-                    style: TextStyle(
-                      color: AppTheme.textSecondary,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.0,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // ChatGPT Key Field (Primary High Availability)
-                  _buildSecureKeyField(
-                    controller: _openaiKeyController,
-                    label: 'ChatGPT API Key (Active)',
-                    isObscured: _obscureOpenaiKey,
-                    onToggle: () {
-                      setState(() {
-                        _obscureOpenaiKey = !_obscureOpenaiKey;
-                      });
-                    },
-                    iconColor: AppTheme.accentEmerald,
-                  ),
-                  const SizedBox(height: 16),
-                  const Divider(color: AppTheme.glassBorder, height: 1),
-                  const SizedBox(height: 16),
-
-                  const Text(
-                    'BACKUP ROTATION ENDPOINTS (GEMINI)',
-                    style: TextStyle(
-                      color: AppTheme.textSecondary,
-                      fontSize: 9,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.0,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  
-                  // Key 1 Field
-                  _buildSecureKeyField(
-                    controller: _key1Controller,
-                    label: 'Backup Gemini Key 1',
-                    isObscured: _obscureKey1,
-                    onToggle: () {
-                      setState(() {
-                        _obscureKey1 = !_obscureKey1;
-                      });
-                    },
-                    iconColor: AppTheme.accentCyan,
-                  ),
-                  const SizedBox(height: 12),
-                  
-                  // Key 2 Field
-                  _buildSecureKeyField(
-                    controller: _key2Controller,
-                    label: 'Backup Gemini Key 2',
-                    isObscured: _obscureKey2,
-                    onToggle: () {
-                      setState(() {
-                        _obscureKey2 = !_obscureKey2;
-                      });
-                    },
-                    iconColor: AppTheme.accentPurple,
-                  ),
-                  const SizedBox(height: 12),
-                  
-                  // Key 3 Field
-                  _buildSecureKeyField(
-                    controller: _key3Controller,
-                    label: 'Backup Gemini Key 3',
-                    isObscured: _obscureKey3,
-                    onToggle: () {
-                      setState(() {
-                        _obscureKey3 = !_obscureKey3;
-                      });
-                    },
-                    iconColor: AppTheme.accentOrange,
-                  ),
-                  
-                  const SizedBox(height: 20),
-                  GestureDetector(
-                    onTap: _saveGeminiKeys,
-                    child: Container(
-                      width: double.infinity,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        color: AppTheme.accentCyan,
-                        borderRadius: BorderRadius.circular(14),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppTheme.accentCyan.withOpacity(0.15),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: const Center(
-                        child: Text(
-                          'Save & Encrypt Keys',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
             const SizedBox(height: 32),
 
             // Reminders Section
@@ -1056,7 +818,7 @@ class _ProfilePlaceholderScreenState
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Aura AI Alerts',
+                            'Zivo AI Alerts',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 15,

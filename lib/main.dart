@@ -5,6 +5,7 @@ import 'core/theme.dart';
 import 'services/storage_service.dart';
 import 'services/router_service.dart';
 import 'services/state_providers.dart';
+import 'firebase_options.dart';
 
 void main() async {
   // Ensure framework services are initialized
@@ -12,7 +13,9 @@ void main() async {
 
   // Initialize Firebase with fallback safety if configs are not populated yet
   try {
-    await Firebase.initializeApp();
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
   } catch (e) {
     debugPrint("Firebase initialization warning (expected if google-services.json is missing): $e");
   }
@@ -31,7 +34,7 @@ class MyApp extends ConsumerWidget {
     final themeMode = ref.watch(themeModeProvider);
 
     return MaterialApp.router(
-      title: 'FitNotes 2',
+      title: 'Zivo',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
