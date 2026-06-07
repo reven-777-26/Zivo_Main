@@ -13,6 +13,7 @@ import 'dashboard_screen.dart';
 import 'workout_screen.dart';
 import 'scanner_screen.dart';
 import 'progress_screen.dart';
+import '../../services/ai_backend_service.dart';
 
 class MainShell extends ConsumerStatefulWidget {
   const MainShell({super.key});
@@ -286,6 +287,8 @@ class _ProfilePlaceholderScreenState
   String _selectedActivityLevel = 'moderate';
   bool _auraNotificationsEnabled = true;
   bool _systemNotificationsEnabled = true;
+  String? _healthCheckResult;
+  bool _isLoadingHealthCheck = false;
 
 
 
@@ -922,6 +925,107 @@ class _ProfilePlaceholderScreenState
                           val ? ThemeMode.dark : ThemeMode.light;
                     },
                   ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 32),
+            const Text(
+              'AI Backend Integration',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w900,
+                color: Colors.white,
+                letterSpacing: -0.5,
+              ),
+            ),
+            const SizedBox(height: 16),
+            GlassCard(
+              width: double.infinity,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Verification test for Flutter ↔ Firebase Cloud Functions connection using Secure Secret Manager.',
+                    style: TextStyle(
+                      color: AppTheme.textSecondary,
+                      fontSize: 13,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  GestureDetector(
+                    onTap: _isLoadingHealthCheck
+                        ? null
+                        : () async {
+                            setState(() {
+                              _isLoadingHealthCheck = true;
+                              _healthCheckResult = null;
+                            });
+                            final result = await AIBackendService.healthCheckAI();
+                            if (mounted) {
+                              setState(() {
+                                _isLoadingHealthCheck = false;
+                                _healthCheckResult = result.toString();
+                              });
+                            }
+                          },
+                    child: Container(
+                      width: double.infinity,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        gradient: AppTheme.primaryGradient,
+                        borderRadius: BorderRadius.circular(14),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppTheme.accentCyan.withOpacity(0.15),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Center(
+                        child: _isLoadingHealthCheck
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor:
+                                      AlwaysStoppedAnimation<Color>(Colors.white),
+                                ),
+                              )
+                            : const Text(
+                                'Run healthCheckAI()',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                      ),
+                    ),
+                  ),
+                  if (_healthCheckResult != null) ...[
+                    const SizedBox(height: 16),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.3),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: AppTheme.glassBorder,
+                          width: 1,
+                        ),
+                      ),
+                      child: Text(
+                        _healthCheckResult!,
+                        style: const TextStyle(
+                          color: AppTheme.accentCyan,
+                          fontFamily: 'monospace',
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),

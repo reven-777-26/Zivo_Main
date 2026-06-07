@@ -1,7 +1,7 @@
 import 'dart:async';
-import 'dart:js' as js;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import '../utils/web_notification_helper.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../models/user_profile.dart';
@@ -22,24 +22,7 @@ class NotificationManager {
 void showWebNotification(String title, String body) {
   NotificationManager.trigger(title, body);
   if (kIsWeb) {
-    try {
-      js.context.callMethod('eval', [
-        """
-        if (window.Notification) {
-          Notification.requestPermission().then(function(permission) {
-            if (permission === 'granted') {
-              new Notification('$title', {
-                body: '$body',
-                icon: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCoqjP7BFZ5G58JZ9dWkY7i2nuxlXG22yw4_kp_tZDq9_LFlGpDXZN7CW3mbIisWHeikqi3HAtRW3GIE3Yv25gBdC20K-f5kYqQWbCYwr59BI8F9VS5Px2JuUIN1vtuKG2z93p-pIAb6Ea3-53UcUQzDXCzvR9Ar7P2inSnzRzOu5DHjU442uippjL0VveOFZ3BBk_TEVeMPIfcupH3xh7AswuFV2aHm9hmqFljLzwDutvFMQRHy3SZzrRekzi82S15S4nTDmbypbM'
-              });
-            }
-          });
-        }
-        """
-      ]);
-    } catch (e) {
-      debugPrint('Web Notification error: $e');
-    }
+    showWebNotificationPlatform(title, body);
   }
 }
 
@@ -289,7 +272,9 @@ class DailyMetricsNotifier extends StateNotifier<Map<String, dynamic>> {
     required int carbs,
     required int fat,
     String? foodName,
+    String? imageUrl,
   }) async {
+    debugPrint("STATE PROVIDER: logMeal called for $foodName with imageUrl length: ${imageUrl?.length ?? 0}");
     final metrics = StorageService.getDailyMetrics(dateStr);
     metrics[mealKey] = (metrics[mealKey] ?? 0) + calories;
     metrics['protein'] = (metrics['protein'] ?? 0) + protein;
@@ -315,6 +300,7 @@ class DailyMetricsNotifier extends StateNotifier<Map<String, dynamic>> {
         'fat': fat,
         'meal': mealLabel,
         'time': timestamp,
+        if (imageUrl != null) 'imageUrl': imageUrl,
       });
       metrics['logged_items'] = items;
     }

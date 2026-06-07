@@ -12,6 +12,7 @@ import '../../services/storage_service.dart';
 import '../../utils/image_picker_helper.dart';
 import '../../services/scanner/ai_analysis_service.dart';
 import 'food_history_screen.dart';
+import 'food_logger_dialog.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -495,13 +496,29 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text(
-                  'Daily Goal Completion',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: -0.5,
-                  ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Daily Goal Completion',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: () => _showEditDailyGoalDialog(context, selectedDate),
+                      child: const Text(
+                        'Edit',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.accentCyan,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 12),
 
@@ -792,7 +809,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             icon: Icons.restaurant_rounded,
             color: AppTheme.accentCyan,
             onTap: () {
-              _showAddFoodBottomSheet(context, 'Meal Log', 'breakfast_cal', selectedDate);
+              showDialog(
+                context: context,
+                builder: (context) => const FoodLoggerDialog(),
+              );
             },
           ),
         ),
@@ -910,6 +930,28 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           foodThumbUrl = 'https://lh3.googleusercontent.com/aida-public/AB6AXuAu02ztHCanw1Xo-CIsQxvODCtZXuuPSSm0Kn4ZGG3jNSR0Ffx2Q5Q9ezBZymakx28NRatfkqbjwoU2ihTQJwLgBDIWKsZzvnBRAMkgG0j6Uz0sH5-uofS3PGDzF4acLg4DHNPPHAbQwbos-7Bq3B_mc5XWzCQt_0oXTJ1EXjvahwLqze45OL8C5aVKdO-10SRju8l4451S6qP7FBAwNzwklV4Ek-SVdF9fmeejvW_NNhv5bnuC8itvhdJkQLn1txc5IlKWvspYzec';
         }
 
+        final String? customImageUrl = item['imageUrl'];
+        ImageProvider imageProvider;
+        if (customImageUrl != null && customImageUrl.isNotEmpty) {
+          if (customImageUrl.startsWith('http')) {
+            imageProvider = NetworkImage(customImageUrl);
+          } else {
+            try {
+              String cleaned = customImageUrl;
+              final commaIndex = cleaned.indexOf(',');
+              if (commaIndex != -1) {
+                cleaned = cleaned.substring(commaIndex + 1);
+              }
+              cleaned = cleaned.replaceAll(RegExp(r'\s+'), '');
+              imageProvider = MemoryImage(base64Decode(cleaned));
+            } catch (e) {
+              imageProvider = NetworkImage(foodThumbUrl);
+            }
+          }
+        } else {
+          imageProvider = NetworkImage(foodThumbUrl);
+        }
+
         return Container(
           margin: const EdgeInsets.only(bottom: 10),
           child: GestureDetector(
@@ -926,7 +968,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: Colors.white.withOpacity(0.06), width: 1.0),
                       image: DecorationImage(
-                        image: NetworkImage(foodThumbUrl),
+                        image: imageProvider,
                         fit: BoxFit.cover,
                       ),
                     ),
@@ -991,335 +1033,1243 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  void _showFoodDetailsDialog(BuildContext context, Map<String, dynamic> item) {
-    final String name = item['name'] ?? 'Logged Meal';
-    final String meal = item['meal'] ?? 'MEAL';
+  Future<dynamic> _showFoodDetailsDialog(BuildContext context, Map<String, dynamic> item, {bool startInEditMode = false}) {
+    final String initialName = item['name'] ?? 'Logged Meal';
+    final String initialMeal = item['meal'] ?? 'MEAL';
     final String time = item['time'] ?? '8:00 AM';
-    final int calories = item['calories'] ?? 0;
-    final int protein = item['protein'] ?? 0;
-    final int carbs = item['carbs'] ?? 0;
-    final int fat = item['fat'] ?? 0;
+    final int initialCalories = item['calories'] ?? 0;
+    final int initialProtein = item['protein'] ?? 0;
+    final int initialCarbs = item['carbs'] ?? 0;
+    final int initialFat = item['fat'] ?? 0;
+
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final nameController = TextEditingController(text: initialName);
+    final calController = TextEditingController(text: initialCalories.toString());
+    final proteinController = TextEditingController(text: initialProtein.toString());
+    final carbsController = TextEditingController(text: initialCarbs.toString());
+    final fatController = TextEditingController(text: initialFat.toString());
+
+    String initialMealKey = 'snacks_cal';
+    final String upperMeal = initialMeal.toUpperCase();
+    if (upperMeal == 'BREAKFAST') {
+      initialMealKey = 'breakfast_cal';
+    } else if (upperMeal == 'LUNCH') {
+      initialMealKey = 'lunch_cal';
+    } else if (upperMeal == 'DINNER') {
+      initialMealKey = 'dinner_cal';
+    } else if (upperMeal == 'SNACKS') {
+      initialMealKey = 'snacks_cal';
+    } else if (upperMeal == 'EATING OUT' || upperMeal == 'OUTSIDE FOOD') {
+      initialMealKey = 'outside_food_cal';
+    }
+
+    String selectedMealKey = initialMealKey;
+    bool isEditing = startInEditMode;
+
+    return showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            final categories = [
+              {'name': 'Breakfast', 'key': 'breakfast_cal', 'icon': Icons.egg_rounded},
+              {'name': 'Lunch', 'key': 'lunch_cal', 'icon': Icons.restaurant_rounded},
+              {'name': 'Dinner', 'key': 'dinner_cal', 'icon': Icons.soup_kitchen_rounded},
+              {'name': 'Snacks', 'key': 'snacks_cal', 'icon': Icons.bakery_dining_rounded},
+              {'name': 'Eating Out', 'key': 'outside_food_cal', 'icon': Icons.delivery_dining_rounded},
+            ];
+
+            return Dialog(
+              backgroundColor: Colors.transparent,
+              insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(28),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xEC090E18) : Colors.white,
+                      borderRadius: BorderRadius.circular(28),
+                      border: Border.all(
+                        color: isDark ? AppTheme.glassBorder : const Color(0xFFEADBFF),
+                        width: 1.5,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppTheme.accentCyan.withOpacity(0.12),
+                          blurRadius: 30,
+                          spreadRadius: 2,
+                        ),
+                      ],
+                    ),
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Header Row: Close Button & Category (or Category selector in edit mode)
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            if (!isEditing)
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                                decoration: BoxDecoration(
+                                  color: AppTheme.accentPurple.withOpacity(0.08),
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(
+                                    color: AppTheme.accentPurple.withOpacity(0.3),
+                                    width: 1.2,
+                                  ),
+                                ),
+                                child: Text(
+                                  selectedMealKey == 'outside_food_cal'
+                                      ? 'EATING OUT'
+                                      : selectedMealKey.replaceAll('_cal', '').replaceAll('_', ' ').toUpperCase(),
+                                  style: const TextStyle(
+                                    color: AppTheme.accentPurple,
+                                    fontWeight: FontWeight.w900,
+                                    fontSize: 10,
+                                    letterSpacing: 0.8,
+                                  ),
+                                ),
+                              )
+                            else
+                              const Text(
+                                'EDIT ENTRY',
+                                style: TextStyle(
+                                  color: AppTheme.accentPurple,
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 11,
+                                  letterSpacing: 1.0,
+                                ),
+                              ),
+                            // Close button
+                            GestureDetector(
+                              onTap: () => Navigator.of(context).pop(),
+                              child: Container(
+                                padding: const EdgeInsets.all(6),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.04),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.close_rounded,
+                                  color: AppTheme.textSecondary,
+                                  size: 18,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 18),
+
+                        if (isEditing) ...[
+                          const Text(
+                            'MEAL CATEGORY',
+                            style: TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 1.0,
+                              color: AppTheme.textSecondary,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Wrap(
+                            spacing: 6,
+                            runSpacing: 6,
+                            children: categories.map((cat) {
+                              final isSelected = selectedMealKey == cat['key'];
+                              return ChoiceChip(
+                                label: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      cat['icon'] as IconData,
+                                      size: 11,
+                                      color: isSelected ? Colors.black : Colors.white70,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      cat['name'] as String,
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                        color: isSelected ? Colors.black : Colors.white70,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                selected: isSelected,
+                                selectedColor: AppTheme.accentCyan,
+                                backgroundColor: Colors.white.withOpacity(0.03),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                  side: BorderSide(
+                                    color: isSelected
+                                        ? AppTheme.accentCyan
+                                        : Colors.white.withOpacity(0.08),
+                                  ),
+                                ),
+                                showCheckmark: false,
+                                onSelected: (selected) {
+                                  if (selected) {
+                                    setState(() {
+                                      selectedMealKey = cat['key'] as String;
+                                    });
+                                  }
+                                },
+                              );
+                            }).toList(),
+                          ),
+                          const SizedBox(height: 16),
+                        ],
+
+                        // Meal Name (Text or TextField)
+                        if (!isEditing)
+                          Text(
+                            nameController.text,
+                            style: TextStyle(
+                              color: isDark ? Colors.white : AppTheme.textPrimary,
+                              fontSize: 20,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: -0.5,
+                            ),
+                          )
+                        else ...[
+                          const Text(
+                            'FOOD NAME',
+                            style: TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 1.0,
+                              color: AppTheme.textSecondary,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          TextField(
+                            controller: nameController,
+                            style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+                            decoration: InputDecoration(
+                              filled: true,
+                              fillColor: Colors.white.withOpacity(0.02),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(14),
+                                borderSide: BorderSide(color: Colors.white.withOpacity(0.08)),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(14),
+                                borderSide: BorderSide(color: Colors.white.withOpacity(0.08)),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(14),
+                                borderSide: const BorderSide(color: AppTheme.accentCyan),
+                              ),
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 8),
+
+                        // Time indicator row (only show if not editing)
+                        if (!isEditing)
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.access_time_rounded,
+                                color: AppTheme.textSecondary,
+                                size: 13,
+                              ),
+                              const SizedBox(width: 5),
+                              Text(
+                                'Logged at $time',
+                                style: const TextStyle(
+                                  color: AppTheme.textSecondary,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+
+                        if (item['imageUrl'] != null && (item['imageUrl'] as String).isNotEmpty) ...[
+                          const SizedBox(height: 16),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(16),
+                            child: Container(
+                              width: double.infinity,
+                              height: 140,
+                              decoration: BoxDecoration(
+                                border: Border.all(
+                                  color: Colors.white.withOpacity(0.06),
+                                ),
+                              ),
+                              child: () {
+                                final imgStr = item['imageUrl'] as String;
+                                if (imgStr.startsWith('http')) {
+                                  return Image.network(imgStr, fit: BoxFit.cover);
+                                }
+                                try {
+                                  String cleaned = imgStr;
+                                  final commaIndex = cleaned.indexOf(',');
+                                  if (commaIndex != -1) {
+                                    cleaned = cleaned.substring(commaIndex + 1);
+                                  }
+                                  cleaned = cleaned.replaceAll(RegExp(r'\s+'), '');
+                                  return Image.memory(base64Decode(cleaned), fit: BoxFit.cover);
+                                } catch (e) {
+                                  return const Center(
+                                    child: Icon(Icons.broken_image_rounded, color: AppTheme.accentCoral),
+                                  );
+                                }
+                              }(),
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 20),
+
+                        // Bento-Grid of Calories (or TextField in edit mode)
+                        if (!isEditing)
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                            decoration: BoxDecoration(
+                              color: AppTheme.accentCyan.withOpacity(0.06),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: AppTheme.accentCyan.withOpacity(0.25),
+                                width: 1.2,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        color: AppTheme.accentCyan.withOpacity(0.12),
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      child: const Icon(
+                                        Icons.local_fire_department_rounded,
+                                        color: AppTheme.accentCyan,
+                                        size: 20,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: const [
+                                        Text(
+                                          'CALORIES',
+                                          style: TextStyle(
+                                            color: AppTheme.textSecondary,
+                                            fontSize: 9,
+                                            fontWeight: FontWeight.w900,
+                                            letterSpacing: 0.8,
+                                          ),
+                                        ),
+                                        Text(
+                                          'Energy Output',
+                                          style: TextStyle(
+                                            color: AppTheme.textSecondary,
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                                Text(
+                                  '${calController.text} kcal',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        else ...[
+                          const Text(
+                            'CALORIES',
+                            style: TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 1.0,
+                              color: AppTheme.textSecondary,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          TextField(
+                            controller: calController,
+                            keyboardType: TextInputType.number,
+                            style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+                            decoration: InputDecoration(
+                              filled: true,
+                              fillColor: Colors.white.withOpacity(0.02),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                              suffixText: ' kcal',
+                              suffixStyle: const TextStyle(color: AppTheme.textSecondary, fontSize: 12),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(14),
+                                borderSide: BorderSide(color: Colors.white.withOpacity(0.08)),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(14),
+                                borderSide: BorderSide(color: Colors.white.withOpacity(0.08)),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(14),
+                                borderSide: const BorderSide(color: AppTheme.accentCyan),
+                              ),
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 12),
+
+                        // Macros Splits
+                        if (!isEditing)
+                          Row(
+                            children: [
+                              Expanded(child: _buildDetailMacroCard('PROTEIN', '${proteinController.text}g', AppTheme.accentOrange, Icons.egg_rounded)),
+                              const SizedBox(width: 8),
+                              Expanded(child: _buildDetailMacroCard('CARBS', '${carbsController.text}g', AppTheme.accentCyan, Icons.bakery_dining_rounded)),
+                              const SizedBox(width: 8),
+                              Expanded(child: _buildDetailMacroCard('FAT', '${fatController.text}g', AppTheme.accentCoral, Icons.water_drop_rounded)),
+                            ],
+                          )
+                        else ...[
+                          const Text(
+                            'MACRONUTRIENTS (G)',
+                            style: TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 1.0,
+                              color: AppTheme.textSecondary,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Row(
+                            children: [
+                              Expanded(child: _buildMiniEditField("Protein", proteinController)),
+                              const SizedBox(width: 8),
+                              Expanded(child: _buildMiniEditField("Carbs", carbsController)),
+                              const SizedBox(width: 8),
+                              Expanded(child: _buildMiniEditField("Fat", fatController)),
+                            ],
+                          ),
+                        ],
+
+                        const SizedBox(height: 24),
+
+                        // Buttons section
+                        if (!isEditing)
+                          Row(
+                            children: [
+                              Expanded(
+                                child: GestureDetector(
+                                  onTap: () async {
+                                    final selectedDate = ref.read(selectedDateProvider);
+                                    final currentMetrics = ref.read(dailyMetricsProvider(selectedDate));
+                                    final updatedMetrics = Map<String, dynamic>.from(currentMetrics);
+
+                                    final List<dynamic> loggedItems = List<dynamic>.from(updatedMetrics['logged_items'] ?? []);
+                                    int removeIndex = -1;
+                                    for (int i = 0; i < loggedItems.length; i++) {
+                                      final currentItem = loggedItems[i];
+                                      if (currentItem['name'] == item['name'] &&
+                                          currentItem['calories'] == item['calories'] &&
+                                          currentItem['protein'] == item['protein'] &&
+                                          currentItem['carbs'] == item['carbs'] &&
+                                          currentItem['fat'] == item['fat'] &&
+                                          currentItem['meal'] == item['meal'] &&
+                                          currentItem['time'] == item['time']) {
+                                        removeIndex = i;
+                                        break;
+                                      }
+                                    }
+
+                                    if (removeIndex != -1) {
+                                      loggedItems.removeAt(removeIndex);
+                                      updatedMetrics['logged_items'] = loggedItems;
+
+                                      updatedMetrics[initialMealKey] = ((updatedMetrics[initialMealKey] ?? 0) - initialCalories).clamp(0, 999999);
+                                      updatedMetrics['protein'] = ((updatedMetrics['protein'] ?? 0) - initialProtein).clamp(0, 999999);
+                                      updatedMetrics['carbs'] = ((updatedMetrics['carbs'] ?? 0) - initialCarbs).clamp(0, 999999);
+                                      updatedMetrics['fat'] = ((updatedMetrics['fat'] ?? 0) - initialFat).clamp(0, 999999);
+
+                                      await ref.read(dailyMetricsProvider(selectedDate).notifier).saveMetrics(updatedMetrics);
+
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          backgroundColor: AppTheme.accentCoral,
+                                          content: Text("Deleted entry: ${initialName}"),
+                                        ),
+                                      );
+                                    }
+                                    Navigator.of(context).pop();
+                                  },
+                                  child: Container(
+                                    height: 46,
+                                    decoration: BoxDecoration(
+                                      color: AppTheme.accentCoral.withOpacity(0.12),
+                                      borderRadius: BorderRadius.circular(14),
+                                      border: Border.all(
+                                        color: AppTheme.accentCoral.withOpacity(0.3),
+                                        width: 1.2,
+                                      ),
+                                    ),
+                                    child: const Center(
+                                      child: Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Icon(Icons.delete_outline_rounded, color: AppTheme.accentCoral, size: 18),
+                                          SizedBox(width: 8),
+                                          Text(
+                                            "Delete",
+                                            style: TextStyle(
+                                              color: AppTheme.accentCoral,
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      isEditing = true;
+                                    });
+                                  },
+                                  child: Container(
+                                    height: 46,
+                                    decoration: BoxDecoration(
+                                      color: AppTheme.accentCyan.withOpacity(0.12),
+                                      borderRadius: BorderRadius.circular(14),
+                                      border: Border.all(
+                                        color: AppTheme.accentCyan.withOpacity(0.3),
+                                        width: 1.2,
+                                      ),
+                                    ),
+                                    child: const Center(
+                                      child: Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Icon(Icons.edit_rounded, color: AppTheme.accentCyan, size: 18),
+                                          SizedBox(width: 8),
+                                          Text(
+                                            "Edit Entry",
+                                            style: TextStyle(
+                                              color: AppTheme.accentCyan,
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          )
+                        else
+                          Row(
+                            children: [
+                              Expanded(
+                                child: GestureDetector(
+                                  onTap: () {
+                                    if (startInEditMode) {
+                                      Navigator.of(context).pop();
+                                    } else {
+                                      setState(() {
+                                        isEditing = false;
+                                        // Reset fields
+                                        nameController.text = initialName;
+                                        calController.text = initialCalories.toString();
+                                        proteinController.text = initialProtein.toString();
+                                        carbsController.text = initialCarbs.toString();
+                                        fatController.text = initialFat.toString();
+                                        selectedMealKey = initialMealKey;
+                                      });
+                                    }
+                                  },
+                                  child: Container(
+                                    height: 46,
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(0.04),
+                                      borderRadius: BorderRadius.circular(14),
+                                      border: Border.all(
+                                        color: Colors.white.withOpacity(0.08),
+                                        width: 1.2,
+                                      ),
+                                    ),
+                                    child: const Center(
+                                      child: Text(
+                                        "Cancel",
+                                        style: TextStyle(
+                                          color: AppTheme.textSecondary,
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: GestureDetector(
+                                  onTap: () async {
+                                    final selectedDate = ref.read(selectedDateProvider);
+                                    final currentMetrics = ref.read(dailyMetricsProvider(selectedDate));
+                                    final updatedMetrics = Map<String, dynamic>.from(currentMetrics);
+
+                                    final String newName = nameController.text.trim();
+                                    final int newCal = int.tryParse(calController.text) ?? 0;
+                                    final int newProt = int.tryParse(proteinController.text) ?? 0;
+                                    final int newCarb = int.tryParse(carbsController.text) ?? 0;
+                                    final int newFat = int.tryParse(fatController.text) ?? 0;
+
+                                    final List<dynamic> loggedItems = List<dynamic>.from(updatedMetrics['logged_items'] ?? []);
+                                    int updateIndex = -1;
+                                    for (int i = 0; i < loggedItems.length; i++) {
+                                      final currentItem = loggedItems[i];
+                                      if (currentItem['name'] == item['name'] &&
+                                          currentItem['calories'] == item['calories'] &&
+                                          currentItem['protein'] == item['protein'] &&
+                                          currentItem['carbs'] == item['carbs'] &&
+                                          currentItem['fat'] == item['fat'] &&
+                                          currentItem['meal'] == item['meal'] &&
+                                          currentItem['time'] == item['time']) {
+                                        updateIndex = i;
+                                        break;
+                                      }
+                                    }
+
+                                    if (updateIndex != -1) {
+                                      // 1. Subtract original values from daily totals
+                                      updatedMetrics[initialMealKey] = ((updatedMetrics[initialMealKey] ?? 0) - initialCalories).clamp(0, 999999);
+                                      updatedMetrics['protein'] = ((updatedMetrics['protein'] ?? 0) - initialProtein).clamp(0, 999999);
+                                      updatedMetrics['carbs'] = ((updatedMetrics['carbs'] ?? 0) - initialCarbs).clamp(0, 999999);
+                                      updatedMetrics['fat'] = ((updatedMetrics['fat'] ?? 0) - initialFat).clamp(0, 999999);
+
+                                      // 2. Add new values to daily totals
+                                      updatedMetrics[selectedMealKey] = ((updatedMetrics[selectedMealKey] ?? 0) + newCal).clamp(0, 999999);
+                                      updatedMetrics['protein'] = ((updatedMetrics['protein'] ?? 0) + newProt).clamp(0, 999999);
+                                      updatedMetrics['carbs'] = ((updatedMetrics['carbs'] ?? 0) + newCarb).clamp(0, 999999);
+                                      updatedMetrics['fat'] = ((updatedMetrics['fat'] ?? 0) + newFat).clamp(0, 999999);
+
+                                      // 3. Update logged item entry
+                                      final String newMealLabel = selectedMealKey == 'outside_food_cal'
+                                          ? 'EATING OUT'
+                                          : selectedMealKey.replaceAll('_cal', '').replaceAll('_', ' ').toUpperCase();
+
+                                      loggedItems[updateIndex] = {
+                                        ...loggedItems[updateIndex],
+                                        'name': newName.isNotEmpty ? newName : "Logged Meal",
+                                        'calories': newCal,
+                                        'protein': newProt,
+                                        'carbs': newCarb,
+                                        'fat': newFat,
+                                        'meal': newMealLabel,
+                                      };
+                                      updatedMetrics['logged_items'] = loggedItems;
+
+                                      await ref.read(dailyMetricsProvider(selectedDate).notifier).saveMetrics(updatedMetrics);
+
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                          backgroundColor: AppTheme.accentEmerald,
+                                          content: Text("Updated entry successfully!"),
+                                        ),
+                                      );
+                                    }
+                                    Navigator.of(context).pop();
+                                  },
+                                  child: Container(
+                                    height: 46,
+                                    decoration: BoxDecoration(
+                                      gradient: AppTheme.primaryGradient,
+                                      borderRadius: BorderRadius.circular(14),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: AppTheme.accentCyan.withOpacity(0.15),
+                                          blurRadius: 8,
+                                          offset: const Offset(0, 3),
+                                        ),
+                                      ],
+                                    ),
+                                    child: const Center(
+                                      child: Text(
+                                        "Save Changes",
+                                        style: TextStyle(
+                                          color: Colors.black,
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildDetailMacroCard(String label, String val, Color col, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 14),
+      decoration: BoxDecoration(
+        color: col.withOpacity(0.06),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: col.withOpacity(0.2),
+          width: 1.2,
+        ),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, color: col, size: 16),
+          const SizedBox(height: 6),
+          Text(
+            label,
+            style: const TextStyle(
+              color: AppTheme.textSecondary,
+              fontSize: 8,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 0.5,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            val,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 14,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMiniEditField(String label, TextEditingController controller) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 9,
+            color: AppTheme.textSecondary,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 4),
+        TextField(
+          controller: controller,
+          keyboardType: TextInputType.number,
+          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: Colors.white.withOpacity(0.02),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Edit Daily Goal Dialog
+  void _showEditDailyGoalDialog(BuildContext context, String dateStr) {
+    final currentMetrics = ref.read(dailyMetricsProvider(dateStr));
+    final breakfastController = TextEditingController(text: (currentMetrics['breakfast_cal'] ?? 0).toString());
+    final lunchController = TextEditingController(text: (currentMetrics['lunch_cal'] ?? 0).toString());
+    final dinnerController = TextEditingController(text: (currentMetrics['dinner_cal'] ?? 0).toString());
+    final snacksController = TextEditingController(text: (currentMetrics['snacks_cal'] ?? 0).toString());
+    final outsideFoodController = TextEditingController(text: (currentMetrics['outside_food_cal'] ?? 0).toString());
+    final proteinController = TextEditingController(text: (currentMetrics['protein'] ?? 0).toString());
+    final carbsController = TextEditingController(text: (currentMetrics['carbs'] ?? 0).toString());
+    final fatController = TextEditingController(text: (currentMetrics['fat'] ?? 0).toString());
+    final waterController = TextEditingController(text: (currentMetrics['water'] ?? 0).toString());
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     showDialog(
       context: context,
       builder: (context) {
-        return Dialog(
-          backgroundColor: Colors.transparent,
-          insetPadding: const EdgeInsets.symmetric(horizontal: 24),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(28),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: isDark ? const Color(0xEC090E18) : Colors.white,
-                  borderRadius: BorderRadius.circular(28),
-                  border: Border.all(
-                    color: isDark ? AppTheme.glassBorder : const Color(0xFFEADBFF),
-                    width: 1.5,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppTheme.accentCyan.withOpacity(0.12),
-                      blurRadius: 30,
-                      spreadRadius: 2,
-                    ),
-                  ],
-                ),
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Header Row: Close Button & Category
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        // Glowing Category Badge
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                          decoration: BoxDecoration(
-                            color: AppTheme.accentPurple.withOpacity(0.08),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: AppTheme.accentPurple.withOpacity(0.3),
-                              width: 1.2,
-                            ),
-                          ),
-                          child: Text(
-                            meal,
-                            style: const TextStyle(
-                              color: AppTheme.accentPurple,
-                              fontWeight: FontWeight.w900,
-                              fontSize: 10,
-                              letterSpacing: 0.8,
-                            ),
-                          ),
-                        ),
-                        // Close button
-                        GestureDetector(
-                          onTap: () => Navigator.of(context).pop(),
-                          child: Container(
-                            padding: const EdgeInsets.all(6),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.04),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.close_rounded,
-                              color: AppTheme.textSecondary,
-                              size: 18,
-                            ),
-                          ),
+        return StatefulBuilder(
+          builder: (context, setState) {
+            final latestMetrics = ref.read(dailyMetricsProvider(dateStr));
+            final List<dynamic> loggedItems = latestMetrics['logged_items'] ?? [];
+
+            IconData getMealIcon(String meal) {
+              final upper = meal.toUpperCase();
+              if (upper == 'BREAKFAST') return Icons.egg_rounded;
+              if (upper == 'LUNCH') return Icons.restaurant_rounded;
+              if (upper == 'DINNER') return Icons.soup_kitchen_rounded;
+              if (upper == 'SNACKS') return Icons.bakery_dining_rounded;
+              return Icons.delivery_dining_rounded;
+            }
+
+            return Dialog(
+              backgroundColor: Colors.transparent,
+              insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(28),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                  child: Container(
+                    constraints: const BoxConstraints(maxWidth: 460),
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xEC090E18) : Colors.white.withOpacity(0.95),
+                      borderRadius: BorderRadius.circular(28),
+                      border: Border.all(
+                        color: isDark ? AppTheme.glassBorder : const Color(0xFFEADBFF),
+                        width: 1.5,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppTheme.accentCyan.withOpacity(0.12),
+                          blurRadius: 30,
+                          spreadRadius: 2,
                         ),
                       ],
                     ),
-                    const SizedBox(height: 18),
-
-                    // Meal Name
-                    Text(
-                      name,
-                      style: TextStyle(
-                        color: isDark ? Colors.white : AppTheme.textPrimary,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: -0.5,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-
-                    // Time indicator row
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.access_time_rounded,
-                          color: AppTheme.textSecondary,
-                          size: 13,
-                        ),
-                        const SizedBox(width: 5),
-                        Text(
-                          'Logged at $time',
-                          style: const TextStyle(
-                            color: AppTheme.textSecondary,
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-
-                    // Bento-Grid of Nutrients
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 18),
-                      decoration: BoxDecoration(
-                        color: AppTheme.accentCyan.withOpacity(0.06),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: AppTheme.accentCyan.withOpacity(0.25),
-                          width: 1.2,
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    padding: const EdgeInsets.all(24),
+                    child: SingleChildScrollView(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: AppTheme.accentCyan.withOpacity(0.12),
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: const Icon(
-                                  Icons.local_fire_department_rounded,
-                                  color: AppTheme.accentCyan,
-                                  size: 20,
-                                ),
-                              ),
-                              const SizedBox(width: 12),
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
-                                children: const [
+                                children: [
                                   Text(
-                                    'CALORIES',
+                                    'Edit Daily Metrics',
                                     style: TextStyle(
-                                      color: AppTheme.textSecondary,
-                                      fontSize: 9,
+                                      fontSize: 20,
                                       fontWeight: FontWeight.w900,
-                                      letterSpacing: 0.8,
+                                      letterSpacing: -0.5,
+                                      color: isDark ? Colors.white : AppTheme.textPrimary,
                                     ),
                                   ),
-                                  Text(
-                                    'Energy Output',
+                                  const SizedBox(height: 2),
+                                  const Text(
+                                    'Manual overrides for the selected day',
                                     style: TextStyle(
                                       color: AppTheme.textSecondary,
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w500,
+                                      fontSize: 11,
                                     ),
                                   ),
                                 ],
                               ),
+                              GestureDetector(
+                                onTap: () => Navigator.of(context).pop(),
+                                child: Container(
+                                  padding: const EdgeInsets.all(6),
+                                  decoration: BoxDecoration(
+                                    color: isDark ? Colors.white.withOpacity(0.04) : Colors.black.withOpacity(0.04),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(
+                                    Icons.close_rounded,
+                                    color: AppTheme.textSecondary,
+                                    size: 18,
+                                  ),
+                                ),
+                              ),
                             ],
                           ),
-                          Text(
-                            '$calories kcal',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.w900,
+                          const SizedBox(height: 20),
+
+                          const Text(
+                            'CALORIES BY CATEGORY',
+                            style: TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 1.0,
+                              color: AppTheme.textSecondary,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+
+                          Row(
+                            children: [
+                              Expanded(child: _buildEditField("Breakfast", breakfastController, isDark)),
+                              const SizedBox(width: 12),
+                              Expanded(child: _buildEditField("Lunch", lunchController, isDark)),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              Expanded(child: _buildEditField("Dinner", dinnerController, isDark)),
+                              const SizedBox(width: 12),
+                              Expanded(child: _buildEditField("Snacks", snacksController, isDark)),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          _buildEditField("Eating Out", outsideFoodController, isDark),
+
+                          const SizedBox(height: 20),
+                          const Text(
+                            'MACRONUTRIENTS (G)',
+                            style: TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 1.0,
+                              color: AppTheme.textSecondary,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          Row(
+                            children: [
+                              Expanded(child: _buildEditField("Protein", proteinController, isDark)),
+                              const SizedBox(width: 8),
+                              Expanded(child: _buildEditField("Carbs", carbsController, isDark)),
+                              const SizedBox(width: 8),
+                              Expanded(child: _buildEditField("Fat", fatController, isDark)),
+                            ],
+                          ),
+
+                          const SizedBox(height: 20),
+                          const Text(
+                            'HYDRATION',
+                            style: TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 1.0,
+                              color: AppTheme.textSecondary,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          _buildEditField("Water Intake (ml)", waterController, isDark),
+
+                          const SizedBox(height: 20),
+                          const Divider(color: Colors.white12, height: 1),
+                          const SizedBox(height: 20),
+                          const Text(
+                            'LOGGED FOOD HISTORY',
+                            style: TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 1.0,
+                              color: AppTheme.textSecondary,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          if (loggedItems.isEmpty)
+                            const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 12),
+                              child: Text(
+                                'No food items logged for this day',
+                                style: TextStyle(
+                                  color: AppTheme.textSecondary,
+                                  fontSize: 12,
+                                  fontStyle: FontStyle.italic,
+                                ),
+                              ),
+                            )
+                          else
+                            ...loggedItems.map((item) {
+                              final String name = item['name'] ?? 'Logged Meal';
+                              final String meal = item['meal'] ?? 'MEAL';
+                              final int calories = item['calories'] ?? 0;
+                              return Container(
+                                margin: const EdgeInsets.only(bottom: 8),
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.02),
+                                  borderRadius: BorderRadius.circular(14),
+                                  border: Border.all(
+                                    color: Colors.white.withOpacity(0.06),
+                                    width: 1.0,
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        color: AppTheme.accentCyan.withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      child: Icon(
+                                        getMealIcon(meal),
+                                        color: AppTheme.accentCyan,
+                                        size: 16,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            name,
+                                            style: const TextStyle(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.white,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            '$meal • $calories kcal',
+                                            style: const TextStyle(
+                                              fontSize: 10,
+                                              color: AppTheme.textSecondary,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.edit_rounded, color: AppTheme.accentCyan, size: 16),
+                                      padding: EdgeInsets.zero,
+                                      constraints: const BoxConstraints(),
+                                      onPressed: () async {
+                                        await _showFoodDetailsDialog(context, Map<String, dynamic>.from(item), startInEditMode: true);
+                                        final updated = ref.read(dailyMetricsProvider(dateStr));
+                                        breakfastController.text = (updated['breakfast_cal'] ?? 0).toString();
+                                        lunchController.text = (updated['lunch_cal'] ?? 0).toString();
+                                        dinnerController.text = (updated['dinner_cal'] ?? 0).toString();
+                                        snacksController.text = (updated['snacks_cal'] ?? 0).toString();
+                                        outsideFoodController.text = (updated['outside_food_cal'] ?? 0).toString();
+                                        proteinController.text = (updated['protein'] ?? 0).toString();
+                                        carbsController.text = (updated['carbs'] ?? 0).toString();
+                                        fatController.text = (updated['fat'] ?? 0).toString();
+                                        setState(() {});
+                                      },
+                                    ),
+                                    const SizedBox(width: 8),
+                                    IconButton(
+                                      icon: const Icon(Icons.delete_outline_rounded, color: AppTheme.accentCoral, size: 16),
+                                      padding: EdgeInsets.zero,
+                                      constraints: const BoxConstraints(),
+                                      onPressed: () async {
+                                        final latestMetrics = ref.read(dailyMetricsProvider(dateStr));
+                                        final updatedMetrics = Map<String, dynamic>.from(latestMetrics);
+
+                                        final List<dynamic> loggedItems = List<dynamic>.from(updatedMetrics['logged_items'] ?? []);
+                                        int removeIndex = -1;
+                                        for (int i = 0; i < loggedItems.length; i++) {
+                                          final currentItem = loggedItems[i];
+                                          if (currentItem['name'] == item['name'] &&
+                                              currentItem['calories'] == item['calories'] &&
+                                              currentItem['protein'] == item['protein'] &&
+                                              currentItem['carbs'] == item['carbs'] &&
+                                              currentItem['fat'] == item['fat'] &&
+                                              currentItem['meal'] == item['meal'] &&
+                                              currentItem['time'] == item['time']) {
+                                            removeIndex = i;
+                                            break;
+                                          }
+                                        }
+
+                                        if (removeIndex != -1) {
+                                          loggedItems.removeAt(removeIndex);
+                                          updatedMetrics['logged_items'] = loggedItems;
+
+                                          String mealKey;
+                                          switch (meal.toUpperCase()) {
+                                            case 'BREAKFAST':
+                                              mealKey = 'breakfast_cal';
+                                              break;
+                                            case 'LUNCH':
+                                              mealKey = 'lunch_cal';
+                                              break;
+                                            case 'DINNER':
+                                              mealKey = 'dinner_cal';
+                                              break;
+                                            case 'SNACKS':
+                                              mealKey = 'snacks_cal';
+                                              break;
+                                            case 'EATING OUT':
+                                            case 'OUTSIDE FOOD':
+                                              mealKey = 'outside_food_cal';
+                                              break;
+                                            default:
+                                              mealKey = 'snacks_cal';
+                                          }
+
+                                          final int calVal = item['calories'] ?? 0;
+                                          final int protVal = item['protein'] ?? 0;
+                                          final int carbsVal = item['carbs'] ?? 0;
+                                          final int fatVal = item['fat'] ?? 0;
+
+                                          updatedMetrics[mealKey] = ((updatedMetrics[mealKey] ?? 0) - calVal).clamp(0, 999999);
+                                          updatedMetrics['protein'] = ((updatedMetrics['protein'] ?? 0) - protVal).clamp(0, 999999);
+                                          updatedMetrics['carbs'] = ((updatedMetrics['carbs'] ?? 0) - carbsVal).clamp(0, 999999);
+                                          updatedMetrics['fat'] = ((updatedMetrics['fat'] ?? 0) - fatVal).clamp(0, 999999);
+
+                                          await ref.read(dailyMetricsProvider(dateStr).notifier).saveMetrics(updatedMetrics);
+
+                                          breakfastController.text = (updatedMetrics['breakfast_cal'] ?? 0).toString();
+                                          lunchController.text = (updatedMetrics['lunch_cal'] ?? 0).toString();
+                                          dinnerController.text = (updatedMetrics['dinner_cal'] ?? 0).toString();
+                                          snacksController.text = (updatedMetrics['snacks_cal'] ?? 0).toString();
+                                          outsideFoodController.text = (updatedMetrics['outside_food_cal'] ?? 0).toString();
+                                          proteinController.text = (updatedMetrics['protein'] ?? 0).toString();
+                                          carbsController.text = (updatedMetrics['carbs'] ?? 0).toString();
+                                          fatController.text = (updatedMetrics['fat'] ?? 0).toString();
+
+                                          setState(() {});
+
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              backgroundColor: AppTheme.accentCoral,
+                                              content: Text("Deleted entry: $name"),
+                                            ),
+                                          );
+                                        }
+                                      },
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }),
+
+                          const SizedBox(height: 28),
+
+                          GestureDetector(
+                            onTap: () async {
+                              final latestMetricsForSave = ref.read(dailyMetricsProvider(dateStr));
+                              final updatedMetrics = Map<String, dynamic>.from(latestMetricsForSave);
+                              updatedMetrics['breakfast_cal'] = int.tryParse(breakfastController.text) ?? 0;
+                              updatedMetrics['lunch_cal'] = int.tryParse(lunchController.text) ?? 0;
+                              updatedMetrics['dinner_cal'] = int.tryParse(dinnerController.text) ?? 0;
+                              updatedMetrics['snacks_cal'] = int.tryParse(snacksController.text) ?? 0;
+                              updatedMetrics['outside_food_cal'] = int.tryParse(outsideFoodController.text) ?? 0;
+                              updatedMetrics['protein'] = int.tryParse(proteinController.text) ?? 0;
+                              updatedMetrics['carbs'] = int.tryParse(carbsController.text) ?? 0;
+                              updatedMetrics['fat'] = int.tryParse(fatController.text) ?? 0;
+                              updatedMetrics['water'] = int.tryParse(waterController.text) ?? 0;
+
+                              await ref.read(dailyMetricsProvider(dateStr).notifier).saveMetrics(updatedMetrics);
+
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  backgroundColor: AppTheme.accentEmerald,
+                                  content: Text("Daily metrics updated successfully!"),
+                                ),
+                              );
+                              Navigator.of(context).pop();
+                            },
+                            child: Container(
+                              height: 48,
+                              decoration: BoxDecoration(
+                                gradient: AppTheme.primaryGradient,
+                                borderRadius: BorderRadius.circular(14),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppTheme.accentCyan.withOpacity(0.15),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 3),
+                                  ),
+                                ],
+                              ),
+                              child: const Center(
+                                child: Text(
+                                  "Save Changes",
+                                  style: TextStyle(
+                                    color: Colors.black,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
                             ),
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(height: 12),
-
-                    // Macros Splits
-                    Row(
-                      children: [
-                        // Protein Card
-                        Expanded(
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            decoration: BoxDecoration(
-                              color: AppTheme.accentOrange.withOpacity(0.06),
-                              borderRadius: BorderRadius.circular(18),
-                              border: Border.all(
-                                color: AppTheme.accentOrange.withOpacity(0.2),
-                                width: 1.2,
-                              ),
-                            ),
-                            child: Column(
-                              children: [
-                                const Icon(
-                                  Icons.egg_rounded,
-                                  color: AppTheme.accentOrange,
-                                  size: 16,
-                                ),
-                                const SizedBox(height: 6),
-                                const Text(
-                                  'PROTEIN',
-                                  style: TextStyle(
-                                    color: AppTheme.textSecondary,
-                                    fontSize: 8,
-                                    fontWeight: FontWeight.w900,
-                                    letterSpacing: 0.5,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  '${protein}g',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w900,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-
-                        // Carbs Card
-                        Expanded(
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            decoration: BoxDecoration(
-                              color: AppTheme.accentCyan.withOpacity(0.06),
-                              borderRadius: BorderRadius.circular(18),
-                              border: Border.all(
-                                color: AppTheme.accentCyan.withOpacity(0.2),
-                                width: 1.2,
-                              ),
-                            ),
-                            child: Column(
-                              children: [
-                                const Icon(
-                                  Icons.bakery_dining_rounded,
-                                  color: AppTheme.accentCyan,
-                                  size: 16,
-                                ),
-                                const SizedBox(height: 6),
-                                const Text(
-                                  'CARBS',
-                                  style: TextStyle(
-                                    color: AppTheme.textSecondary,
-                                    fontSize: 8,
-                                    fontWeight: FontWeight.w900,
-                                    letterSpacing: 0.5,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  '${carbs}g',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w900,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-
-                        // Fats Card
-                        Expanded(
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            decoration: BoxDecoration(
-                              color: AppTheme.accentCoral.withOpacity(0.06),
-                              borderRadius: BorderRadius.circular(18),
-                              border: Border.all(
-                                color: AppTheme.accentCoral.withOpacity(0.2),
-                                width: 1.2,
-                              ),
-                            ),
-                            child: Column(
-                              children: [
-                                const Icon(
-                                  Icons.water_drop_rounded,
-                                  color: AppTheme.accentCoral,
-                                  size: 16,
-                                ),
-                                const SizedBox(height: 6),
-                                const Text(
-                                  'FAT',
-                                  style: TextStyle(
-                                    color: AppTheme.textSecondary,
-                                    fontSize: 8,
-                                    fontWeight: FontWeight.w900,
-                                    letterSpacing: 0.5,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  '${fat}g',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w900,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+                  ),
                 ),
               ),
-            ),
-          ),
+            );
+          },
         );
       },
+    );
+  }
+
+  Widget _buildEditField(String label, TextEditingController controller, bool isDark) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.bold,
+            color: AppTheme.textSecondary,
+          ),
+        ),
+        const SizedBox(height: 6),
+        TextField(
+          controller: controller,
+          keyboardType: TextInputType.number,
+          style: TextStyle(
+            color: isDark ? Colors.white : Colors.black,
+            fontWeight: FontWeight.bold,
+            fontSize: 13,
+          ),
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: isDark ? Colors.white.withOpacity(0.02) : Colors.black.withOpacity(0.02),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: isDark ? AppTheme.glassBorder : Colors.black.withOpacity(0.1),
+              ),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: isDark ? AppTheme.glassBorder : Colors.black.withOpacity(0.1),
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: AppTheme.accentCyan),
+            ),
+          ),
+        ),
+      ],
     );
   }
 

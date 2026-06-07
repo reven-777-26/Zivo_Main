@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -2343,6 +2344,247 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
     );
   }
 
+  void _showFullscreenCompareDialog(BuildContext context, String beforeBase64, String afterBase64) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        double localSplit = 0.5;
+        BoxFit localFit = BoxFit.contain; // Start with contain so they see the full image without cropping!
+        
+        return StatefulBuilder(
+          builder: (context, setState) {
+            final isDark = Theme.of(context).brightness == Brightness.dark;
+            return Dialog(
+              backgroundColor: isDark ? const Color(0xEC090E18) : Colors.white,
+              insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(24),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(
+                        color: isDark ? AppTheme.glassBorder : const Color(0xFFEADBFF),
+                        width: 1.5,
+                      ),
+                    ),
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      children: [
+                        // Header
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Physique Comparison',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w900,
+                                    color: isDark ? Colors.white : AppTheme.textPrimary,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                const Text(
+                                  'Slide to compare before & after (entire image visible)',
+                                  style: TextStyle(
+                                    color: AppTheme.textSecondary,
+                                    fontSize: 10,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            Row(
+                              children: [
+                                // Toggle fit button
+                                GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      localFit = localFit == BoxFit.cover ? BoxFit.contain : BoxFit.cover;
+                                    });
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                    decoration: BoxDecoration(
+                                      color: AppTheme.accentPurple.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(10),
+                                      border: Border.all(color: AppTheme.accentPurple.withOpacity(0.3)),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          localFit == BoxFit.cover ? Icons.aspect_ratio_rounded : Icons.crop_free_rounded,
+                                          color: AppTheme.accentPurple,
+                                          size: 14,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          localFit == BoxFit.cover ? 'Fit Screen' : 'Fill Screen',
+                                          style: const TextStyle(
+                                            color: AppTheme.accentPurple,
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                GestureDetector(
+                                  onTap: () => Navigator.pop(context),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(6),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(0.04),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(
+                                      Icons.close_rounded,
+                                      color: AppTheme.textSecondary,
+                                      size: 18,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        // The Slider container taking up the rest of the space
+                        Expanded(
+                          child: LayoutBuilder(
+                            builder: (context, constraints) {
+                              final width = constraints.maxWidth;
+                              final height = constraints.maxHeight;
+                              return GestureDetector(
+                                onHorizontalDragUpdate: (details) {
+                                  final RenderBox renderBox = context.findRenderObject() as RenderBox;
+                                  final localPos = renderBox.globalToLocal(details.globalPosition);
+                                  setState(() {
+                                    localSplit = (localPos.dx / width).clamp(0.0, 1.0);
+                                  });
+                                },
+                                child: Container(
+                                  width: width,
+                                  height: height,
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(color: AppTheme.glassBorder, width: 1),
+                                  ),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(16),
+                                    child: Stack(
+                                      children: [
+                                        Positioned.fill(
+                                          child: Image.memory(
+                                            base64Decode(beforeBase64),
+                                            fit: localFit,
+                                          ),
+                                        ),
+                                        Positioned(
+                                          left: 0,
+                                          top: 0,
+                                          bottom: 0,
+                                          width: width * localSplit,
+                                          child: ClipRect(
+                                            child: SizedBox(
+                                              width: width,
+                                              height: height,
+                                              child: Image.memory(
+                                                base64Decode(afterBase64),
+                                                fit: localFit,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        Positioned(
+                                          left: 12,
+                                          top: 12,
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                            decoration: BoxDecoration(
+                                              color: Colors.black.withOpacity(0.6),
+                                              borderRadius: BorderRadius.circular(6),
+                                            ),
+                                            child: const Text(
+                                              'AFTER',
+                                              style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                                            ),
+                                          ),
+                                        ),
+                                        Positioned(
+                                          right: 12,
+                                          top: 12,
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                            decoration: BoxDecoration(
+                                              color: Colors.black.withOpacity(0.6),
+                                              borderRadius: BorderRadius.circular(6),
+                                            ),
+                                            child: const Text(
+                                              'BEFORE',
+                                              style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                                            ),
+                                          ),
+                                        ),
+                                        Positioned(
+                                          left: (width * localSplit) - 1.5,
+                                          top: 0,
+                                          bottom: 0,
+                                          child: Container(
+                                            width: 3,
+                                            color: AppTheme.accentPurple,
+                                          ),
+                                        ),
+                                        Positioned(
+                                          left: (width * localSplit) - 14,
+                                          top: (height / 2) - 14,
+                                          child: Container(
+                                            width: 28,
+                                            height: 28,
+                                            decoration: const BoxDecoration(
+                                              color: AppTheme.accentPurple,
+                                              shape: BoxShape.circle,
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: Colors.black26,
+                                                  blurRadius: 4,
+                                                  offset: Offset(0, 2),
+                                                ),
+                                              ],
+                                            ),
+                                            child: const Icon(
+                                              Icons.unfold_more_rounded,
+                                              color: Colors.white,
+                                              size: 16,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   Widget _buildSplitSlider(String beforeBase64, String afterBase64) {
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -2452,6 +2694,25 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
                       ),
                     ),
                   ),
+                  Positioned(
+                    right: 12,
+                    bottom: 12,
+                    child: GestureDetector(
+                      onTap: () => _showFullscreenCompareDialog(context, beforeBase64, afterBase64),
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.6),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.fullscreen_rounded,
+                          color: Colors.white,
+                          size: 16,
+                        ),
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -2465,8 +2726,6 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
     final now = DateTime.now();
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final cardBg = isDark ? Colors.white.withOpacity(0.015) : Colors.black.withOpacity(0.01);
-    final isLight = Theme.of(context).brightness == Brightness.light;
-    final titleColor = isLight ? AppTheme.textPrimary : Colors.white;
 
     final List<String> datesWithPhotos = [];
     final List<String> dropdownLabels = [];
@@ -2485,6 +2744,10 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
         _selectedBeforeDate = datesWithPhotos.last;
       }
       if (_selectedAfterDate == null || !datesWithPhotos.contains(_selectedAfterDate)) {
+        _selectedAfterDate = datesWithPhotos.first;
+      }
+      if (datesWithPhotos.length >= 2 && _selectedBeforeDate == _selectedAfterDate) {
+        _selectedBeforeDate = datesWithPhotos.last;
         _selectedAfterDate = datesWithPhotos.first;
       }
     } else {
@@ -2573,6 +2836,9 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
                               if (val != null) {
                                 setState(() {
                                   _selectedBeforeDate = val;
+                                  if (_selectedBeforeDate == _selectedAfterDate && datesWithPhotos.length >= 2) {
+                                    _selectedAfterDate = datesWithPhotos.firstWhere((d) => d != val);
+                                  }
                                 });
                               }
                             },
@@ -2612,6 +2878,9 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
                               if (val != null) {
                                 setState(() {
                                   _selectedAfterDate = val;
+                                  if (_selectedBeforeDate == _selectedAfterDate && datesWithPhotos.length >= 2) {
+                                    _selectedBeforeDate = datesWithPhotos.lastWhere((d) => d != val);
+                                  }
                                 });
                               }
                             },

@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:html' as html;
+import 'dart:js' as js;
 
 void pickImagePlatform(Function(String base64, String name) onSelected) {
   final uploadInput = html.FileUploadInputElement()..accept = 'image/*';
@@ -58,4 +60,45 @@ void pickImagePlatform(Function(String base64, String name) onSelected) {
       });
     }
   });
+}
+
+Future<String> scanBarcodePlatform(String base64) async {
+  try {
+    // 1. Ensure ZXing is loaded
+    if (!js.context.hasProperty('ZXing')) {
+      final completer = Completer<void>();
+      final script = html.ScriptElement()
+        ..src = "https://unpkg.com/@zxing/library@0.19.1/umd/index.min.js"
+        ..async = true;
+      script.onLoad.listen((_) => completer.complete());
+      script.onError.listen((e) => completer.completeError(e));
+      html.document.head?.append(script);
+      await completer.future;
+    }
+
+    // 2. Prepare callback
+    final completer = Completer<String>();
+    // ignore: undefined_function
+    js.context['__zxingCallback'] = js.allowInterop((String text) {
+      completer.complete(text);
+    });
+
+    // 3. Execute JS decode
+    final String dataUrl = "data:image/jpeg;base64,$base64";
+    js.context.callMethod('eval', ["""
+      (async () => {
+        try {
+          const reader = new window.ZXing.BrowserMultiFormatReader();
+          const result = await reader.decodeFromImageUrl("$dataUrl");
+          window.__zxingCallback(result.text || "");
+        } catch (e) {
+          window.__zxingCallback("");
+        }
+      })();
+    """]);
+
+    return completer.future;
+  } catch (e) {
+    return "";
+  }
 }

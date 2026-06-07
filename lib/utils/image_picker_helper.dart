@@ -6,4 +6,8 @@ class ImagePickerHelper {
   static void pickImage(Function(String base64, String name) onSelected) {
     pickImagePlatform(onSelected);
   }
+
+  static Future<String> scanBarcode(String base64) {
+    return scanBarcodePlatform(base64);
+  }
 }
