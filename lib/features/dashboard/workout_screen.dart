@@ -2149,7 +2149,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
   // ==========================================
 
   void _uploadPhotoForDate(String dateStr) {
-    ImagePickerHelper.pickImage((base64, name) async {
+    ImagePickerHelper.pickImage((base64, name, filePath) async {
       final metrics = StorageService.getDailyMetrics(dateStr);
       metrics['gym_pic'] = base64;
       

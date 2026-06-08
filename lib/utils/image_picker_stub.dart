@@ -1,7 +1,3 @@
-void pickImagePlatform(Function(String base64, String name) onSelected) {
+void pickImagePlatform(Function(String base64, String name, String? filePath) onSelected, {bool isBarcode = false, bool fromCamera = false}) {
   // Platform stub
-}
-
-Future<String> scanBarcodePlatform(String base64) async {
-  return "";
 }

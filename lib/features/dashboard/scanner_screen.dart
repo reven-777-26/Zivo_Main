@@ -1,9 +1,13 @@
 import 'dart:convert';
 import 'dart:ui';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:http/http.dart' as http;
+import 'package:camera/camera.dart';
+import 'package:flutter/foundation.dart';
+import 'package:image/image.dart' as img;
 import '../../core/theme.dart';
 import '../../utils/image_picker_helper.dart';
 import '../../services/storage_service.dart';
@@ -12,6 +16,8 @@ import '../../services/scanner/database_service.dart';
 import '../../services/scanner/ocr_service.dart';
 import '../../services/scanner/ai_analysis_service.dart';
 import '../../services/scanner/nutrition_normalizer.dart';
+import '../../services/scanner/camera_barcode_scanner.dart';
+import '../../services/scanner/native_barcode_scanner.dart';
 
 class ScannerScreen extends ConsumerStatefulWidget {
   const ScannerScreen({super.key});
@@ -29,10 +35,110 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
   final _scanInputController = TextEditingController();
   String? _selectedImageBase64;
   String? _selectedImageName;
+  String? _selectedImageFilePath;
   final List<Map<String, dynamic>> _scanHistory = [];
+
+  CameraController? _cameraController;
+  List<CameraDescription> _cameras = [];
+  bool _isCameraInitialized = false;
+  bool _isProcessingFrame = false;
+  Timer? _webFrameTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeCamera();
+  }
+
+  Future<void> _initializeCamera() async {
+    try {
+      _cameras = await availableCameras();
+      if (_cameras.isNotEmpty) {
+        final backCamera = _cameras.firstWhere(
+          (camera) => camera.lensDirection == CameraLensDirection.back,
+          orElse: () => _cameras.first,
+        );
+
+        _cameraController = CameraController(
+          backCamera,
+          ResolutionPreset.medium,
+          enableAudio: false,
+          imageFormatGroup: kIsWeb ? ImageFormatGroup.jpeg : ImageFormatGroup.yuv420,
+        );
+
+        await _cameraController!.initialize();
+        if (mounted) {
+          setState(() {
+            _isCameraInitialized = true;
+          });
+          _startBarcodeScanningLoop();
+        }
+      }
+    } catch (e) {
+      debugPrint("Camera initialization failed: $e");
+    }
+  }
+
+  void _startBarcodeScanningLoop() {
+    if (_cameraController == null || !_isCameraInitialized) return;
+
+    if (kIsWeb) {
+      _webFrameTimer = Timer.periodic(const Duration(milliseconds: 600), (timer) async {
+        if (_isScanning || _isProcessingFrame || _scanResult != null || !mounted) return;
+        _isProcessingFrame = true;
+        try {
+          final XFile file = await _cameraController!.takePicture();
+          final bytes = await file.readAsBytes();
+          
+          final img.Image? decoded = img.decodeImage(bytes);
+          if (decoded != null) {
+            final rgbaBytes = decoded.getBytes(order: img.ChannelOrder.rgba);
+            final frame = ImageFrame(
+              bytes: rgbaBytes,
+              width: decoded.width,
+              height: decoded.height,
+              format: 'rgba8888',
+              rotation: 0,
+            );
+            final barcode = await CameraBarcodeScanner.detectBarcode(frame);
+            if (barcode != null && barcode.isNotEmpty && mounted) {
+              _isProcessingFrame = true;
+              _scanInputController.text = barcode;
+              await _triggerScan();
+              _isProcessingFrame = false;
+            }
+          }
+        } catch (e) {
+          debugPrint("Web barcode scan frame error: $e");
+        } finally {
+          _isProcessingFrame = false;
+        }
+      });
+    } else {
+      _cameraController!.startImageStream((CameraImage image) async {
+        if (_isScanning || _isProcessingFrame || _scanResult != null || !mounted) return;
+        _isProcessingFrame = true;
+        try {
+          final barcode = await NativeBarcodeScanner.scanCameraImage(image, _cameraController!.description);
+          if (barcode != null && barcode.isNotEmpty && mounted) {
+            _isProcessingFrame = true;
+            _scanInputController.text = barcode;
+            await _triggerScan();
+            _isProcessingFrame = false;
+          }
+        } catch (e) {
+          debugPrint("Mobile barcode scan frame error: $e");
+        } finally {
+          _isProcessingFrame = false;
+        }
+      });
+    }
+  }
 
   @override
   void dispose() {
+    _webFrameTimer?.cancel();
+    _cameraController?.dispose();
     _scanInputController.dispose();
     super.dispose();
   }
@@ -206,6 +312,7 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
         imageBase64: _selectedImageBase64,
         imageName: _selectedImageName,
         textQuery: query.isNotEmpty ? query : null,
+        filePath: _selectedImageFilePath,
         onProgress: (step) {
           setState(() {
             _loadingStep = "[Step 1/4] $step";
@@ -229,9 +336,39 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
             });
           },
         );
+
+        if (finalProduct == null) {
+          setState(() {
+            _isScanning = false;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Product not found'),
+              backgroundColor: AppTheme.accentCoral,
+              duration: Duration(seconds: 3),
+            ),
+          );
+          return;
+        }
+      } else {
+        // Barcode detection failed (returned null)
+        // If they had an image selected/uploaded (or scanned via camera), this is a barcode detection failure.
+        if (_selectedImageBase64 != null) {
+          setState(() {
+            _isScanning = false;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Could not detect barcode, try again'),
+              backgroundColor: AppTheme.accentCoral,
+              duration: Duration(seconds: 3),
+            ),
+          );
+          return;
+        }
       }
 
-      // 3. If barcode database fails or no barcode detected, perform OCR
+      // 3. If barcode database fails or no barcode detected, perform OCR (only if not already resolved)
       if (finalProduct == null) {
         setState(() {
           _loadingStep = "[Step 3/4] Parsing Label via High-Fidelity OCR...";
@@ -545,7 +682,7 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
                             ),
                       ],
 
-                      // Show picked image preview if selected
+                      // Show picked image preview if selected, otherwise live CameraPreview
                       if (_selectedImageBase64 != null)
                         Positioned.fill(
                           child: Opacity(
@@ -555,16 +692,60 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
                               fit: BoxFit.cover,
                             ),
                           ),
+                        )
+                      else if (_cameraController != null && _isCameraInitialized)
+                        Positioned.fill(
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(16),
+                            child: FittedBox(
+                              fit: BoxFit.cover,
+                              child: SizedBox(
+                                width: _cameraController!.value.previewSize?.height ?? 240,
+                                height: _cameraController!.value.previewSize?.width ?? 320,
+                                child: CameraPreview(_cameraController!),
+                              ),
+                            ),
+                          ),
+                        ),
+
+                      if (_isProcessingFrame)
+                        Positioned.fill(
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.black.withOpacity(0.4),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: const Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  CircularProgressIndicator(
+                                    color: AppTheme.accentCyan,
+                                  ),
+                                  SizedBox(height: 10),
+                                  Text(
+                                    "Processing frame...",
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
                         ),
 
                       GestureDetector(
                         onTap: _isScanning
                             ? null
                             : () {
-                                ImagePickerHelper.pickImage((base64, name) {
+                                ImagePickerHelper.pickImage((base64, name, filePath) {
                                   setState(() {
                                     _selectedImageBase64 = base64;
                                     _selectedImageName = name;
+                                    _selectedImageFilePath = filePath;
                                     _scanResult = null;
                                   });
                                 });
@@ -576,38 +757,67 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
                           child: Stack(
                             alignment: Alignment.center,
                             children: [
-                              if (_selectedImageBase64 == null)
-                                Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      _selectedCategory == 'Food'
-                                          ? Icons.restaurant_menu_rounded
-                                          : (_selectedCategory == 'Supplement'
-                                              ? Icons.health_and_safety_rounded
-                                              : Icons.face_retouching_natural_rounded),
-                                      size: 48,
-                                      color: AppTheme.textSecondary.withOpacity(0.3),
-                                    ),
-                                    const SizedBox(height: 12),
-                                    const Text(
-                                      'Upload Product/Barcode Image',
-                                      style: TextStyle(
-                                        color: AppTheme.textSecondary,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 12,
+                              if (_selectedImageBase64 == null) ...[
+                                if (_isCameraInitialized)
+                                  Positioned(
+                                    bottom: 12,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                      decoration: BoxDecoration(
+                                        color: Colors.black.withOpacity(0.65),
+                                        borderRadius: BorderRadius.circular(10),
+                                        border: Border.all(color: AppTheme.glassBorder, width: 1),
+                                      ),
+                                      child: const Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(Icons.photo_library_rounded, color: AppTheme.accentCyan, size: 12),
+                                          SizedBox(width: 4),
+                                          Text(
+                                            'Upload Image Instead',
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
-                                    const SizedBox(height: 4),
-                                    const Text(
-                                      '(Tap to pick photo)',
-                                      style: TextStyle(
-                                        color: AppTheme.textSecondary,
-                                        fontSize: 10,
+                                  )
+                                else
+                                  Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        _selectedCategory == 'Food'
+                                            ? Icons.restaurant_menu_rounded
+                                            : (_selectedCategory == 'Supplement'
+                                                ? Icons.health_and_safety_rounded
+                                                : Icons.face_retouching_natural_rounded),
+                                        size: 48,
+                                        color: AppTheme.textSecondary.withOpacity(0.3),
                                       ),
-                                    ),
-                                  ],
-                                ),
+                                      const SizedBox(height: 12),
+                                      const Text(
+                                        'Upload Product/Barcode Image',
+                                        style: TextStyle(
+                                          color: AppTheme.textSecondary,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      const Text(
+                                        '(Tap to pick photo)',
+                                        style: TextStyle(
+                                          color: AppTheme.textSecondary,
+                                          fontSize: 10,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                              ],
                               if (_selectedImageBase64 != null) ...[
                                 if (_isScanning)
                                   const Center(
@@ -742,6 +952,7 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
                                 _scanInputController.clear();
                                 _selectedImageBase64 = null;
                                 _selectedImageName = null;
+                                _selectedImageFilePath = null;
                                 _scanResult = null;
                               });
                             },

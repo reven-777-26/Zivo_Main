@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import '../../utils/image_picker_helper.dart';
 
 class BarcodeService {
   /// Simulates and executes image preprocessing to prepare the barcode region.
@@ -8,6 +9,7 @@ class BarcodeService {
     required String? imageBase64,
     required String? imageName,
     required String? textQuery,
+    String? filePath,
     required Function(String step) onProgress,
   }) async {
     // 1. Check if we can extract barcode directly from text query or image filename
@@ -37,20 +39,17 @@ class BarcodeService {
     onProgress("Initializing Barcode Engines...");
     await Future.delayed(const Duration(milliseconds: 250));
 
-    if (kIsWeb) {
-      onProgress("Decoding via Web High-Fidelity Canvas Engine...");
-      await Future.delayed(const Duration(milliseconds: 400));
-    } else {
-      onProgress("Attempting Google MLKit Barcode Scanning...");
-      await Future.delayed(const Duration(milliseconds: 300));
-      
-      if (detectedBarcode == null) {
-        onProgress("Falling back to Mobile Scanner engine...");
-        await Future.delayed(const Duration(milliseconds: 300));
+    if (detectedBarcode == null && imageBase64 != null && imageBase64.isNotEmpty) {
+      onProgress("Running unified pure Dart ZXing decoder...");
+      try {
+        final result = await ImagePickerHelper.scanBarcode(imageBase64, filePath: filePath);
+        if (result.isNotEmpty && !result.startsWith("ERROR:")) {
+          detectedBarcode = result;
+        }
+      } catch (e) {
+        debugPrint("Error scanning image: $e");
       }
     }
-
-
 
     if (detectedBarcode != null) {
       onProgress("Barcode Decoded Successfully: $detectedBarcode");
@@ -60,6 +59,7 @@ class BarcodeService {
     onProgress("No barcode detected in the image/text.");
     return null;
   }
+
 
   /// Extracts numeric barcode matching 8 to 14 digits from a string,
   /// but ignores obvious timestamps, dates, or sequential camera filenames (e.g. IMG_2023...).

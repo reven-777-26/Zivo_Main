@@ -499,14 +499,19 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
-                      'Daily Goal Completion',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: -0.5,
+                    const Expanded(
+                      child: Text(
+                        'Daily Goal Completion',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: -0.5,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
+                    const SizedBox(width: 8),
                     GestureDetector(
                       onTap: () => _showEditDailyGoalDialog(context, selectedDate),
                       child: const Text(
@@ -2722,7 +2727,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                               else if (selectedFoodPic == null)
                                 GestureDetector(
                                   onTap: () {
-                                    ImagePickerHelper.pickImage((base64, name) {
+                                    ImagePickerHelper.pickImage((base64, name, filePath) {
                                       setState(() {
                                         selectedFoodPic = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&q=80&w=300';
                                       });
@@ -2767,7 +2772,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           children: [
                             GestureDetector(
                               onTap: () {
-                                ImagePickerHelper.pickImage((base64, name) {
+                                ImagePickerHelper.pickImage((base64, name, filePath) {
                                   setState(() {
                                     selectedFoodPic = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&q=80&w=300';
                                   });
