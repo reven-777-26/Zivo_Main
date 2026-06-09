@@ -7,11 +7,19 @@ class StorageService {
   static const String _dailyBoxName = 'daily_metrics_box';
   static const String _workoutBoxName = 'workout_box';
   static const String _reminderBoxName = 'reminder_box';
+  static const String _barcodeCacheBoxName = 'barcode_cache_box';
+  static const String _productCacheBoxName = 'product_cache_box';
+  static const String _analysisCacheBoxName = 'analysis_cache_box';
+  static const String _recentScansBoxName = 'recent_scans_box';
 
   static late Box<UserProfile> _profileBox;
   static late Box<Map> _dailyBox;
   static late Box<Map> _workoutBox;
   static late Box<Map> _reminderBox;
+  static late Box<Map> _barcodeCacheBox;
+  static late Box<Map> _productCacheBox;
+  static late Box<Map> _analysisCacheBox;
+  static late Box<Map> _recentScansBox;
 
   /// Initializes Hive database and opens the required boxes.
   static Future<void> init() async {
@@ -27,7 +35,10 @@ class StorageService {
     _dailyBox = await Hive.openBox<Map>(_dailyBoxName);
     _workoutBox = await Hive.openBox<Map>(_workoutBoxName);
     _reminderBox = await Hive.openBox<Map>(_reminderBoxName);
-
+    _barcodeCacheBox = await Hive.openBox<Map>(_barcodeCacheBoxName);
+    _productCacheBox = await Hive.openBox<Map>(_productCacheBoxName);
+    _analysisCacheBox = await Hive.openBox<Map>(_analysisCacheBoxName);
+    _recentScansBox = await Hive.openBox<Map>(_recentScansBoxName);
 
     // Seed realistic dummy data for interactive metrics visual experience
     seedDummyData();
@@ -49,7 +60,114 @@ class StorageService {
     await _dailyBox.clear();
     await _workoutBox.clear();
     await _reminderBox.clear();
+    await _barcodeCacheBox.clear();
+    await _productCacheBox.clear();
+    await _analysisCacheBox.clear();
+    await _recentScansBox.clear();
   }
+
+  // --- Zivofit Vision Lens Cache API ---
+
+  /// Reads a product by barcode. If TTL (30 Days) has expired, removes it from cache and returns null.
+  static Map<String, dynamic>? getCachedBarcode(String barcode) {
+    final raw = _barcodeCacheBox.get(barcode);
+    if (raw == null) return null;
+    final map = Map<String, dynamic>.from(raw);
+    final timestamp = map['timestamp'] as int?;
+    if (timestamp == null || DateTime.now().millisecondsSinceEpoch - timestamp > 30 * 24 * 60 * 60 * 1000) {
+      _barcodeCacheBox.delete(barcode);
+      return null;
+    }
+    return Map<String, dynamic>.from(map['data']);
+  }
+
+  /// Caches a product by barcode with the current timestamp.
+  static Future<void> saveCachedBarcode(String barcode, Map<String, dynamic> productJson) async {
+    await _barcodeCacheBox.put(barcode, {
+      'data': productJson,
+      'timestamp': DateTime.now().millisecondsSinceEpoch,
+    });
+  }
+
+  /// Reads a search result by term. If TTL (30 Days) has expired, removes it from cache and returns null.
+  static Map<String, dynamic>? getCachedProductSearch(String term) {
+    final cleanTerm = term.trim().toLowerCase();
+    final raw = _productCacheBox.get(cleanTerm);
+    if (raw == null) return null;
+    final map = Map<String, dynamic>.from(raw);
+    final timestamp = map['timestamp'] as int?;
+    if (timestamp == null || DateTime.now().millisecondsSinceEpoch - timestamp > 30 * 24 * 60 * 60 * 1000) {
+      _productCacheBox.delete(cleanTerm);
+      return null;
+    }
+    return Map<String, dynamic>.from(map['data']);
+  }
+
+  /// Caches a search result by term with current timestamp.
+  static Future<void> saveCachedProductSearch(String term, Map<String, dynamic> productJson) async {
+    final cleanTerm = term.trim().toLowerCase();
+    await _productCacheBox.put(cleanTerm, {
+      'data': productJson,
+      'timestamp': DateTime.now().millisecondsSinceEpoch,
+    });
+  }
+
+  /// Reads analysis cache by key. If TTL (30 Days) has expired, removes it and returns null.
+  static Map<String, dynamic>? getCachedAnalysis(String key) {
+    final raw = _analysisCacheBox.get(key);
+    if (raw == null) return null;
+    final map = Map<String, dynamic>.from(raw);
+    final timestamp = map['timestamp'] as int?;
+    if (timestamp == null || DateTime.now().millisecondsSinceEpoch - timestamp > 30 * 24 * 60 * 60 * 1000) {
+      _analysisCacheBox.delete(key);
+      return null;
+    }
+    return Map<String, dynamic>.from(map['data']);
+  }
+
+  /// Caches analysis result by key with current timestamp.
+  static Future<void> saveCachedAnalysis(String key, Map<String, dynamic> analysisJson) async {
+    await _analysisCacheBox.put(key, {
+      'data': analysisJson,
+      'timestamp': DateTime.now().millisecondsSinceEpoch,
+    });
+  }
+
+  /// Retrieves list of all recent scans. Handles TTL filter for scan entries.
+  static List<Map<String, dynamic>> getRecentScans() {
+    final rawList = _recentScansBox.get('scans_list');
+    if (rawList == null) return [];
+    final list = (rawList['list'] as List?)?.map((e) => Map<String, dynamic>.from(e)).toList() ?? [];
+    
+    // Filter out expired items (> 30 days)
+    final nowMs = DateTime.now().millisecondsSinceEpoch;
+    final filtered = list.where((item) {
+      final timestamp = item['timestamp'] as int?;
+      if (timestamp == null) return false;
+      return (nowMs - timestamp) <= 30 * 24 * 60 * 60 * 1000;
+    }).toList();
+
+    if (filtered.length != list.length) {
+      // Update cache box if some items expired
+      _recentScansBox.put('scans_list', {'list': filtered});
+    }
+
+    return filtered;
+  }
+
+  /// Adds a product to the recent scans list.
+  static Future<void> addRecentScan(Map<String, dynamic> productJson) async {
+    final list = getRecentScans();
+    final name = productJson['name'];
+    // Remove duplicate by name to keep it on top
+    list.removeWhere((item) => item['name'] == name);
+    list.insert(0, {
+      ...productJson,
+      'timestamp': DateTime.now().millisecondsSinceEpoch,
+    });
+    await _recentScansBox.put('scans_list', {'list': list});
+  }
+
 
   /// Returns all dates that have logged metrics, sorted reverse chronologically (newest first).
   static List<String> getAllLoggedDates() {

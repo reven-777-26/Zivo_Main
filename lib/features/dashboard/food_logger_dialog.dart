@@ -326,7 +326,7 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
 
     try {
       final url = Uri.parse(
-          'https://world.openfoodfacts.org/api/v2/product/$barcode.json');
+          'https://world.openfoodfacts.org/api/v0/product/$barcode.json');
       final response = await http.get(url);
       if (response.statusCode == 200) {
         final json = jsonDecode(response.body);

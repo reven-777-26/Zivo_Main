@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import '../storage_service.dart';
 import 'nutrition_normalizer.dart';
 import 'ocr_service.dart';
+import 'database_service.dart';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -26,7 +27,6 @@ class AiAnalysisService {
         final user = FirebaseAuth.instance.currentUser;
         if (user != null) {
           final idToken = await user.getIdToken();
-          // Replace with your production Firebase Cloud Function URL
           final proxyUrl = Uri.parse(
             'https://us-central1-fitnotes-prod.cloudfunctions.net/geminiProxy'
           );
@@ -54,7 +54,6 @@ class AiAnalysisService {
       debugPrint("Falling back to local rotated key mode...");
     }
 
-    // 2. Sandbox/Local Fallback Path: Client-side key rotation (Disabled)
     debugPrint("Gemini Service Error: No API keys configured or allowed.");
     return null;
   }
@@ -84,19 +83,39 @@ class AiAnalysisService {
     final prompt = "Return ONLY a clean JSON object from this raw text string block. If fields are missing, output 0. No markdown formatting, backticks, or introduction blocks. Schema: {'product_name': '', 'calories': 0, 'protein': 0, 'carbs': 0, 'fat': 0, 'ingredients': []}. Text block: $rawTextBlock";
 
     try {
-      onProgress("Executing extreme token conservation payload call...");
+      onProgress("Executing structured extraction call...");
       final result = await queryGemini(prompt: prompt);
 
       if (result != null) {
-        onProgress("Gemini structured extraction completed successfully!");
-        final List<String> rawIngredients = (result['ingredients'] as List?)?.map((e) => e.toString()).toList() ?? [];
+        final String extractedName = result['product_name'] ?? queryText;
+        onProgress("Searching registry for '$extractedName'...");
+        
+        // Query search
+        final ScannedProduct? registryMatch = await DatabaseService.searchProduct(
+          queryText: extractedName,
+          category: category,
+          onProgress: onProgress,
+        );
 
-        return NutritionNormalizer.normalize(
-          name: result['product_name'] ?? queryText,
-          rawCalories: result['calories'],
-          rawProtein: result['protein'],
-          rawCarbs: result['carbs'],
-          rawFat: result['fat'],
+        if (registryMatch != null) {
+          onProgress("Found registry match for '$extractedName'!");
+          return registryMatch;
+        }
+
+        // Search returned null, fallback to Gemini structured extraction details directly
+        onProgress("No registry search match. Normalizing Gemini extraction directly...");
+        final List<String> rawIngredients = (result['ingredients'] as List?)?.map((e) => e.toString()).toList() ?? [];
+        final double? cal = result['calories'] != null ? (result['calories'] as num).toDouble() : null;
+        final double prot = result['protein'] != null ? (result['protein'] as num).toDouble() : 0.0;
+        final double carb = result['carbs'] != null ? (result['carbs'] as num).toDouble() : 0.0;
+        final double fat = result['fat'] != null ? (result['fat'] as num).toDouble() : 0.0;
+
+        final normalized = NutritionNormalizer.normalize(
+          name: extractedName,
+          rawCalories: cal,
+          rawProtein: prot,
+          rawCarbs: carb,
+          rawFat: fat,
           rawIngredients: rawIngredients,
           rawWarnings: [],
           category: category,
@@ -105,6 +124,15 @@ class AiAnalysisService {
           method: 'Structured AI Ingestion',
           rawServingSize: '1 portion',
         );
+
+        final finalProduct = _wrapWithData(normalized, category);
+
+        // Save to cache & scan history
+        final productMap = finalProduct.toJson();
+        await StorageService.saveCachedProductSearch(extractedName, productMap);
+        await StorageService.addRecentScan(productMap);
+
+        return finalProduct;
       }
     } catch (e) {
       debugPrint("Structured fallback parser error: $e");
@@ -228,13 +256,37 @@ class AiAnalysisService {
     return parsed?.round() ?? 0;
   }
 
+  static ScannedProduct _wrapWithData(ScannedProduct normalized, String category) {
+    final alternatives = DatabaseService.getAlternatives(normalized.name, category);
+    final retailLinks = DatabaseService.generateRetailLinks(normalized.name, category);
+    return ScannedProduct(
+      name: normalized.name,
+      rating: normalized.rating,
+      ratingColor: normalized.ratingColor,
+      imageIcon: normalized.imageIcon,
+      calories: normalized.calories,
+      macros: normalized.macros,
+      proteinQuality: normalized.proteinQuality,
+      ingredients: normalized.ingredients,
+      warnings: normalized.warnings,
+      acneScore: normalized.acneScore,
+      source: normalized.source,
+      confidence: normalized.confidence,
+      method: normalized.method,
+      servingSize: normalized.servingSize,
+      category: category,
+      alternatives: alternatives,
+      retailLinks: retailLinks,
+    );
+  }
+
   /// Extremely robust Smart Local Scanner Fallback Parser to handle offline requests
   static ScannedProduct _generateOfflineFallback(String queryText, String category) {
     final String lower = queryText.toLowerCase();
 
     if (lower.contains('65') || lower.contains('charcoal')) {
       if (category == 'Skincare') {
-        return NutritionNormalizer.normalize(
+        return _wrapWithData(NutritionNormalizer.normalize(
           name: 'Activated Charcoal Deep Clean Face Wash',
           rawCalories: null,
           rawProtein: null,
@@ -254,9 +306,9 @@ class AiAnalysisService {
           confidence: 'LOW',
           method: 'Multimodal Estimation',
           rawServingSize: '1 unit',
-        );
+        ), category);
       } else {
-        return NutritionNormalizer.normalize(
+        return _wrapWithData(NutritionNormalizer.normalize(
           name: 'Premium Activated Charcoal (Detox Supplement)',
           rawCalories: 0,
           rawProtein: 0,
@@ -274,10 +326,10 @@ class AiAnalysisService {
           confidence: 'LOW',
           method: 'Multimodal Estimation',
           rawServingSize: '1 capsule',
-        );
+        ), category);
       }
     } else if (lower.contains('parle') || lower.contains('glucose') || lower.contains('biscuit') || lower.contains('202203170454')) {
-      return NutritionNormalizer.normalize(
+      return _wrapWithData(NutritionNormalizer.normalize(
         name: 'Parle-G Original Glucose Biscuits',
         rawCalories: 450,
         rawProtein: 6.5,
@@ -298,9 +350,9 @@ class AiAnalysisService {
         confidence: 'LOW',
         method: 'Multimodal Estimation',
         rawServingSize: '1 pack (100g)',
-      );
+      ), category);
     } else if (lower.contains('4901058851335') || lower.contains('901058851335') || lower.contains('nittoh') || lower.contains('milk tea')) {
-      return NutritionNormalizer.normalize(
+      return _wrapWithData(NutritionNormalizer.normalize(
         name: 'Nittoh Royal Milk Tea (Japanese Blend)',
         rawCalories: 59,
         rawProtein: 0.9,
@@ -327,11 +379,11 @@ class AiAnalysisService {
         confidence: 'LOW',
         method: 'Multimodal Estimation',
         rawServingSize: '1 sachet (14g)',
-      );
+      ), category);
     }
 
     if (category == 'Food') {
-      return NutritionNormalizer.normalize(
+      return _wrapWithData(NutritionNormalizer.normalize(
         name: 'Oats & Berries Porridge',
         rawCalories: 320,
         rawProtein: 24.0,
@@ -349,9 +401,9 @@ class AiAnalysisService {
         confidence: 'LOW',
         method: 'Multimodal Estimation',
         rawServingSize: '1 bowl (80g)',
-      );
+      ), category);
     } else if (category == 'Supplement') {
-      return NutritionNormalizer.normalize(
+      return _wrapWithData(NutritionNormalizer.normalize(
         name: 'Hydrolyzed Whey Isolate',
         rawCalories: 120,
         rawProtein: 26.0,
@@ -369,9 +421,9 @@ class AiAnalysisService {
         confidence: 'LOW',
         method: 'Multimodal Estimation',
         rawServingSize: '1 scoop (30g)',
-      );
+      ), category);
     } else {
-      return NutritionNormalizer.normalize(
+      return _wrapWithData(NutritionNormalizer.normalize(
         name: 'Niacinamide 10% Zinc Serum',
         rawCalories: null,
         rawProtein: null,
@@ -390,7 +442,7 @@ class AiAnalysisService {
         confidence: 'LOW',
         method: 'Multimodal Estimation',
         rawServingSize: '1 unit',
-      );
+      ), category);
     }
   }
 

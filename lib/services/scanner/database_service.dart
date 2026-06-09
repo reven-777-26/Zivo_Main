@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import '../storage_service.dart';
+import '../firebase_service.dart';
 import 'nutrition_normalizer.dart';
 
 class DatabaseService {
@@ -11,69 +13,269 @@ class DatabaseService {
     required String preferredCategory, // 'Food', 'Supplement', 'Skincare'
     required Function(String step) onProgress,
   }) async {
-    // 0. Check Local High-Fidelity Database First
+    // 0. Check Hive local cache first
+    onProgress("Searching Hive local cache...");
+    final cachedHive = StorageService.getCachedBarcode(barcode);
+    if (cachedHive != null) {
+      await Future.delayed(const Duration(milliseconds: 200));
+      onProgress("Match found in Hive Cache!");
+      await StorageService.addRecentScan(cachedHive);
+      return ScannedProduct.fromJson(cachedHive);
+    }
+
+    // 0.5 Check Firebase cloud cache
+    onProgress("Searching Firebase cloud cache...");
+    final cachedCloud = await FirebaseService.getScanFromCloud(barcode, preferredCategory);
+    if (cachedCloud != null) {
+      onProgress("Match found in Firebase Cache!");
+      await StorageService.saveCachedBarcode(barcode, cachedCloud);
+      await StorageService.addRecentScan(cachedCloud);
+      return ScannedProduct.fromJson(cachedCloud);
+    }
+
+    // 1. Check Local High-Fidelity Database First
     onProgress("Searching local high-fidelity database...");
     final localProduct = _lookupLocalDatabase(barcode, preferredCategory);
     if (localProduct != null) {
       await Future.delayed(const Duration(milliseconds: 350)); // Smooth UX transition
       onProgress("Match found in local database!");
-      return localProduct;
+      
+      final category = localProduct.category;
+      final alternatives = getAlternatives(localProduct.name, category);
+      final retailLinks = generateRetailLinks(localProduct.name, category);
+
+      final finalLocalProduct = ScannedProduct(
+        name: localProduct.name,
+        rating: localProduct.rating,
+        ratingColor: localProduct.ratingColor,
+        imageIcon: localProduct.imageIcon,
+        calories: localProduct.calories,
+        macros: localProduct.macros,
+        proteinQuality: localProduct.proteinQuality,
+        ingredients: localProduct.ingredients,
+        warnings: localProduct.warnings,
+        acneScore: localProduct.acneScore,
+        source: localProduct.source,
+        confidence: localProduct.confidence,
+        method: localProduct.method,
+        servingSize: localProduct.servingSize,
+        category: category,
+        alternatives: alternatives,
+        retailLinks: retailLinks,
+      );
+
+      final productMap = finalLocalProduct.toJson();
+      await StorageService.saveCachedBarcode(barcode, productMap);
+      await FirebaseService.saveScanToCloud(barcode, preferredCategory, productMap);
+      await StorageService.addRecentScan(productMap);
+
+      return finalLocalProduct;
     }
 
-    // 1. OpenFoodFacts
+    ScannedProduct? finalProduct;
+
+    // 2. OpenFoodFacts
     onProgress("Querying OpenFoodFacts API...");
     try {
       final offProduct = await _queryOpenFoodFacts(barcode);
       if (offProduct != null) {
         onProgress("Match found in OpenFoodFacts Database!");
-        return offProduct;
+        finalProduct = offProduct;
       }
     } catch (e) {
       debugPrint("OpenFoodFacts lookup error: $e");
     }
 
-    // 2. OpenBeautyFacts
-    onProgress("Querying OpenBeautyFacts (Skincare) API...");
-    try {
-      final obfProduct = await _queryOpenBeautyFacts(barcode);
-      if (obfProduct != null) {
-        onProgress("Match found in OpenBeautyFacts Database!");
-        return obfProduct;
+    // 3. OpenBeautyFacts
+    if (finalProduct == null) {
+      onProgress("Querying OpenBeautyFacts (Skincare) API...");
+      try {
+        final obfProduct = await _queryOpenBeautyFacts(barcode);
+        if (obfProduct != null) {
+          onProgress("Match found in OpenBeautyFacts Database!");
+          finalProduct = obfProduct;
+        }
+      } catch (e) {
+        debugPrint("OpenBeautyFacts lookup error: $e");
       }
-    } catch (e) {
-      debugPrint("OpenBeautyFacts lookup error: $e");
     }
 
-    // 3. USDA FoodData Central
-    onProgress("Querying USDA FoodData Central...");
-    try {
-      final usdaProduct = await _queryUSDA(barcode, preferredCategory);
-      if (usdaProduct != null) {
-        onProgress("Match found in USDA FoodData Central!");
-        return usdaProduct;
+    // 4. USDA FoodData Central
+    if (finalProduct == null) {
+      onProgress("Querying USDA FoodData Central...");
+      try {
+        final usdaProduct = await _queryUSDA(barcode, preferredCategory);
+        if (usdaProduct != null) {
+          onProgress("Match found in USDA FoodData Central!");
+          finalProduct = usdaProduct;
+        }
+      } catch (e) {
+        debugPrint("USDA lookup error: $e");
       }
-    } catch (e) {
-      debugPrint("USDA lookup error: $e");
     }
 
-    // 4. UPCItemDB
-    onProgress("Querying UPCItemDB API...");
-    try {
-      final upcProduct = await _queryUPCItemDB(barcode, preferredCategory);
-      if (upcProduct != null) {
-        onProgress("Match found in UPCItemDB!");
-        return upcProduct;
+    // 5. UPCItemDB
+    if (finalProduct == null) {
+      onProgress("Querying UPCItemDB API...");
+      try {
+        final upcProduct = await _queryUPCItemDB(barcode, preferredCategory);
+        if (upcProduct != null) {
+          onProgress("Match found in UPCItemDB!");
+          finalProduct = upcProduct;
+        }
+      } catch (e) {
+        debugPrint("UPCItemDB lookup error: $e");
       }
-    } catch (e) {
-      debugPrint("UPCItemDB lookup error: $e");
+    }
+
+    if (finalProduct != null) {
+      final category = finalProduct.category;
+      final alternatives = getAlternatives(finalProduct.name, category);
+      final retailLinks = generateRetailLinks(finalProduct.name, category);
+      
+      final productWithData = ScannedProduct(
+        name: finalProduct.name,
+        rating: finalProduct.rating,
+        ratingColor: finalProduct.ratingColor,
+        imageIcon: finalProduct.imageIcon,
+        calories: finalProduct.calories,
+        macros: finalProduct.macros,
+        proteinQuality: finalProduct.proteinQuality,
+        ingredients: finalProduct.ingredients,
+        warnings: finalProduct.warnings,
+        acneScore: finalProduct.acneScore,
+        source: finalProduct.source,
+        confidence: finalProduct.confidence,
+        method: finalProduct.method,
+        servingSize: finalProduct.servingSize,
+        category: category,
+        alternatives: alternatives,
+        retailLinks: retailLinks,
+      );
+
+      final productMap = productWithData.toJson();
+      await StorageService.saveCachedBarcode(barcode, productMap);
+      await FirebaseService.saveScanToCloud(barcode, preferredCategory, productMap);
+      await StorageService.addRecentScan(productMap);
+
+      return productWithData;
     }
 
     onProgress("No registry match. Moving to next scanning stage...");
     return null;
   }
 
+  /// Searches global registry (OpenFoodFacts or OpenBeautyFacts) using cgi/search.pl API.
+  /// Returns a ScannedProduct if a match is found.
+  static Future<ScannedProduct?> searchProduct({
+    required String queryText,
+    required String category, // 'Food', 'Supplement', 'Skincare'
+    required Function(String step) onProgress,
+  }) async {
+    final cleanQuery = queryText.trim();
+    if (cleanQuery.isEmpty) return null;
+
+    // 0. Check Hive search cache first
+    onProgress("Checking local search cache...");
+    final cachedSearch = StorageService.getCachedProductSearch(cleanQuery);
+    if (cachedSearch != null) {
+      await Future.delayed(const Duration(milliseconds: 200));
+      onProgress("Match found in local search cache!");
+      await StorageService.addRecentScan(cachedSearch);
+      return ScannedProduct.fromJson(cachedSearch);
+    }
+
+    // 1. Determine correct registry and endpoint
+    final isBeauty = category == 'Skincare';
+    final baseUrl = isBeauty ? 'https://world.openbeautyfacts.org' : 'https://world.openfoodfacts.org';
+    final url = Uri.parse('$baseUrl/cgi/search.pl?action=process&search_terms=${Uri.encodeComponent(cleanQuery)}&json=1');
+
+    onProgress("Searching registry via search API...");
+    try {
+      final response = await http.get(url).timeout(const Duration(seconds: 5));
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final List<dynamic> products = data['products'] ?? [];
+        if (products.isNotEmpty) {
+          final p = products.first;
+          final String name = p['product_name'] ?? '$cleanQuery (Registry Search)';
+          
+          final List<String> ingredients = [];
+          final List<dynamic> rawIngs = p['ingredients'] ?? [];
+          for (var ing in rawIngs) {
+            final t = ing['text']?.toString();
+            if (t != null && t.isNotEmpty) {
+              ingredients.add(t);
+            }
+          }
+          if (ingredients.isEmpty && p['ingredients_text'] != null) {
+            ingredients.addAll((p['ingredients_text'] as String).split(',').map((e) => e.trim()));
+          }
+
+          final nut = p['nutriments'] ?? {};
+          final double calories = (nut['energy-kcal_val'] ?? nut['energy-kcal'] ?? nut['energy_value'] ?? 0.0).toDouble();
+          final double protein = (nut['proteins_val'] ?? nut['proteins'] ?? 0.0).toDouble();
+          final double carbs = (nut['carbohydrates_val'] ?? nut['carbohydrates'] ?? 0.0).toDouble();
+          final double fat = (nut['fat_val'] ?? nut['fat'] ?? 0.0).toDouble();
+          final String servingSize = p['serving_size']?.toString() ?? '100g';
+
+          final normalized = NutritionNormalizer.normalize(
+            name: name,
+            rawCalories: calories > 0 ? calories : null,
+            rawProtein: protein,
+            rawCarbs: carbs,
+            rawFat: fat,
+            rawIngredients: ingredients,
+            rawWarnings: [],
+            category: category == 'Skincare' ? 'Skincare' : 'Food',
+            source: isBeauty ? 'OpenBeautyFacts Search' : 'OpenFoodFacts Search',
+            confidence: 'HIGH',
+            method: 'Structured Search Match',
+            rawServingSize: servingSize,
+          );
+
+          // Attach alternatives & retail links
+          final alternatives = getAlternatives(normalized.name, category);
+          final retailLinks = generateRetailLinks(normalized.name, category);
+
+          final finalProduct = ScannedProduct(
+            name: normalized.name,
+            rating: normalized.rating,
+            ratingColor: normalized.ratingColor,
+            imageIcon: normalized.imageIcon,
+            calories: normalized.calories,
+            macros: normalized.macros,
+            proteinQuality: normalized.proteinQuality,
+            ingredients: normalized.ingredients,
+            warnings: normalized.warnings,
+            acneScore: normalized.acneScore,
+            source: normalized.source,
+            confidence: normalized.confidence,
+            method: normalized.method,
+            servingSize: normalized.servingSize,
+            category: category,
+            alternatives: alternatives,
+            retailLinks: retailLinks,
+          );
+
+          final productMap = finalProduct.toJson();
+          // Save to search cache & scan history
+          await StorageService.saveCachedProductSearch(cleanQuery, productMap);
+          await StorageService.addRecentScan(productMap);
+
+          return finalProduct;
+        }
+      }
+    } catch (e) {
+      debugPrint("Registry product search error: $e");
+    }
+
+    onProgress("No registry search match found.");
+    return null;
+  }
+
   static Future<ScannedProduct?> _queryOpenFoodFacts(String barcode) async {
-    final url = Uri.parse('https://world.openfoodfacts.org/api/v2/product/$barcode.json');
+    final url = Uri.parse('https://world.openfoodfacts.org/api/v0/product/$barcode.json');
     final response = await http.get(url).timeout(const Duration(seconds: 4));
     
     if (response.statusCode == 200) {
@@ -241,11 +443,9 @@ class DatabaseService {
         if (match != null) {
           ingredients = match.group(1)!.split(',').map((e) => e.trim()).toList();
         } else {
-          // fallback to standard words if any
           ingredients = [brand.isNotEmpty ? 'Brand: $brand' : 'Product Registry Entry'];
         }
 
-        // Try to parse basic categories
         String matchedCategory = preferredCategory;
         if (category.toLowerCase().contains('beauty') || category.toLowerCase().contains('skin') || category.toLowerCase().contains('cosmetic')) {
           matchedCategory = 'Skincare';
@@ -272,6 +472,170 @@ class DatabaseService {
       }
     }
     return null;
+  }
+
+  static List<Map<String, String>> generateRetailLinks(String productName, String category) {
+    final encodedName = Uri.encodeComponent(productName);
+    final List<Map<String, String>> links = [];
+
+    if (category == 'Skincare') {
+      links.add({'name': 'Myntra', 'url': 'https://www.myntra.com/$encodedName'});
+      links.add({'name': 'Nykaa', 'url': 'https://www.nykaa.com/search/result/?q=$encodedName'});
+    }
+
+    links.add({'name': 'Amazon', 'url': 'https://www.amazon.in/s?k=$encodedName'});
+    links.add({'name': 'Flipkart', 'url': 'https://www.flipkart.com/search?q=$encodedName'});
+    links.add({'name': 'Blinkit', 'url': 'https://blinkit.com/s/?q=$encodedName'});
+    links.add({'name': 'Zepto', 'url': 'https://www.zeptonow.com/search?query=$encodedName'});
+    links.add({'name': 'Swiggy Instamart', 'url': 'https://www.swiggy.com/instamart/search?custom_back=true&query=$encodedName'});
+    links.add({'name': 'JioMart', 'url': 'https://www.jiomart.com/search/$encodedName'});
+
+    return links;
+  }
+
+  static List<Map<String, dynamic>> getAlternatives(String productName, String category) {
+    final lower = productName.toLowerCase();
+    if (category == 'Food') {
+      if (lower.contains('nutella') || lower.contains('chocolate spread') || lower.contains('hazelnut')) {
+        return [
+          {
+            'name': 'Organic Crunchy Peanut Butter',
+            'rating': 'Healthy',
+            'ratingColorValue': 0xFF00C853,
+            'calories': '190 kcal',
+            'macros': 'P: 8g  C: 6g  F: 16g',
+            'ingredients': ['Organic Roasted Peanuts', 'Sea Salt'],
+            'acneScore': '0/5 (Low Glycemic Index)'
+          },
+          {
+            'name': 'Raw Stoneground Almond Butter',
+            'rating': 'Healthy',
+            'ratingColorValue': 0xFF00C853,
+            'calories': '180 kcal',
+            'macros': 'P: 7g  C: 5g  F: 15g',
+            'ingredients': ['Raw Almonds'],
+            'acneScore': '0/5 (Low Glycemic Index)'
+          }
+        ];
+      }
+      if (lower.contains('chip') || lower.contains('nacho') || lower.contains('crisp') || lower.contains('biscuit') || lower.contains('parle')) {
+        return [
+          {
+            'name': 'Organic Roasted Chickpeas',
+            'rating': 'Healthy',
+            'ratingColorValue': 0xFF00C853,
+            'calories': '120 kcal',
+            'macros': 'P: 6g  C: 18g  F: 2g',
+            'ingredients': ['Organic Chickpeas', 'Olive Oil', 'Sea Salt'],
+            'acneScore': '0/5 (Anti-inflammatory)'
+          },
+          {
+            'name': 'Dehydrated Organic Kale Chips',
+            'rating': 'Healthy',
+            'ratingColorValue': 0xFF00C853,
+            'calories': '80 kcal',
+            'macros': 'P: 4g  C: 8g  F: 3g',
+            'ingredients': ['Organic Curly Kale', 'Nutritional Yeast', 'Olive Oil'],
+            'acneScore': '0/5 (Rich in Zinc and Vitamin A)'
+          }
+        ];
+      }
+      if (lower.contains('cola') || lower.contains('coke') || lower.contains('soda') || lower.contains('pepsi') || lower.contains('fanta') || lower.contains('sprite')) {
+        return [
+          {
+            'name': 'Organic Lemon Kombucha',
+            'rating': 'Healthy',
+            'ratingColorValue': 0xFF00C853,
+            'calories': '30 kcal',
+            'macros': 'P: 0g  C: 7g  F: 0g',
+            'ingredients': ['Filtered Water', 'Organic Black Tea', 'Kombucha Culture', 'Organic Lemon'],
+            'acneScore': '0/5 (Gut-friendly probiotics)'
+          },
+          {
+            'name': 'Sparkling Mineral Water',
+            'rating': 'Healthy',
+            'ratingColorValue': 0xFF00C853,
+            'calories': '0 kcal',
+            'macros': 'P: 0g  C: 0g  F: 0g',
+            'ingredients': ['Natural Carbonated Water'],
+            'acneScore': '0/5 (No sugar or sweeteners)'
+          }
+        ];
+      }
+      return [
+        {
+          'name': 'Organic Rolled Oats & Berries',
+          'rating': 'Healthy',
+          'ratingColorValue': 0xFF00C853,
+          'calories': '150 kcal',
+          'macros': 'P: 6g  C: 27g  F: 2.5g',
+          'ingredients': ['Whole Rolled Oats', 'Freeze-dried Raspberries'],
+          'acneScore': '0/5'
+        }
+      ];
+    } else if (category == 'Supplement') {
+      if (lower.contains('pre-workout') || lower.contains('preworkout') || lower.contains('nitro') || lower.contains('caffeine')) {
+        return [
+          {
+            'name': 'Organic Ceremonial Matcha Green Tea',
+            'rating': 'Healthy',
+            'ratingColorValue': 0xFF00C853,
+            'calories': '5 kcal',
+            'macros': 'P: 0.5g  C: 1g  F: 0g',
+            'ingredients': ['Pure Stoneground Matcha Leaf'],
+            'acneScore': '0/5 (Rich in EGCG Antioxidants)'
+          },
+          {
+            'name': '100% Pure Creatine Monohydrate',
+            'rating': 'Healthy',
+            'ratingColorValue': 0xFF00C853,
+            'calories': '0 kcal',
+            'macros': 'P: 0g  C: 0g  F: 0g',
+            'ingredients': ['Creatine Monohydrate (Creapure)'],
+            'acneScore': '0/5 (Unflavored, clean)'
+          }
+        ];
+      }
+      return [
+        {
+          'name': 'Hydrolyzed Grass-Fed Whey Isolate',
+          'rating': 'Healthy',
+          'ratingColorValue': 0xFF00C853,
+          'calories': '110 kcal',
+          'macros': 'P: 25g  C: 0g  F: 0g',
+          'ingredients': ['Grass-Fed Whey Protein Isolate', 'Sunflower Lecithin'],
+          'acneScore': '1/5'
+        }
+      ];
+    } else {
+      if (lower.contains('cream') || lower.contains('comedo') || lower.contains('fragrant') || lower.contains('paraben') || lower.contains('isopropyl')) {
+        return [
+          {
+            'name': 'Niacinamide 10% + Zinc 1% Serum',
+            'rating': 'Safe Match',
+            'ratingColorValue': 0xFF00C853,
+            'ingredients': ['Aqua', 'Niacinamide', 'Zinc PCA', 'Phenoxyethanol'],
+            'acneScore': '0/5 (Regulates sebum and reduces acne)'
+          },
+          {
+            'name': 'Cerave Hydrating Facial Cleanser',
+            'rating': 'Safe Match',
+            'ratingColorValue': 0xFF00C853,
+            'ingredients': ['Aqua', 'Glycerin', 'Ceramide NP', 'Ceramide AP', 'Hyaluronic Acid'],
+            'acneScore': '0/5 (Restores skin lipid barrier)'
+          }
+        ];
+      }
+      return [
+        {
+          'name': 'Pure Centella Asiatica Calming Gel',
+          'rating': 'Safe Match',
+          'ratingColorValue': 0xFF00C853,
+          'ingredients': ['Centella Asiatica Extract', 'Glycerin', 'Allantoin'],
+          'acneScore': '0/5 (Deeply soothing and non-comedogenic)'
+        }
+      ];
+    }
   }
 
   /// Looks up product details in a local high-fidelity database for test barcodes

@@ -341,4 +341,44 @@ class FirebaseService {
       debugPrint("Error syncing reminders: $e");
     }
   }
+
+  /// Retrieves a cached scan from Firestore by barcode and category.
+  static Future<Map<String, dynamic>?> getScanFromCloud(String barcode, String category) async {
+    if (!isLoggedIn) return null;
+    try {
+      final subcollection = category == 'Food'
+          ? 'food_scans'
+          : (category == 'Supplement' ? 'supplement_scans' : 'skincare_scans');
+      final doc = await firestore
+          .collection('users')
+          .doc(currentUser!.uid)
+          .collection(subcollection)
+          .doc(barcode)
+          .get();
+      if (doc.exists) {
+        return doc.data();
+      }
+    } catch (e) {
+      debugPrint("Error loading scan from Firestore: $e");
+    }
+    return null;
+  }
+
+  /// Saves an analyzed scan to Firestore.
+  static Future<void> saveScanToCloud(String barcode, String category, Map<String, dynamic> scanData) async {
+    if (!isLoggedIn) return;
+    try {
+      final subcollection = category == 'Food'
+          ? 'food_scans'
+          : (category == 'Supplement' ? 'supplement_scans' : 'skincare_scans');
+      await firestore
+          .collection('users')
+          .doc(currentUser!.uid)
+          .collection(subcollection)
+          .doc(barcode)
+          .set(scanData);
+    } catch (e) {
+      debugPrint("Error saving scan to Firestore: $e");
+    }
+  }
 }

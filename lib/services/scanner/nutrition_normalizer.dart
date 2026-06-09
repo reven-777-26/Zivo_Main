@@ -18,6 +18,9 @@ class ScannedProduct {
   final String confidence; // 'HIGH', 'MEDIUM', 'LOW'
   final String method; // 'Barcode Decoded', 'OCR Extraction', 'Multimodal Estimation'
   final String servingSize;
+  final String category;
+  final List<Map<String, dynamic>> alternatives;
+  final List<Map<String, String>> retailLinks;
 
   ScannedProduct({
     required this.name,
@@ -34,14 +37,17 @@ class ScannedProduct {
     required this.confidence,
     required this.method,
     required this.servingSize,
+    required this.category,
+    this.alternatives = const [],
+    this.retailLinks = const [],
   });
 
   Map<String, dynamic> toJson() {
     return {
       'name': name,
       'rating': rating,
-      'ratingColor': ratingColor,
-      'imageIcon': imageIcon,
+      'ratingColorValue': ratingColor.value,
+      'imageIconCode': imageIcon.codePoint,
       'calories': calories,
       'macros': macros,
       'proteinQuality': proteinQuality,
@@ -52,7 +58,52 @@ class ScannedProduct {
       'confidence': confidence,
       'method': method,
       'servingSize': servingSize,
+      'category': category,
+      'alternatives': alternatives,
+      'retailLinks': retailLinks,
     };
+  }
+
+  factory ScannedProduct.fromJson(Map<String, dynamic> json) {
+    Color color = AppTheme.textSecondary;
+    if (json['ratingColor'] is Color) {
+      color = json['ratingColor'] as Color;
+    } else if (json['ratingColorValue'] is int) {
+      color = Color(json['ratingColorValue'] as int);
+    }
+
+    IconData icon = Icons.fastfood_rounded;
+    if (json['imageIcon'] is IconData) {
+      icon = json['imageIcon'] as IconData;
+    } else if (json['imageIconCode'] is int) {
+      icon = IconData(json['imageIconCode'] as int, fontFamily: 'MaterialIcons');
+    }
+
+    return ScannedProduct(
+      name: json['name'] ?? '',
+      rating: json['rating'] ?? '',
+      ratingColor: color,
+      imageIcon: icon,
+      calories: json['calories'] ?? '',
+      macros: json['macros'] ?? '',
+      proteinQuality: json['proteinQuality'] ?? '',
+      ingredients: List<String>.from(json['ingredients'] ?? []),
+      warnings: List<String>.from(json['warnings'] ?? []),
+      acneScore: json['acneScore'] ?? '',
+      source: json['source'] ?? '',
+      confidence: json['confidence'] ?? '',
+      method: json['method'] ?? '',
+      servingSize: json['servingSize'] ?? '',
+      category: json['category'] ?? '',
+      alternatives: (json['alternatives'] as List?)
+              ?.map((e) => Map<String, dynamic>.from(e))
+              .toList() ??
+          [],
+      retailLinks: (json['retailLinks'] as List?)
+              ?.map((e) => Map<String, String>.from(e))
+              .toList() ??
+          [],
+    );
   }
 }
 
@@ -106,6 +157,8 @@ class NutritionNormalizer {
     String? rawAcneScore,
     String? skinType,
     dynamic rawSodium,
+    List<Map<String, dynamic>>? alternatives,
+    List<Map<String, String>>? retailLinks,
   }) {
     // 1. Fetch current UserProfile from Hive to run offline custom normalization loops
     final UserProfile? userProfile = StorageService.getUserProfile();
@@ -318,6 +371,9 @@ class NutritionNormalizer {
       confidence: confidence,
       method: method,
       servingSize: serving,
+      category: category,
+      alternatives: alternatives ?? const [],
+      retailLinks: retailLinks ?? const [],
     );
   }
 
