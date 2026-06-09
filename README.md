@@ -7,7 +7,8 @@ An ultra-premium, dark-themed fitness, nutrition, and physique tracker applicati
 - **Frontend Framework**: Flutter (Stable Channel)
 - **State Management**: Flutter Riverpod
 - **Local Storage**: Hive (for lightning-fast local metadata/metrics caching)
-- **Backend / Authentication**: Firebase Auth, Cloud Firestore, Cloud Functions (proxying AI analysis queries safely), and Cloud Storage (for physique photos)
+- **Backend / Authentication**: Firebase Auth, Cloud Firestore, Cloud Functions (Node.js 24), and Cloud Storage (for physique photos)
+- **AI Engine**: Gemini 2.5 Flash integrated server-side via Firebase Cloud Functions
 - **Design Language**: Luminous low-light glassmorphism dark mode ("Obsidian Velvet" & "Space Sapphire" gradients with neon highlights)
 - **CI/CD Integration**: GitHub Actions workflow for automatic Android APK compilation (`Build Release APK` pipeline)
 
@@ -20,9 +21,16 @@ An ultra-premium, dark-themed fitness, nutrition, and physique tracker applicati
 - **Dynamic Metrics Editor**: Tapping "Edit" on the main card launches a blur-background metrics panel to override daily calories, macronutrient targets, and water intake.
 - **Embedded Daily History**: Inline log tracker showing every item logged on the selected day, with immediate editing/removal options.
 
-### 🍎 Food Journaling & AI Scanning
+### 🔍 Zivo Vision Lens (V4 AI Decision Engine)
+- **Unified Barcode & Visual Scanner**: Scan any food, supplement, or skincare product via barcode, manual digits, or product photos.
+- **Automated Classification**: Automatically detects whether the scanned product is a food, supplement, or skincare item without manual user input.
+- **Database & AI Pipeline**: Queries public APIs (OpenFoodFacts/OpenBeautyFacts) for metadata, then funnels ingredients to Gemini 2.5 Flash Cloud Functions for a premium WHOOP/Apple Health-style evaluation.
+- **Visual Grades & Verdicts**: Instantly displays a health grade (A–E) and clear, direct verdict on real-world impact.
+- **Responsive Insights Grid**: Bulleted key highlights detailing palm oil, sugar spikes, additives, or acne triggers, fully responsive on all screen sizes.
+- **Healthier Alternatives & Store Links**: Recommends 3 healthier category-matched alternatives. Tapping an alternative dynamically updates purchase buttons linked to services like Blinkit, Zepto, Swiggy Instamart, Amazon, Myntra, and Nykaa with brand favicons.
+
+### 🍎 Food Journaling
 - **AI Photo Scan**: Upload or take a picture of a meal for automated calorie and macronutrient parsing. Includes disclaimer notices and manual overrides.
-- **Barcode Scanner**: ZXing-powered quick item scanning on both web and mobile environments.
 - **Food Timelines**: The history screen maps all logs dynamically to see when meals were eaten, allowing users to modify or delete logs retroactively.
 
 ### 🏋️ Workout Tracker & Physique Analyzer
@@ -39,23 +47,48 @@ An ultra-premium, dark-themed fitness, nutrition, and physique tracker applicati
 
 ### Environment Requirements
 - Flutter SDK `^3.12.0` (with web and mobile channels enabled)
+- Node.js `^24.0.0` (for Cloud Functions)
+- Firebase CLI (`npm install -g firebase-tools`)
 - Java 17+ (configured via JDK)
 
 ### Local Configuration
-1. Initialize the packages:
+
+1. **Initialize Flutter dependencies:**
    ```bash
    flutter pub get
    ```
-2. Configure Firebase:
-   - Place a valid [google-services.json](file:///c:/Users/smogg/Downloads/v2/healthapp/codemvpv1/android/app/google-services.json) in `android/app/`.
-   - Initialize configurations using `flutterfire configure` if modifying project structures.
 
-3. Run the application:
-   - For Web:
+2. **Configure Firebase & Cloud Functions:**
+   * Place a valid `google-services.json` in `android/app/`.
+   * Configure your local env secrets or deploy functions with the `GEMINI_API_KEY` secret configured in GCP Secret Manager.
+   * Build and lint functions:
+     ```bash
+     cd functions
+     npm install
+     npm run build
+     npm run lint
+     ```
+
+3. **Deploy Cloud Functions:**
+   ```bash
+   npx firebase deploy --only functions
+   ```
+
+4. **Run the Application:**
+   * **For Web (Normal Chrome Browser):**
+     To serve locally and view in your standard Chrome browser without test automation debug profiles:
+     ```bash
+     flutter run -d web-server --web-port=8080 --web-hostname=127.0.0.1
+     ```
+     Once running, open your regular Chrome browser and navigate to:
+     [http://127.0.0.1:8080](http://127.0.0.1:8080)
+
+   * **For Web (Flutter Debug Chrome):**
      ```bash
      flutter run -d chrome
      ```
-   - For Android (Native):
+
+   * **For Android (Native):**
      ```bash
      flutter run -d android
      ```
