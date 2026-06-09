@@ -13,6 +13,7 @@ import '../../utils/image_picker_helper.dart';
 import '../../services/scanner/ai_analysis_service.dart';
 import 'food_history_screen.dart';
 import 'food_logger_dialog.dart';
+import '../vision_lens/vision_lens/screens/unified_scanner_dialog.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -828,7 +829,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             icon: Icons.qr_code_scanner_rounded,
             color: AppTheme.accentOrange,
             onTap: () {
-              ref.read(activeTabProvider.notifier).state = 2; // Go to Scan
+              showDialog(
+                context: context,
+                builder: (context) => const UnifiedVisionScannerDialog(),
+              );
             },
           ),
         ),

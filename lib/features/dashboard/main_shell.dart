@@ -11,7 +11,7 @@ import '../../services/state_providers.dart';
 import '../../services/storage_service.dart';
 import 'dashboard_screen.dart';
 import 'workout_screen.dart';
-import 'scanner_screen.dart';
+import '../vision_lens/vision_lens/screens/vision_lens_home_screen.dart';
 import 'progress_screen.dart';
 import '../../services/ai_backend_service.dart';
 
@@ -26,7 +26,7 @@ class _MainShellState extends ConsumerState<MainShell> {
   final List<Widget> _screens = [
     const DashboardScreen(),
     const WorkoutScreen(),
-    const ScannerScreen(),
+    const VisionLensHomeScreen(),
     const ProgressScreen(),
     const ProfilePlaceholderScreen(),
   ];
@@ -608,6 +608,73 @@ class _ProfilePlaceholderScreenState
                 ],
               ),
             ),
+            const SizedBox(height: 32),
+
+            // Zivo Vision Lens Launch Card
+            const Text(
+              'AI Product Intelligence',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w900,
+                color: Colors.white,
+                letterSpacing: -0.5,
+              ),
+            ),
+            const SizedBox(height: 16),
+            GestureDetector(
+              onTap: () => context.push('/vision_lens'),
+              child: GlassCard(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppTheme.accentCyan.withOpacity(0.12),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.center_focus_strong_rounded,
+                        color: AppTheme.accentCyan,
+                        size: 26,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Zivo Vision Lens',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            'Scan and analyze ingredients of food, supplements, and skincare products using AI.',
+                            style: TextStyle(
+                              color: AppTheme.textSecondary,
+                              fontSize: 12,
+                              height: 1.3,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Icon(
+                      Icons.chevron_right_rounded,
+                      color: AppTheme.accentCyan,
+                      size: 24,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
             const SizedBox(height: 32),
 
             // Target budgets editor
