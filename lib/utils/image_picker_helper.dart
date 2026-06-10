@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:image/image.dart' as img;
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
@@ -117,6 +116,7 @@ class ImagePickerHelper {
           height: decoded.height,
           format: 'rgba8888',
           rotation: 0,
+          centerCrop: false, // static upload: search the whole image, not just center
         );
         
         final result = await CameraBarcodeScanner.detectBarcode(frame);
@@ -132,21 +132,42 @@ class ImagePickerHelper {
           );
           return result;
         }
+        // Record actual dimensions even on failure
+        lastDebugInfo = BarcodeDebugInfo(
+          imagePath: filePath,
+          fileSize: bytes.length,
+          width: decoded.width,
+          height: decoded.height,
+          detectedCount: 0,
+          rawBarcodeValue: null,
+          mimeType: 'image/png',
+          exception: "Decoding failed",
+        );
+      } else {
+        lastDebugInfo = BarcodeDebugInfo(
+          imagePath: filePath,
+          fileSize: bytes.length,
+          width: 0,
+          height: 0,
+          detectedCount: 0,
+          rawBarcodeValue: null,
+          mimeType: 'image/png',
+          exception: "Image format not recognized",
+        );
       }
     } catch (e) {
       debugPrint("Pure Dart image scan failed: $e");
+      lastDebugInfo = BarcodeDebugInfo(
+        imagePath: filePath,
+        fileSize: 0,
+        width: 0,
+        height: 0,
+        detectedCount: 0,
+        rawBarcodeValue: null,
+        mimeType: 'image/png',
+        exception: e.toString(),
+      );
     }
-    
-    lastDebugInfo = BarcodeDebugInfo(
-      imagePath: filePath,
-      fileSize: 0,
-      width: 0,
-      height: 0,
-      detectedCount: 0,
-      rawBarcodeValue: null,
-      mimeType: 'image/png',
-      exception: "Decoding failed",
-    );
     return "";
   }
 

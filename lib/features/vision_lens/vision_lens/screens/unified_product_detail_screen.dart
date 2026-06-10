@@ -717,33 +717,75 @@ class _UnifiedProductDetailScreenState extends ConsumerState<UnifiedProductDetai
 
                         // Bento Metrics for food/supplement
                         if (report.category.toLowerCase() != 'skincare') ...[
-                          Row(
-                            children: [
-                              Expanded(
-                                child: _buildMiniStatusBox(
-                                  'Added Sugars',
-                                  report.sugarAnalysis.impact,
-                                  report.sugarAnalysis.amount,
-                                  report.sugarAnalysis.impact == 'High' ? AppTheme.accentCoral : AppTheme.accentEmerald,
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: _buildMiniStatusBox(
-                                  'Palm Oil',
-                                  report.palmOilAnalysis.present ? 'Present' : 'Clean',
-                                  report.palmOilAnalysis.present ? '❌ Avoid' : '✅ Safe',
-                                  report.palmOilAnalysis.present ? AppTheme.accentCoral : AppTheme.accentEmerald,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 10),
-                          _buildHorizontalMiniMetric(
-                            'Carbohydrate Level',
-                            report.carbsAnalysis.impact,
-                            report.carbsAnalysis.verdict,
-                            report.carbsAnalysis.impact == 'High' ? AppTheme.accentCoral : AppTheme.accentEmerald,
+                          LayoutBuilder(
+                            builder: (context, constraints) {
+                              final isMobile = constraints.maxWidth < 450;
+                              if (isMobile) {
+                                return Column(
+                                  children: [
+                                    _buildBentoCard(
+                                      title: 'Added Sugars',
+                                      status: report.sugarAnalysis.impact,
+                                      description: report.sugarAnalysis.amount,
+                                      accentColor: _getStatusColor(report.sugarAnalysis.impact),
+                                      icon: Icons.cookie_outlined,
+                                    ),
+                                    const SizedBox(height: 10),
+                                    _buildBentoCard(
+                                      title: 'Palm Oil',
+                                      status: report.palmOilAnalysis.present ? 'Present' : 'Clean',
+                                      description: report.palmOilAnalysis.present ? '❌ Avoid palm oil usage' : '✅ Safe (No palm oil)',
+                                      accentColor: _getStatusColor(report.palmOilAnalysis.present ? 'present' : 'clean'),
+                                      icon: Icons.eco_outlined,
+                                    ),
+                                    const SizedBox(height: 10),
+                                    _buildBentoCard(
+                                      title: 'Carbohydrate Level',
+                                      status: report.carbsAnalysis.impact,
+                                      description: report.carbsAnalysis.verdict,
+                                      accentColor: _getStatusColor(report.carbsAnalysis.impact),
+                                      icon: Icons.donut_large_rounded,
+                                    ),
+                                  ],
+                                );
+                              } else {
+                                return Column(
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: _buildBentoCard(
+                                            title: 'Added Sugars',
+                                            status: report.sugarAnalysis.impact,
+                                            description: report.sugarAnalysis.amount,
+                                            accentColor: _getStatusColor(report.sugarAnalysis.impact),
+                                            icon: Icons.cookie_outlined,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 10),
+                                        Expanded(
+                                          child: _buildBentoCard(
+                                            title: 'Palm Oil',
+                                            status: report.palmOilAnalysis.present ? 'Present' : 'Clean',
+                                            description: report.palmOilAnalysis.present ? '❌ Avoid palm oil usage' : '✅ Safe (No palm oil)',
+                                            accentColor: _getStatusColor(report.palmOilAnalysis.present ? 'present' : 'clean'),
+                                            icon: Icons.eco_outlined,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 10),
+                                    _buildBentoCard(
+                                      title: 'Carbohydrate Level',
+                                      status: report.carbsAnalysis.impact,
+                                      description: report.carbsAnalysis.verdict,
+                                      accentColor: _getStatusColor(report.carbsAnalysis.impact),
+                                      icon: Icons.donut_large_rounded,
+                                    ),
+                                  ],
+                                );
+                              }
+                            },
                           ),
                           const SizedBox(height: 20),
                         ],
@@ -925,76 +967,80 @@ class _UnifiedProductDetailScreenState extends ConsumerState<UnifiedProductDetai
     );
   }
 
-  Widget _buildMiniStatusBox(String title, String status, String value, Color color) {
+  Color _getStatusColor(String statusText) {
+    final lower = statusText.toLowerCase();
+    if (lower.contains('high') || lower.contains('present') || lower.contains('avoid')) {
+      return AppTheme.accentCoral;
+    } else if (lower.contains('moderate') || lower.contains('caution') || lower.contains('warning')) {
+      return AppTheme.accentOrange;
+    } else {
+      return AppTheme.accentEmerald;
+    }
+  }
+
+  Widget _buildBentoCard({
+    required String title,
+    required String status,
+    required String description,
+    required Color accentColor,
+    required IconData icon,
+  }) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppTheme.obsidianBackground.withOpacity(0.3),
-        borderRadius: BorderRadius.circular(12),
+        color: AppTheme.obsidianBackground.withOpacity(0.4),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppTheme.glassBorder),
+        gradient: LinearGradient(
+          colors: [
+            AppTheme.obsidianBackground.withOpacity(0.5),
+            accentColor.withOpacity(0.04),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title.toUpperCase(),
-            style: const TextStyle(color: AppTheme.textSecondary, fontSize: 8, fontWeight: FontWeight.bold),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                title.toUpperCase(),
+                style: const TextStyle(
+                  color: AppTheme.textSecondary,
+                  fontSize: 9,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.0,
+                ),
+              ),
+              Icon(
+                icon,
+                color: accentColor.withOpacity(0.6),
+                size: 16,
+              ),
+            ],
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 12),
           Text(
             status,
-            style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              color: accentColor,
+              fontSize: 14,
+              fontWeight: FontWeight.w900,
+              letterSpacing: -0.2,
+            ),
           ),
-          const SizedBox(height: 2),
+          const SizedBox(height: 6),
           Text(
-            value,
-            style: const TextStyle(color: Colors.white, fontSize: 10),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHorizontalMiniMetric(String title, String status, String description, Color color) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppTheme.obsidianBackground.withOpacity(0.3),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppTheme.glassBorder),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title.toUpperCase(),
-                  style: const TextStyle(color: AppTheme.textSecondary, fontSize: 8, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  description,
-                  style: const TextStyle(color: Colors.white, fontSize: 11),
-                ),
-              ],
+            description,
+            style: const TextStyle(
+              color: Colors.white70,
+              fontSize: 11.5,
+              height: 1.35,
             ),
           ),
-          const SizedBox(width: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(6),
-              border: Border.all(color: color.withOpacity(0.2)),
-            ),
-            child: Text(
-              status.toUpperCase(),
-              style: TextStyle(color: color, fontSize: 9, fontWeight: FontWeight.bold),
-            ),
-          )
         ],
       ),
     );

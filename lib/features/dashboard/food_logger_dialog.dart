@@ -8,13 +8,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:camera/camera.dart';
-import 'package:image/image.dart' as img;
 import '../../core/theme.dart';
 import '../../services/ai_backend_service.dart';
 import '../../services/state_providers.dart';
 import '../../utils/image_picker_helper.dart';
-import '../../services/scanner/camera_barcode_scanner.dart';
 import '../../services/scanner/native_barcode_scanner.dart';
+import '../../services/scanner/ai_analysis_service.dart';
 
 class StandardFood {
   String foodName;
@@ -194,29 +193,16 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
             return;
           }
           final bytes = await file.readAsBytes();
-          
-          // Use native browser decoding (non-blocking) instead of pure-Dart img.decodeImage!
-          // We downscale to 600px targetWidth to drastically reduce the RGBA byte buffer size & CPU usage.
-          final ui.Codec codec = await ui.instantiateImageCodec(bytes, targetWidth: 600);
-          final ui.FrameInfo frameInfo = await codec.getNextFrame();
-          final ui.Image nativeImage = frameInfo.image;
-          
-          final byteData = await nativeImage.toByteData(format: ui.ImageByteFormat.rawRgba);
-          if (byteData != null && mounted) {
-            final rgbaBytes = byteData.buffer.asUint8List();
-            final frame = ImageFrame(
-              bytes: rgbaBytes,
-              width: nativeImage.width,
-              height: nativeImage.height,
-              format: 'rgba8888',
-              rotation: 0,
-            );
-            final barcode = await CameraBarcodeScanner.detectBarcode(frame);
-            if (barcode != null && barcode.isNotEmpty && mounted) {
-              _isProcessingFrame = true;
-              await _runBarcodeScan(barcode);
-              _isProcessingFrame = false;
-            }
+          final base64Str = base64Encode(bytes);
+          final extension = file.path.split('.').last.toLowerCase();
+          final mimeType = (extension == 'png') ? 'image/png' : 'image/jpeg';
+          final dataUrl = "data:$mimeType;base64,$base64Str";
+
+          final barcode = await ImagePickerHelper.scanBarcode(dataUrl);
+          if (barcode.isNotEmpty && !barcode.startsWith('ERROR') && mounted) {
+            _isProcessingFrame = true;
+            await _runBarcodeScan(barcode);
+            _isProcessingFrame = false;
           }
         } catch (e) {
           if (_cameraController != null && _isCameraInitialized) {
@@ -348,19 +334,35 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
 
     try {
       final url = Uri.parse(
-          'https://world.openfoodfacts.org/api/v0/product/$barcode.json');
+          'https://world.openfoodfacts.org/api/v2/product/$barcode.json');
       final response = await http.get(url);
       if (response.statusCode == 200) {
         final json = jsonDecode(response.body);
-        if (json['status'] == 1 && json['product'] != null) {
+        final isSuccess = json['product'] != null;
+        
+        if (isSuccess) {
           final product = json['product'];
           final nutriments = product['nutriments'] ?? {};
 
           final name = product['product_name'] ?? 'Unknown Product';
-          final cal = (nutriments['energy-kcal_100g'] ?? 0).round();
-          final prot = (nutriments['proteins_100g'] ?? 0).round();
-          final carb = (nutriments['carbohydrates_100g'] ?? 0).round();
-          final fat = (nutriments['fat_100g'] ?? 0).round();
+          
+          // Safely parse int/double/String values from nutriment list
+          int _parseNutrient(List<String> keys) {
+            for (var key in keys) {
+              final val = nutriments[key];
+              if (val != null) {
+                if (val is num) return val.round();
+                final parsed = double.tryParse(val.toString());
+                if (parsed != null) return parsed.round();
+              }
+            }
+            return 0;
+          }
+
+          final cal = _parseNutrient(['energy-kcal_100g', 'energy-kcal', 'energy-kcal_value', 'energy_value']);
+          final prot = _parseNutrient(['proteins_100g', 'proteins', 'proteins_value']);
+          final carb = _parseNutrient(['carbohydrates_100g', 'carbohydrates', 'carbohydrates_value']);
+          final fat = _parseNutrient(['fat_100g', 'fat', 'fat_value']);
 
           final String? productImageUrl = product['image_url'] ??
               product['image_front_url'] ??
@@ -395,7 +397,8 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
           _errorMessage = "Product Not Found";
         });
       }
-    } catch (e) {
+    } catch (e, stack) {
+      debugPrint("Food Log Barcode lookup exception: $e\n$stack");
       setState(() {
         _isLoading = false;
         _errorMessage = "Product Not Found";
@@ -489,11 +492,22 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
 
   // Gemini API Integration via Cloud Function
   Future<void> _runGeminiAnalysis(String type, String content) async {
+    String optimizedContent = content;
+    if (type == 'image') {
+      try {
+        optimizedContent = AiAnalysisService.optimizeImage(content);
+      } catch (e) {
+        debugPrint("Food Log visual compression failed: $e");
+      }
+    }
+
     setState(() {
       _isLoading = true;
       _loadingText = "Analyzing meal with Gemini 2.5 Flash...";
       _errorMessage = null;
-      if (type != 'image') {
+      if (type == 'image') {
+        _selectedImageBase64 = optimizedContent;
+      } else {
         _selectedImageBase64 = null;
       }
     });
@@ -501,7 +515,7 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
     try {
       final result = await AIBackendService.analyzeMeal(
         type: type,
-        content: content,
+        content: optimizedContent,
       );
 
       if (result.containsKey('error')) {

@@ -377,7 +377,7 @@ function buildFoodPrompt(payloadStr: string): string {
     "2. grade: A/B/C/D/E",
     "3. verdict: max 12 words",
     "4. insights: 3-5, start with ❌, ⚠, ✅",
-    "5. decodedIngredients: decode all. Safety: Safe/Caution/Avoid. Max 12-word desc. Check for hidden sugars (maltodextrin, dextrose, HFCS, invert sugar), palm oil (palmitate, palmitic acid, vegetable fat), additives.",
+    "5. decodedIngredients: Decode ONLY ingredients of concern (safety: Caution or Avoid, sneaky sugars, palm oil, warning items, artificial sweeteners, or harmful chemical additives). Do not create detailed decodedIngredients entries for standard safe ingredients (like water, oats, salt, wheat flour); these can be completely omitted from the decoded list to keep the response concise. Max 12-word description for each entry.",
     "6. allergyWarnings: list allergen warnings (e.g. nuts, dairy, soy, gluten, wheat, egg).",
     "7. alternatives: 3 real Indian products (e.g. Yoga Bar, True Elements).",
     "Note: Focus on metabolic health & ingredient safety."
@@ -398,7 +398,7 @@ function buildSupplementPrompt(
     "2. grade: A/B/C/D/E",
     "3. verdict: max 12 words",
     "4. insights: 3-5, start with ❌, ⚠, ✅",
-    "5. decodedIngredients: decode all. Safety: Safe/Caution/Avoid. Max 12-word desc. Check for sweeteners (sucralose, aspartame, acesulfame-K), fillers (magnesium stearate), artificial colors (Red 40).",
+    "5. decodedIngredients: Decode ONLY ingredients of concern (safety: Caution or Avoid, artificial sweeteners, fillers, binders, artificial colors, or heavy preservatives). Omit basic harmless ingredients from the decoded list to keep the response concise. Max 12-word description for each entry.",
     "6. allergyWarnings: list allergen warnings (nuts, dairy, soy, gluten, etc).",
     "7. alternatives: 3 real Indian products (Nutrabay, AS-IT-IS, MuscleBlaze, Avvatar).",
     "Note: Focus on purity, bioavailability, sweeteners."
@@ -419,7 +419,7 @@ function buildSkincarePrompt(
     "2. grade: A/B/C/D/E",
     "3. verdict: max 12 words",
     "4. insights: 3-5, start with ❌, ⚠, ✅",
-    "5. decodedIngredients: decode all. Safety: Safe/Caution/Avoid. Max 12-word desc. Check for acne triggers, drying alcohols, fragrance, parabens, sulfates, silicones.",
+    "5. decodedIngredients: Decode ONLY ingredients of concern (safety: Caution or Avoid, acne triggers, drying alcohols, parabens, sulfates, silicones, synthetic fragrances, or contact allergens). Omit basic harmless skin-identical ingredients or water from the decoded list to keep the response concise. Max 12-word description for each entry.",
     "6. allergyWarnings: list contact allergens or irritants warnings (e.g. linalool, limonene, essential oils).",
     "7. alternatives: 3 real Indian products (Minimalist, Cetaphil, CeraVe, Plum).",
     "Note: Focus on comedogenicity, irritation, barrier health."

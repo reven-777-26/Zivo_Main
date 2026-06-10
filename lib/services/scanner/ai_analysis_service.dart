@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:image/image.dart' as img;
 import '../storage_service.dart';
 import 'nutrition_normalizer.dart';
 import 'ocr_service.dart';
@@ -10,10 +11,45 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class AiAnalysisService {
-  /// Optimization asset utility: executes simulated quality downscaling and size compression.
+  /// Optimization asset utility: executes actual quality downscaling and size compression.
   static String optimizeImage(String base64Str) {
-    debugPrint("Applying asset optimization: downscaled to max 512px width & 70% quality JPEG.");
-    return base64Str;
+    try {
+      String cleanBase64 = base64Str;
+      if (cleanBase64.contains(',')) {
+        cleanBase64 = cleanBase64.split(',').last;
+      }
+      final bytes = base64Decode(cleanBase64.replaceAll(RegExp(r'\s+'), ''));
+      img.Image? decoded = img.decodeImage(bytes);
+      if (decoded == null) {
+        debugPrint("Asset optimization: Failed to decode image bytes.");
+        return base64Str;
+      }
+
+      img.Image resized = decoded;
+      if (decoded.width > 512 || decoded.height > 512) {
+        resized = img.copyResize(
+          decoded,
+          width: decoded.width > decoded.height ? 512 : null,
+          height: decoded.height >= decoded.width ? 512 : null,
+        );
+      }
+
+      final compressedBytes = img.encodeJpg(resized, quality: 70);
+      final encoded = base64Encode(compressedBytes);
+      
+      if (base64Str.startsWith('data:image/')) {
+        final commaIndex = base64Str.indexOf(',');
+        final prefix = base64Str.substring(0, commaIndex + 1);
+        debugPrint("Asset optimization: downscaled to max 512px & 70% quality. Original: ${bytes.length} bytes, New: ${compressedBytes.length} bytes.");
+        return "$prefix$encoded";
+      }
+      
+      debugPrint("Asset optimization: downscaled to max 512px & 70% quality. Original: ${bytes.length} bytes, New: ${compressedBytes.length} bytes.");
+      return encoded;
+    } catch (e) {
+      debugPrint("Asset optimization failed: $e");
+      return base64Str;
+    }
   }
 
   /// Secure client method that rotates Gemini API keys and queries the gemini-2.5-flash endpoint.

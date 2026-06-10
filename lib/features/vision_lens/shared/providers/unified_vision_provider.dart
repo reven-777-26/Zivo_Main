@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../utils/image_picker_helper.dart';
 import '../services/vision_storage_service.dart';
 import '../services/unified_vision_service.dart';
+import '../../../../services/scanner/ai_analysis_service.dart';
 
 class UnifiedVisionState {
   final AsyncValue<UnifiedProductReport?> currentReport;
@@ -80,6 +81,14 @@ class UnifiedVisionNotifier extends StateNotifier<UnifiedVisionState> {
     } catch (_) {}
   }
 
+  String _generateImageHash(String base64Content) {
+    int hash = 0;
+    for (int i = 0; i < base64Content.length; i++) {
+      hash = (31 * hash + base64Content.codeUnitAt(i)) & 0xFFFFFFFF;
+    }
+    return 'img_hash_${base64Content.length}_$hash';
+  }
+
   /// BARCODE FLOW:
   /// 1. Check local cache
   /// 2. Lookup OpenFoodFacts/OpenBeautyFacts by barcode
@@ -119,10 +128,9 @@ class UnifiedVisionNotifier extends StateNotifier<UnifiedVisionState> {
     final registryData = await UnifiedVisionService.lookupProductApis(cleanBarcode);
 
     if (registryData == null) {
-      // Barcode not found in any database
+      // Barcode not found in any database — fallback to asking Gemini to identify/estimate it
       state = state.copyWith(progressMessage: 'Product not in database. Asking AI to identify...');
       try {
-        // Try AI analysis with just the barcode number
         final report = await UnifiedVisionService.analyzeWithGemini(
           barcode: cleanBarcode,
           productName: 'Product (Barcode: $cleanBarcode)',
@@ -221,6 +229,9 @@ class UnifiedVisionNotifier extends StateNotifier<UnifiedVisionState> {
       currentReport: const AsyncValue.loading(),
     );
 
+    // Optimize visual image size immediately to reduce tokens and bandwidth
+    final String optimizedBase64 = AiAnalysisService.optimizeImage(base64Content);
+
     // 1. Try to extract EAN barcode from image locally (only if not scanning ingredient label directly)
     if (!isIngredientLabel) {
       final barcode = await ImagePickerHelper.scanBarcode(base64Content, filePath: null);
@@ -231,17 +242,36 @@ class UnifiedVisionNotifier extends StateNotifier<UnifiedVisionState> {
       }
     }
 
-    // 2. No barcode found or isIngredientLabel — Use AI to identify the product from the image
+    // Generate deterministic hash key for image caching
+    final imgHashKey = _generateImageHash(optimizedBase64);
+
+    // 2. Check local image hash cache to avoid redundant vision calls
+    for (var cat in ['food', 'supplement', 'skincare']) {
+      try {
+        final cached = await VisionStorageService.getCachedProduct(cat, imgHashKey);
+        if (cached != null) {
+          debugPrint("Local Image Cache Hit for $imgHashKey!");
+          final report = UnifiedProductReport.fromJson(cached);
+          state = state.copyWith(
+            isScanning: false,
+            currentReport: AsyncValue.data(report),
+          );
+          _addToLocalHistoryList(report);
+          return;
+        }
+      } catch (_) {}
+    }
+
+    // 3. Use AI to identify the product from the image
     state = state.copyWith(
       progressMessage: isIngredientLabel
           ? 'AI is extracting ingredients...'
           : 'AI is identifying the product...',
     );
-    final fakeBarcode = 'img_${DateTime.now().millisecondsSinceEpoch}';
 
     try {
       // Step A: Call identifyProduct cloud function to get product name, brand, category
-      final identifiedProduct = await UnifiedVisionService.identifyProductFromImage(base64Content);
+      final identifiedProduct = await UnifiedVisionService.identifyProductFromImage(optimizedBase64);
       
       String productName = identifiedProduct?['productName'] ?? identifiedProduct?['name'] ?? fileName.split('.').first;
       String brand = identifiedProduct?['brand'] ?? 'Unknown';
@@ -254,6 +284,29 @@ class UnifiedVisionNotifier extends StateNotifier<UnifiedVisionState> {
       }
 
       debugPrint("AI identified: $productName by $brand (category: $category)");
+
+      // Check cache by slug key before running Call #2
+      final String initialSlug = '${productName.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '_')}_${brand.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '_')}';
+      final String initialSlugKey = 'slug_$initialSlug';
+
+      Map<String, dynamic>? cachedData;
+      try {
+        cachedData = await VisionStorageService.getCachedProduct(category, initialSlugKey);
+      } catch (_) {}
+
+      if (cachedData != null) {
+        debugPrint("Local Slug Cache Hit for $initialSlugKey!");
+        final report = UnifiedProductReport.fromJson(cachedData);
+        // Link this image hash to the cached report as well
+        await VisionStorageService.cacheProduct(category, imgHashKey, report.toJson());
+        
+        state = state.copyWith(
+          isScanning: false,
+          currentReport: AsyncValue.data(report),
+        );
+        _addToLocalHistoryList(report);
+        return;
+      }
 
       List<String> ingredients = imageIngredients;
       String? imageUrl;
@@ -271,8 +324,33 @@ class UnifiedVisionNotifier extends StateNotifier<UnifiedVisionState> {
           ingredients = List<String>.from(registryData['ingredients'] ?? imageIngredients);
           imageUrl = registryData['image_url'];
           category = registryData['category'] ?? category;
+
+          // Check cache again with the refined slug key from the database match
+          final String refinedSlug = '${productName.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '_')}_${brand.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '_')}';
+          final String refinedSlugKey = 'slug_$refinedSlug';
+
+          Map<String, dynamic>? refinedCachedData;
+          try {
+            refinedCachedData = await VisionStorageService.getCachedProduct(category, refinedSlugKey);
+          } catch (_) {}
+
+          if (refinedCachedData != null) {
+            debugPrint("Local Refined Slug Cache Hit for $refinedSlugKey!");
+            final report = UnifiedProductReport.fromJson(refinedCachedData);
+            await VisionStorageService.cacheProduct(category, imgHashKey, report.toJson());
+            
+            state = state.copyWith(
+              isScanning: false,
+              currentReport: AsyncValue.data(report),
+            );
+            _addToLocalHistoryList(report);
+            return;
+          }
         }
       }
+
+      final String finalSlug = '${productName.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '_')}_${brand.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '_')}';
+      final String finalSlugKey = 'slug_$finalSlug';
 
       // Step C: Send everything to Gemini AI for deep health analysis
       state = state.copyWith(
@@ -282,16 +360,18 @@ class UnifiedVisionNotifier extends StateNotifier<UnifiedVisionState> {
       );
       
       final report = await UnifiedVisionService.analyzeWithGemini(
-        barcode: fakeBarcode,
+        barcode: imgHashKey,
         productName: productName,
         brand: brand,
         ingredients: ingredients,
         category: category,
         imageUrl: imageUrl,
-        imageBase64: base64Content,
+        imageBase64: optimizedBase64,
       );
 
-      await VisionStorageService.cacheProduct(report.category, fakeBarcode, report.toJson());
+      // Cache the result under the image hash AND the slug key
+      await VisionStorageService.cacheProduct(report.category, imgHashKey, report.toJson());
+      await VisionStorageService.cacheProduct(report.category, finalSlugKey, report.toJson());
 
       state = state.copyWith(
         isScanning: false,

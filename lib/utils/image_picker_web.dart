@@ -21,6 +21,12 @@ void pickImagePlatform(Function(String base64, String name, String? filePath) on
       reader.onLoadEnd.listen((e) {
         final String rawResult = reader.result as String;
 
+        if (isBarcode) {
+          _deliverResult(rawResult, file.name, isBarcode, onSelected);
+          uploadInput.remove();
+          return;
+        }
+
         final html.ImageElement img = html.ImageElement(src: rawResult);
         img.onLoad.first.then((_) {
           int width = img.width ?? 0;

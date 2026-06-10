@@ -7,9 +7,9 @@ void pickImagePlatform(Function(String base64, String name, String? filePath) on
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(
       source: fromCamera ? ImageSource.camera : ImageSource.gallery,
-      maxWidth: 1024,
-      maxHeight: 1024,
-      imageQuality: 80,
+      maxWidth: isBarcode ? null : 1024,
+      maxHeight: isBarcode ? null : 1024,
+      imageQuality: isBarcode ? null : 80,
     );
     if (pickedFile != null) {
       final file = File(pickedFile.path);

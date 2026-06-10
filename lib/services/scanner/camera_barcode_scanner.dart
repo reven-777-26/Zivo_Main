@@ -8,6 +8,9 @@ class ImageFrame {
   final int height;
   final String format;              // 'yuv420', 'rgba8888', etc.
   final int rotation;               // 0, 90, 180, 270
+  /// Set to false when the image is a full static upload (not a live camera frame).
+  /// Disables the center-crop so the entire image is searched.
+  final bool centerCrop;
 
   ImageFrame({
     required this.bytes,
@@ -15,11 +18,14 @@ class ImageFrame {
     required this.height,
     required this.format,
     required this.rotation,
+    this.centerCrop = true,
   });
 }
 
 class CameraBarcodeScanner {
   /// Decodes barcode from a universal ImageFrame using pure Dart zxing_lib.
+  /// [frame.centerCrop] = false → searches the whole image (for uploaded photos).
+  /// [frame.centerCrop] = true  → crops to the center 65×45% area (for live camera).
   static Future<String?> detectBarcode(ImageFrame frame) async {
     try {
       LuminanceSource source;
@@ -32,11 +38,11 @@ class CameraBarcodeScanner {
           frame.height,
         );
       } else {
-        // On Web, convert RGBA bytes to grayscale luminance
+        // On Web/upload, convert RGBA bytes to grayscale luminance
         final Uint8List luminances = Uint8List(frame.width * frame.height);
         final int size = frame.width * frame.height;
         final rgba = frame.bytes;
-        
+
         for (int i = 0; i < size; i++) {
           final r = rgba[i * 4];
           final g = rgba[i * 4 + 1];
@@ -46,16 +52,16 @@ class CameraBarcodeScanner {
         source = RGBLuminanceSource.orig(frame.width, frame.height, luminances);
       }
 
-      // Crop to center focus area where user aligns barcode
-      if (source.isCropSupported) {
-        final int cropWidth = (source.width * 0.65).round();
+      // Crop to center focus area ONLY for live camera frames.
+      // For uploaded images (centerCrop=false) we search the full image.
+      if (frame.centerCrop && source.isCropSupported) {
+        final int cropWidth  = (source.width  * 0.65).round();
         final int cropHeight = (source.height * 0.45).round();
-        final int cropLeft = (source.width - cropWidth) ~/ 2;
-        final int cropTop = (source.height - cropHeight) ~/ 2;
+        final int cropLeft   = (source.width  - cropWidth)  ~/ 2;
+        final int cropTop    = (source.height - cropHeight) ~/ 2;
         source = source.crop(cropLeft, cropTop, cropWidth, cropHeight);
       }
 
-      // Configure decoding hints for improved accuracy and speed
       final hint = DecodeHint(
         tryHarder: true,
         possibleFormats: [
@@ -67,31 +73,29 @@ class CameraBarcodeScanner {
         ],
       );
 
-      // Automatically try HybridBinarizer first (good for 2D/QR codes)
-      BinaryBitmap bitmap = BinaryBitmap(HybridBinarizer(source));
       final reader = MultiFormatReader();
-      
+
+      // Try HybridBinarizer first (good for 2D / QR codes)
+      BinaryBitmap bitmap = BinaryBitmap(HybridBinarizer(source));
       try {
         final result = reader.decode(bitmap, hint);
         if (result.text.isNotEmpty) {
-          debugPrint("ZXing (Pure Dart) decoded barcode: ${result.text}");
+          debugPrint('ZXing (Pure Dart) decoded barcode: ${result.text}');
           return result.text;
         }
-      } catch (_) {
-        // Try fallback to GlobalHistogramBinarizer (good for 1D/EAN barcodes)
-        try {
-          bitmap = BinaryBitmap(GlobalHistogramBinarizer(source));
-          final result = reader.decode(bitmap, hint);
-          if (result.text.isNotEmpty) {
-            debugPrint("ZXing (Pure Dart) decoded barcode (fallback): ${result.text}");
-            return result.text;
-          }
-        } catch (_) {
-          // No barcode found
+      } catch (_) {}
+
+      // Fallback to GlobalHistogramBinarizer (better for 1D / EAN barcodes)
+      try {
+        bitmap = BinaryBitmap(GlobalHistogramBinarizer(source));
+        final result = reader.decode(bitmap, hint);
+        if (result.text.isNotEmpty) {
+          debugPrint('ZXing (Pure Dart) decoded barcode (fallback): ${result.text}');
+          return result.text;
         }
-      }
+      } catch (_) {}
     } catch (e) {
-      debugPrint("ZXing Pure Dart Scanning Exception: $e");
+      debugPrint('ZXing Pure Dart Scanning Exception: $e');
     }
     return null;
   }
