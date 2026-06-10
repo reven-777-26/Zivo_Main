@@ -19,7 +19,7 @@ export const healthCheckAI = onCall({
   try {
     const ai = new GoogleGenAI({apiKey});
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-2.5-flash-lite",
       contents: "Reply ONLY with WORKING",
     });
     const reply = response.text ?
@@ -155,7 +155,7 @@ export const analyzeMeal = onCall({
       );
     }
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-2.5-flash-lite",
       contents: contents,
       config: config,
     });
@@ -236,7 +236,7 @@ export const identifyProduct = onCall({
     ];
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-2.5-flash-lite",
       contents: contents,
       config: {
         responseMimeType: "application/json",
@@ -346,7 +346,7 @@ export const analyzeVisionProduct = onCall({
     }
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-2.5-flash-lite",
       contents: contents,
       config: {
         responseMimeType: "application/json",
@@ -361,7 +361,11 @@ export const analyzeVisionProduct = onCall({
     if (!reply) {
       throw new Error("Empty Gemini response.");
     }
-    return JSON.parse(reply);
+    const parsed = JSON.parse(reply);
+    if (!parsed.imageUrl && payload && payload.image_url) {
+      parsed.imageUrl = payload.image_url;
+    }
+    return parsed;
   } catch (error: unknown) {
     logger.error("analyzeVisionProduct err:", error);
     const errMsg = error instanceof Error ?
@@ -395,7 +399,8 @@ function buildFoodPrompt(payloadStr: string): string {
     "   palm oil (palmitate, palmitic acid,",
     "   vegetable fat, etc), and additives.",
     "6. Mark each ingredient safety as",
-    "   Safe, Caution, or Avoid.",
+    "   Safe, Caution, or Avoid, and limit",
+    "   its description to maximum 12 words.",
     "7. Recommend 3 REAL healthier",
     "   alternatives from Indian markets",
     "   (Yoga Bar, True Elements, etc).",
@@ -433,7 +438,8 @@ function buildSupplementPrompt(
     "   sucralose, aspartame, acesulfame-K,",
     "   fillers (magnesium stearate, etc),",
     "   artificial colors (Red 40, etc).",
-    "6. Mark safety: Safe, Caution, Avoid.",
+    "6. Mark safety: Safe, Caution, Avoid, and",
+    "   limit its description to maximum 12 words.",
     "7. Recommend 3 REAL alternatives from",
     "   Indian brands (Nutrabay, AS-IT-IS,",
     "   MuscleBlaze Raw, Avvatar, etc).",
@@ -468,7 +474,8 @@ function buildSkincarePrompt(
     "   acne triggers, drying alcohols,",
     "   fragrance/parfum, parabens,",
     "   sulfates, silicones.",
-    "6. Mark safety: Safe, Caution, Avoid.",
+    "6. Mark safety: Safe, Caution, Avoid, and",
+    "   limit its description to maximum 12 words.",
     "7. Recommend 3 REAL alternatives from",
     "   brands in India (Minimalist,",
     "   Cetaphil, CeraVe, Plum, etc).",
@@ -488,6 +495,7 @@ function buildAnalysisSchema(): Record<string, unknown> {
     properties: {
       productName: {type: "STRING"},
       brand: {type: "STRING"},
+      imageUrl: {type: "STRING", description: "Public image URL of the product"},
       zivoScore: {type: "INTEGER"},
       healthGrade: {
         type: "STRING",

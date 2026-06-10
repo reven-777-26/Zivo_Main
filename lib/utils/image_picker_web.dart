@@ -21,22 +21,56 @@ void pickImagePlatform(Function(String base64, String name, String? filePath) on
       reader.onLoadEnd.listen((e) {
         final String rawResult = reader.result as String;
 
-        if (isBarcode) {
-          // Pass the complete rawResult (including data URL prefix)
-          onSelected(rawResult, file.name, null);
-        } else {
-          // Pass standard raw base64 string for general AI analysis
-          final commaIndex = rawResult.indexOf(',');
-          if (commaIndex != -1) {
-            onSelected(rawResult.substring(commaIndex + 1), file.name, null);
-          } else {
-            onSelected(rawResult, file.name, null);
+        final html.ImageElement img = html.ImageElement(src: rawResult);
+        img.onLoad.first.then((_) {
+          int width = img.width ?? 0;
+          int height = img.height ?? 0;
+          
+          if (width == 0 || height == 0) {
+            _deliverResult(rawResult, file.name, isBarcode, onSelected);
+            uploadInput.remove();
+            return;
           }
-        }
-        uploadInput.remove(); // Clean up from DOM
+
+          final maxDim = 1024;
+          if (width > maxDim || height > maxDim) {
+            if (width > height) {
+              height = (height * maxDim / width).round();
+              width = maxDim;
+            } else {
+              width = (width * maxDim / height).round();
+              height = maxDim;
+            }
+          }
+
+          final canvas = html.CanvasElement(width: width, height: height);
+          final ctx = canvas.context2D;
+          ctx.drawImageScaled(img, 0, 0, width, height);
+
+          // Convert to JPEG base64 with 80% quality
+          final compressedResult = canvas.toDataUrl('image/jpeg', 0.8);
+          _deliverResult(compressedResult, file.name, isBarcode, onSelected);
+          uploadInput.remove();
+        }).catchError((_) {
+          _deliverResult(rawResult, file.name, isBarcode, onSelected);
+          uploadInput.remove();
+        });
       });
     } else {
-      uploadInput.remove(); // Clean up from DOM if cancelled
+      uploadInput.remove();
     }
   });
+}
+
+void _deliverResult(String dataUrl, String filename, bool isBarcode, Function(String base64, String name, String? filePath) onSelected) {
+  if (isBarcode) {
+    onSelected(dataUrl, filename, null);
+  } else {
+    final commaIndex = dataUrl.indexOf(',');
+    if (commaIndex != -1) {
+      onSelected(dataUrl.substring(commaIndex + 1), filename, null);
+    } else {
+      onSelected(dataUrl, filename, null);
+    }
+  }
 }

@@ -5,7 +5,12 @@ import 'package:image_picker/image_picker.dart';
 void pickImagePlatform(Function(String base64, String name, String? filePath) onSelected, {bool isBarcode = false, bool fromCamera = false}) async {
   try {
     final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: fromCamera ? ImageSource.camera : ImageSource.gallery);
+    final pickedFile = await picker.pickImage(
+      source: fromCamera ? ImageSource.camera : ImageSource.gallery,
+      maxWidth: 1024,
+      maxHeight: 1024,
+      imageQuality: 80,
+    );
     if (pickedFile != null) {
       final file = File(pickedFile.path);
       final bytes = await file.readAsBytes();

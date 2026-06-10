@@ -76,7 +76,24 @@ class ScannedProduct {
     if (json['imageIcon'] is IconData) {
       icon = json['imageIcon'] as IconData;
     } else if (json['imageIconCode'] is int) {
-      icon = IconData(json['imageIconCode'] as int, fontFamily: 'MaterialIcons');
+      final int code = json['imageIconCode'] as int;
+      if (code == Icons.fastfood_rounded.codePoint) {
+        icon = Icons.fastfood_rounded;
+      } else if (code == Icons.bolt_rounded.codePoint) {
+        icon = Icons.bolt_rounded;
+      } else if (code == Icons.clean_hands_rounded.codePoint) {
+        icon = Icons.clean_hands_rounded;
+      } else if (code == Icons.warning_amber_rounded.codePoint) {
+        icon = Icons.warning_amber_rounded;
+      } else if (code == Icons.restaurant_menu_rounded.codePoint) {
+        icon = Icons.restaurant_menu_rounded;
+      } else if (code == Icons.health_and_safety_rounded.codePoint) {
+        icon = Icons.health_and_safety_rounded;
+      } else if (code == Icons.cookie_rounded.codePoint) {
+        icon = Icons.cookie_rounded;
+      } else {
+        icon = Icons.fastfood_rounded;
+      }
     }
 
     return ScannedProduct(

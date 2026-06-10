@@ -46,12 +46,33 @@ class CameraBarcodeScanner {
         source = RGBLuminanceSource.orig(frame.width, frame.height, luminances);
       }
 
+      // Crop to center focus area where user aligns barcode
+      if (source.isCropSupported) {
+        final int cropWidth = (source.width * 0.65).round();
+        final int cropHeight = (source.height * 0.45).round();
+        final int cropLeft = (source.width - cropWidth) ~/ 2;
+        final int cropTop = (source.height - cropHeight) ~/ 2;
+        source = source.crop(cropLeft, cropTop, cropWidth, cropHeight);
+      }
+
+      // Configure decoding hints for improved accuracy and speed
+      final hint = DecodeHint(
+        tryHarder: true,
+        possibleFormats: [
+          BarcodeFormat.ean13,
+          BarcodeFormat.ean8,
+          BarcodeFormat.code128,
+          BarcodeFormat.code39,
+          BarcodeFormat.qrCode,
+        ],
+      );
+
       // Automatically try HybridBinarizer first (good for 2D/QR codes)
       BinaryBitmap bitmap = BinaryBitmap(HybridBinarizer(source));
       final reader = MultiFormatReader();
       
       try {
-        final result = reader.decode(bitmap);
+        final result = reader.decode(bitmap, hint);
         if (result.text.isNotEmpty) {
           debugPrint("ZXing (Pure Dart) decoded barcode: ${result.text}");
           return result.text;
@@ -60,7 +81,7 @@ class CameraBarcodeScanner {
         // Try fallback to GlobalHistogramBinarizer (good for 1D/EAN barcodes)
         try {
           bitmap = BinaryBitmap(GlobalHistogramBinarizer(source));
-          final result = reader.decode(bitmap);
+          final result = reader.decode(bitmap, hint);
           if (result.text.isNotEmpty) {
             debugPrint("ZXing (Pure Dart) decoded barcode (fallback): ${result.text}");
             return result.text;

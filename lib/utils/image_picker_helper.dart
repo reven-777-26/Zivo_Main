@@ -2,8 +2,10 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:image/image.dart' as img;
+import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import '../services/scanner/camera_barcode_scanner.dart';
 import '../services/scanner/native_barcode_scanner.dart';
+import 'web_barcode_scanner.dart';
 import 'image_picker_stub.dart'
     if (dart.library.html) 'image_picker_web.dart'
     if (dart.library.io) 'image_picker_native.dart';
@@ -63,6 +65,25 @@ class ImagePickerHelper {
         }
       } catch (e) {
         debugPrint("Native ML Kit scan failed, falling back: $e");
+      }
+    }
+
+    // 1.5. Try Web Native BarcodeDetector first if we are on Web
+    if (kIsWeb) {
+      try {
+        final webResult = await scanBarcodeWebPlatform(base64String);
+        if (webResult != null && webResult.isNotEmpty) {
+          debugPrint("Web BarcodeDetector decoded barcode: $webResult");
+          lastDebugInfo = BarcodeDebugInfo(
+            imagePath: filePath,
+            detectedCount: 1,
+            rawBarcodeValue: webResult,
+            mimeType: 'image/web-native',
+          );
+          return webResult;
+        }
+      } catch (e) {
+        debugPrint("Web BarcodeDetector scan failed, falling back: $e");
       }
     }
 
@@ -127,5 +148,24 @@ class ImagePickerHelper {
       exception: "Decoding failed",
     );
     return "";
+  }
+
+  /// Extracts text from an image using on-device ML Kit OCR on mobile platforms.
+  /// Returns null on Web or if it fails.
+  static Future<String?> performOCR(String base64String, {String? filePath}) async {
+    if (kIsWeb) return null;
+
+    if (filePath != null && filePath.isNotEmpty) {
+      try {
+        final inputImage = InputImage.fromFilePath(filePath);
+        final textRecognizer = TextRecognizer(script: TextRecognitionScript.latin);
+        final RecognizedText recognizedText = await textRecognizer.processImage(inputImage);
+        await textRecognizer.close();
+        return recognizedText.text;
+      } catch (e) {
+        debugPrint("Native ML Kit OCR failed: $e");
+      }
+    }
+    return null;
   }
 }

@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'dart:ui';
+import 'dart:ui' as ui;
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -70,6 +70,7 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
   List<CameraDescription> _cameras = [];
   bool _isCameraInitialized = false;
   bool _isProcessingFrame = false;
+  bool _isInitializing = false;
   Timer? _webFrameTimer;
 
   // Photo flow states
@@ -134,7 +135,10 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
   }
 
   Future<void> _initializeCamera() async {
+    if (_isInitializing) return;
+    _isInitializing = true;
     try {
+      await _disposeCamera();
       _cameras = await availableCameras();
       if (_cameras.isNotEmpty) {
         final backCamera = _cameras.firstWhere(
@@ -171,6 +175,8 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
           _errorMessage = "Camera access blocked or not supported on HTTP connection. Please upload an image instead.";
         });
       }
+    } finally {
+      _isInitializing = false;
     }
   }
 
@@ -179,19 +185,29 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
 
     if (kIsWeb) {
       _webFrameTimer = Timer.periodic(const Duration(milliseconds: 600), (timer) async {
-        if (_isLoading || _isProcessingFrame || !mounted || _tabController.index != 0 || _showReview) return;
+        if (_isLoading || _isProcessingFrame || !mounted || _tabController.index != 0 || _showReview || _cameraController == null || !_isCameraInitialized || !_cameraController!.value.isInitialized) return;
         _isProcessingFrame = true;
         try {
           final XFile file = await _cameraController!.takePicture();
+          if (!mounted || _cameraController == null || !_isCameraInitialized) {
+            _isProcessingFrame = false;
+            return;
+          }
           final bytes = await file.readAsBytes();
           
-          final img.Image? decoded = img.decodeImage(bytes);
-          if (decoded != null) {
-            final rgbaBytes = decoded.getBytes(order: img.ChannelOrder.rgba);
+          // Use native browser decoding (non-blocking) instead of pure-Dart img.decodeImage!
+          // We downscale to 600px targetWidth to drastically reduce the RGBA byte buffer size & CPU usage.
+          final ui.Codec codec = await ui.instantiateImageCodec(bytes, targetWidth: 600);
+          final ui.FrameInfo frameInfo = await codec.getNextFrame();
+          final ui.Image nativeImage = frameInfo.image;
+          
+          final byteData = await nativeImage.toByteData(format: ui.ImageByteFormat.rawRgba);
+          if (byteData != null && mounted) {
+            final rgbaBytes = byteData.buffer.asUint8List();
             final frame = ImageFrame(
               bytes: rgbaBytes,
-              width: decoded.width,
-              height: decoded.height,
+              width: nativeImage.width,
+              height: nativeImage.height,
               format: 'rgba8888',
               rotation: 0,
             );
@@ -203,7 +219,9 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
             }
           }
         } catch (e) {
-          debugPrint("Web dialog barcode scan frame error: $e");
+          if (_cameraController != null && _isCameraInitialized) {
+            debugPrint("Web dialog barcode scan frame error: $e");
+          }
         } finally {
           _isProcessingFrame = false;
         }
@@ -228,14 +246,18 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
     }
   }
 
-  void _disposeCamera() {
+  Future<void> _disposeCamera() async {
     _webFrameTimer?.cancel();
     _webFrameTimer = null;
     if (_cameraController != null) {
       if (_cameraController!.value.isStreamingImages) {
-        _cameraController!.stopImageStream();
+        try {
+          await _cameraController!.stopImageStream();
+        } catch (_) {}
       }
-      _cameraController!.dispose();
+      try {
+        await _cameraController!.dispose();
+      } catch (_) {}
       _cameraController = null;
     }
     _isCameraInitialized = false;
@@ -519,7 +541,7 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
           child: ClipRRect(
             borderRadius: BorderRadius.circular(24),
             child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+              filter: ui.ImageFilter.blur(sigmaX: 16, sigmaY: 16),
               child: Container(
                 constraints: const BoxConstraints(maxWidth: 450),
                 padding: const EdgeInsets.all(24),
@@ -700,7 +722,7 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
       child: ClipRRect(
         borderRadius: BorderRadius.circular(28),
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+          filter: ui.ImageFilter.blur(sigmaX: 16, sigmaY: 16),
           child: Container(
             constraints: BoxConstraints(
               maxWidth: 500,

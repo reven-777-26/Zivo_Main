@@ -54,6 +54,7 @@ dependencies:
   zxing_lib: ^1.1.4
   image: ^4.2.0
   url_launcher: ^6.2.0
+  google_mlkit_text_recognition: ^0.13.1
 
 
 dev_dependencies:

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,6 +12,7 @@ import '../../../../services/state_providers.dart';
 import '../../../../services/scanner/camera_barcode_scanner.dart';
 import '../../../../services/scanner/native_barcode_scanner.dart';
 import '../../../../utils/image_picker_helper.dart';
+import '../../../../utils/web_barcode_scanner.dart';
 import '../../shared/providers/unified_vision_provider.dart';
 import 'unified_product_detail_screen.dart';
 
@@ -26,6 +28,7 @@ class _VisionLensHomeScreenState extends ConsumerState<VisionLensHomeScreen> wit
   List<CameraDescription> _cameras = [];
   bool _isCameraInitialized = false;
   bool _isProcessingFrame = false;
+  bool _isInitializing = false;
   Timer? _webFrameTimer;
   String? _errorMessage;
 
@@ -42,13 +45,11 @@ class _VisionLensHomeScreenState extends ConsumerState<VisionLensHomeScreen> wit
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _checkCameraLifecycle();
   }
 
   @override
   void didUpdateWidget(covariant VisionLensHomeScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
-    _checkCameraLifecycle();
   }
 
   @override
@@ -68,15 +69,15 @@ class _VisionLensHomeScreenState extends ConsumerState<VisionLensHomeScreen> wit
       _disposeCamera();
     } else if (state == AppLifecycleState.resumed) {
       final activeTab = ref.read(activeTabProvider);
-      if (activeTab == 2) {
+      final isCurrentRoute = ModalRoute.of(context)?.isCurrent ?? true;
+      if (activeTab == 2 && isCurrentRoute) {
         _initializeCamera();
       }
     }
   }
 
-  void _checkCameraLifecycle() {
-    final activeTab = ref.watch(activeTabProvider);
-    if (activeTab == 2) {
+  void _checkCameraLifecycle(int activeTab, bool isCurrentRoute) {
+    if (activeTab == 2 && isCurrentRoute) {
       if (!_isCameraInitialized && _cameraController == null) {
         _initializeCamera();
       }
@@ -88,7 +89,10 @@ class _VisionLensHomeScreenState extends ConsumerState<VisionLensHomeScreen> wit
   }
 
   Future<void> _initializeCamera() async {
+    if (_isInitializing) return;
+    _isInitializing = true;
     try {
+      await _disposeCamera();
       _cameras = await availableCameras();
       if (_cameras.isNotEmpty) {
         final backCamera = _cameras.firstWhere(
@@ -125,6 +129,8 @@ class _VisionLensHomeScreenState extends ConsumerState<VisionLensHomeScreen> wit
           _errorMessage = "Camera not available. Upload a product photo instead.";
         });
       }
+    } finally {
+      _isInitializing = false;
     }
   }
 
@@ -134,31 +140,52 @@ class _VisionLensHomeScreenState extends ConsumerState<VisionLensHomeScreen> wit
     if (kIsWeb) {
       _webFrameTimer = Timer.periodic(const Duration(milliseconds: 700), (timer) async {
         final state = ref.read(unifiedVisionProvider);
-        if (state.isScanning || _isProcessingFrame || !mounted) return;
+        if (state.isScanning || _isProcessingFrame || !mounted || _cameraController == null || !_isCameraInitialized || !_cameraController!.value.isInitialized) return;
         _isProcessingFrame = true;
         try {
           final XFile file = await _cameraController!.takePicture();
+          if (!mounted || _cameraController == null || !_isCameraInitialized) {
+            _isProcessingFrame = false;
+            return;
+          }
           final bytes = await file.readAsBytes();
           
-          final img.Image? decoded = img.decodeImage(bytes);
-          if (decoded != null) {
-            final rgbaBytes = decoded.getBytes(order: img.ChannelOrder.rgba);
+          // 1. Try Browser's Native BarcodeDetector API first (high performance)
+          final base64String = 'data:image/jpeg;base64,${base64Encode(bytes)}';
+          final barcode = await scanBarcodeWebPlatform(base64String);
+          if (barcode != null && barcode.isNotEmpty && mounted) {
+            _isProcessingFrame = true;
+            await _handleBarcodeScan(barcode);
+            _isProcessingFrame = false;
+            return;
+          }
+
+          // 2. Fallback to optimized pure-Dart ZXing reader
+          final ui.Codec codec = await ui.instantiateImageCodec(bytes, targetWidth: 600);
+          final ui.FrameInfo frameInfo = await codec.getNextFrame();
+          final ui.Image nativeImage = frameInfo.image;
+          
+          final byteData = await nativeImage.toByteData(format: ui.ImageByteFormat.rawRgba);
+          if (byteData != null && mounted) {
+            final rgbaBytes = byteData.buffer.asUint8List();
             final frame = ImageFrame(
               bytes: rgbaBytes,
-              width: decoded.width,
-              height: decoded.height,
+              width: nativeImage.width,
+              height: nativeImage.height,
               format: 'rgba8888',
               rotation: 0,
             );
-            final barcode = await CameraBarcodeScanner.detectBarcode(frame);
-            if (barcode != null && barcode.isNotEmpty && mounted) {
+            final fallbackBarcode = await CameraBarcodeScanner.detectBarcode(frame);
+            if (fallbackBarcode != null && fallbackBarcode.isNotEmpty && mounted) {
               _isProcessingFrame = true;
-              await _handleBarcodeScan(barcode);
+              await _handleBarcodeScan(fallbackBarcode);
               _isProcessingFrame = false;
             }
           }
         } catch (e) {
-          debugPrint("Web barcode scan frame error: $e");
+          if (_cameraController != null && _isCameraInitialized) {
+            debugPrint("Web barcode scan frame error: $e");
+          }
         } finally {
           _isProcessingFrame = false;
         }
@@ -184,14 +211,18 @@ class _VisionLensHomeScreenState extends ConsumerState<VisionLensHomeScreen> wit
     }
   }
 
-  void _disposeCamera() {
+  Future<void> _disposeCamera() async {
     _webFrameTimer?.cancel();
     _webFrameTimer = null;
     if (_cameraController != null) {
       if (_cameraController!.value.isStreamingImages) {
-        _cameraController!.stopImageStream();
+        try {
+          await _cameraController!.stopImageStream();
+        } catch (_) {}
       }
-      _cameraController!.dispose();
+      try {
+        await _cameraController!.dispose();
+      } catch (_) {}
       _cameraController = null;
     }
     _isCameraInitialized = false;
@@ -348,6 +379,15 @@ class _VisionLensHomeScreenState extends ConsumerState<VisionLensHomeScreen> wit
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primaryTextColor = isDark ? Colors.white : AppTheme.textPrimary;
     final visionState = ref.watch(unifiedVisionProvider);
+
+    final activeTab = ref.watch(activeTabProvider);
+    final isCurrentRoute = ModalRoute.of(context)?.isCurrent ?? true;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _checkCameraLifecycle(activeTab, isCurrentRoute);
+      }
+    });
 
     return Scaffold(
       backgroundColor: isDark ? AppTheme.obsidianBackground : const Color(0xFFF1F5F9),

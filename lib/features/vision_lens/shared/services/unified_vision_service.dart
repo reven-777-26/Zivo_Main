@@ -493,7 +493,8 @@ class UnifiedVisionService {
           : (cleanCategory == 'supplement' ? 'Supplement' : 'Food');
 
       // Strip data URI prefix from image if present
-      String? cleanImageBase64 = imageBase64;
+      // Optimization: Only send image base64 if we don't have ingredients text yet (saves input tokens)
+      String? cleanImageBase64 = ingredients.isNotEmpty ? null : imageBase64;
       if (cleanImageBase64 != null && cleanImageBase64.contains(',')) {
         cleanImageBase64 = cleanImageBase64.split(',').last;
       }
@@ -519,6 +520,7 @@ class UnifiedVisionService {
           fallbackCategory: cleanCategory,
           fallbackImageUrl: imageUrl,
           fallbackIngredients: ingredients,
+          userImageBase64: imageBase64,
         );
       }
     } catch (e) {
@@ -551,6 +553,7 @@ class UnifiedVisionService {
     required String fallbackCategory,
     String? fallbackImageUrl,
     required List<String> fallbackIngredients,
+    String? userImageBase64,
   }) {
     final rawName = data['productName'] ?? data['product_name'] ?? fallbackName;
     final rawBrand = data['brand'] ?? data['brands'] ?? fallbackBrand;
@@ -624,11 +627,21 @@ class UnifiedVisionService {
       }
     }
 
+    // Resolve imageUrl: try data['imageUrl'] first, then fallbackImageUrl, then userImageBase64
+    String? resolvedImageUrl = data['imageUrl'] ?? data['image_url'] ?? fallbackImageUrl;
+    if ((resolvedImageUrl == null || resolvedImageUrl.isEmpty) && userImageBase64 != null && userImageBase64.isNotEmpty) {
+      if (userImageBase64.startsWith('data:image/')) {
+        resolvedImageUrl = userImageBase64;
+      } else {
+        resolvedImageUrl = 'data:image/jpeg;base64,$userImageBase64';
+      }
+    }
+
     return UnifiedProductReport(
       barcode: barcode,
       productName: rawName,
       brand: rawBrand,
-      imageUrl: data['imageUrl'] ?? data['image_url'] ?? fallbackImageUrl,
+      imageUrl: resolvedImageUrl,
       category: fallbackCategory,
       zivoScore: score,
       healthGrade: grade,
