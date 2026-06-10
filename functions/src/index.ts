@@ -123,9 +123,14 @@ export const analyzeMeal = onCall({
           },
         },
         {
-          text: "Analyze this food image. " +
-            "Estimate name, cals, protein, " +
-            "carbs, fat.",
+          text: "Analyze this food image. Estimate name, cals, protein, " +
+            "carbs, fat. Reference USDA FoodData Central (FDC) and " +
+            "ICMR-NIN (National Institute of Nutrition, India) / IFCT " +
+            "guidelines for standard portion sizes and nutritional " +
+            "values to ensure maximum accuracy and consistency (e.g., " +
+            "2 slices of whole wheat bread must be ~138 kcal, 1 standard " +
+            "home-cooked Roti is ~70-80 kcal, 1 cup of Dal Tadka is " +
+            "~150 kcal, 1 large egg is ~70 kcal, etc.).",
         },
       ];
       config = {
@@ -140,8 +145,14 @@ export const analyzeMeal = onCall({
       contents = [
         {
           text: "Analyze this meal: " +
-            `"${desc}". Estimate name, ` +
-            "cals, protein, carbs, fat.",
+            `"${desc}". Estimate name, cals, protein, carbs, fat. ` +
+            "Reference USDA FoodData Central (FDC) and ICMR-NIN " +
+            "(National Institute of Nutrition, India) / IFCT guidelines " +
+            "for standard portion sizes and nutritional values to ensure " +
+            "maximum accuracy and consistency (e.g., 2 slices of whole " +
+            "wheat bread must be ~138 kcal, 1 standard home-cooked " +
+            "Roti is ~70-80 kcal, 1 cup of Dal Tadka is ~150 kcal, " +
+            "1 large egg is ~70 kcal, etc.).",
         },
       ];
       config = {
@@ -212,8 +223,10 @@ export const identifyProduct = onCall({
       "Identify product from image:",
       "1. productName: exact name with variant",
       "2. brand",
-      "3. category: food (packaged food/drink/snack), supplement (vitamins/protein), skincare",
-      "4. ingredients: array of ingredients if visible (especially if scanning ingredient label)",
+      "3. category: food (packaged food/drink/snack), " +
+        "supplement (vitamins/protein), skincare",
+      "4. ingredients: array of ingredients if visible " +
+        "(especially if scanning ingredient label)",
     ].join("\n");
 
     const contents = [
@@ -377,10 +390,18 @@ function buildFoodPrompt(payloadStr: string): string {
     "2. grade: A/B/C/D/E",
     "3. verdict: max 12 words",
     "4. insights: 3-5, start with ❌, ⚠, ✅",
-    "5. decodedIngredients: Decode ONLY ingredients of concern (safety: Caution or Avoid, sneaky sugars, palm oil, warning items, artificial sweeteners, or harmful chemical additives). Do not create detailed decodedIngredients entries for standard safe ingredients (like water, oats, salt, wheat flour); these can be completely omitted from the decoded list to keep the response concise. Max 12-word description for each entry.",
-    "6. allergyWarnings: list allergen warnings (e.g. nuts, dairy, soy, gluten, wheat, egg).",
-    "7. alternatives: 3 real Indian products (e.g. Yoga Bar, True Elements).",
-    "Note: Focus on metabolic health & ingredient safety."
+    "5. decodedIngredients: Decode ONLY ingredients of concern " +
+      "(safety: Caution or Avoid, sneaky sugars, palm oil, warning items, " +
+      "artificial sweeteners, or harmful chemical additives). Do not " +
+      "create detailed decodedIngredients entries for standard safe " +
+      "ingredients (like water, oats, salt, wheat flour); these can " +
+      "be completely omitted from the decoded list to keep the " +
+      "response concise. Max 12-word description for each entry.",
+    "6. allergyWarnings: list allergen warnings (e.g. " +
+      "nuts, dairy, soy, gluten, wheat, egg).",
+    "7. alternatives: 3 real Indian products (e.g. " +
+      "Yoga Bar, True Elements).",
+    "Note: Focus on metabolic health & ingredient safety.",
   ].join("\n");
 }
 
@@ -398,10 +419,16 @@ function buildSupplementPrompt(
     "2. grade: A/B/C/D/E",
     "3. verdict: max 12 words",
     "4. insights: 3-5, start with ❌, ⚠, ✅",
-    "5. decodedIngredients: Decode ONLY ingredients of concern (safety: Caution or Avoid, artificial sweeteners, fillers, binders, artificial colors, or heavy preservatives). Omit basic harmless ingredients from the decoded list to keep the response concise. Max 12-word description for each entry.",
-    "6. allergyWarnings: list allergen warnings (nuts, dairy, soy, gluten, etc).",
-    "7. alternatives: 3 real Indian products (Nutrabay, AS-IT-IS, MuscleBlaze, Avvatar).",
-    "Note: Focus on purity, bioavailability, sweeteners."
+    "5. decodedIngredients: Decode ONLY ingredients of concern " +
+      "(safety: Caution or Avoid, artificial sweeteners, fillers, " +
+      "binders, artificial colors, or heavy preservatives). Omit basic " +
+      "harmless ingredients from the decoded list to keep the response " +
+      "concise. Max 12-word description for each entry.",
+    "6. allergyWarnings: list allergen warnings (nuts, " +
+      "dairy, soy, gluten, etc).",
+    "7. alternatives: 3 real Indian products (Nutrabay, " +
+      "AS-IT-IS, MuscleBlaze, Avvatar).",
+    "Note: Focus on purity, bioavailability, sweeteners.",
   ].join("\n");
 }
 
@@ -419,10 +446,17 @@ function buildSkincarePrompt(
     "2. grade: A/B/C/D/E",
     "3. verdict: max 12 words",
     "4. insights: 3-5, start with ❌, ⚠, ✅",
-    "5. decodedIngredients: Decode ONLY ingredients of concern (safety: Caution or Avoid, acne triggers, drying alcohols, parabens, sulfates, silicones, synthetic fragrances, or contact allergens). Omit basic harmless skin-identical ingredients or water from the decoded list to keep the response concise. Max 12-word description for each entry.",
-    "6. allergyWarnings: list contact allergens or irritants warnings (e.g. linalool, limonene, essential oils).",
-    "7. alternatives: 3 real Indian products (Minimalist, Cetaphil, CeraVe, Plum).",
-    "Note: Focus on comedogenicity, irritation, barrier health."
+    "5. decodedIngredients: Decode ONLY ingredients of concern " +
+      "(safety: Caution or Avoid, acne triggers, drying alcohols, " +
+      "parabens, sulfates, silicones, synthetic fragrances, or " +
+      "contact allergens). Omit basic harmless skin-identical " +
+      "ingredients or water from the decoded list to keep the " +
+      "response concise. Max 12-word description for each entry.",
+    "6. allergyWarnings: list contact allergens or " +
+      "irritants warnings (e.g. linalool, limonene, essential oils).",
+    "7. alternatives: 3 real Indian products (Minimalist, " +
+      "Cetaphil, CeraVe, Plum).",
+    "Note: Focus on comedogenicity, irritation, barrier health.",
   ].join("\n");
 }
 
@@ -436,7 +470,10 @@ function buildAnalysisSchema(): Record<string, unknown> {
     properties: {
       productName: {type: "STRING"},
       brand: {type: "STRING"},
-      imageUrl: {type: "STRING", description: "Public image URL of the product"},
+      imageUrl: {
+        type: "STRING",
+        description: "Public image URL of the product",
+      },
       zivoScore: {type: "INTEGER"},
       healthGrade: {
         type: "STRING",
@@ -542,7 +579,8 @@ function buildAnalysisSchema(): Record<string, unknown> {
       allergyWarnings: {
         type: "ARRAY",
         items: {type: "STRING"},
-        description: "List of allergens present (e.g. gluten, dairy, nuts, soy, etc) or cross-contamination warnings",
+        description: "List of allergens present (e.g. gluten, " +
+          "dairy, nuts, soy, etc) or cross-contamination warnings",
       },
     },
     required: [

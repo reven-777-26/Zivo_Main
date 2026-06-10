@@ -212,7 +212,7 @@ class AiAnalysisService {
 
     // 3. Query Gemini 2.5 Flash with compressed constraint payload
     onProgress("Querying Gemini 2.5 Flash for unique plate visual estimation...");
-    final prompt = "Analyze this compressed food item. Return ONLY raw JSON mapping single-portion estimations. No markdown formatting or text wrappers. Schema: {'food_name': '$queryText', 'calories': 0, 'protein': 0, 'carbs': 0, 'fat': 0}";
+    final prompt = "Analyze this compressed food item. Return ONLY raw JSON mapping single-portion estimations. Reference USDA FoodData Central (FDC) and ICMR-NIN (National Institute of Nutrition, India) / IFCT guidelines for standard portion sizes and nutritional values to ensure maximum accuracy and consistency (e.g., 2 slices of whole wheat bread must be ~138 kcal, 1 standard home-cooked Roti is ~70-80 kcal, 1 cup of Dal Tadka is ~150 kcal, 1 large egg is ~70 kcal, etc.). No markdown formatting or text wrappers. Schema: {'food_name': '$queryText', 'calories': 0, 'protein': 0, 'carbs': 0, 'fat': 0}";
 
     try {
       final result = await queryGemini(
