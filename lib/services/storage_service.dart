@@ -640,14 +640,15 @@ class StorageService {
       });
     }
 
-    // 3. Seed Workouts Log History dynamically for the past 45 days
-    if (_workoutBox.get('workout_list') == null) {
+    // 3. Seed Workouts Log History dynamically for the past 180 days
+    final existingWorkouts = _workoutBox.get('workout_list');
+    if (existingWorkouts == null || (existingWorkouts['list'] as List?) == null || (existingWorkouts['list'] as List).length < 80) {
       final now = DateTime.now();
       String formatDate(DateTime dt) => DateFormat('yyyy-MM-dd').format(dt);
 
       final List<Map<String, dynamic>> mockWorkouts = [];
       
-      for (int i = 0; i < 45; i++) {
+      for (int i = 0; i < 180; i++) {
         // Log a workout session every 2 days for realistic metrics history
         if (i % 2 == 0) {
           final workoutDate = now.subtract(Duration(days: i));
@@ -725,11 +726,11 @@ class StorageService {
       _workoutBox.put('workout_list', {'list': mockWorkouts});
     }
 
-    // 4. Seed Daily Nutrition Metrics for the past 45 days (providing a rich multi-week interactive history)
+    // 4. Seed Daily Nutrition Metrics for the past 180 days (providing a rich multi-week interactive history)
     final now = DateTime.now();
     String formatDate(DateTime dt) => DateFormat('yyyy-MM-dd').format(dt);
 
-    for (int i = 0; i < 45; i++) {
+    for (int i = 0; i < 180; i++) {
       final dateKey = formatDate(now.subtract(Duration(days: i)));
       if (_dailyBox.get(dateKey) == null) {
         // Vary the meal entries across 3 realistic diet templates for premium visual depth
@@ -948,6 +949,4 @@ class StorageService {
   static Future<void> saveSystemNotifications(List<Map<String, dynamic>> list) async {
     await _reminderBox.put('system_notifications_list', {'list': list});
   }
-
-
 }

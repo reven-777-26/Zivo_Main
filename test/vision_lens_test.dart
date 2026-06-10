@@ -3,6 +3,7 @@ import 'package:codemvp/features/vision_lens/shared/services/country_regulation_
 import 'package:codemvp/features/vision_lens/food/services/food_api_service.dart';
 import 'package:codemvp/features/vision_lens/supplements/services/supplement_service.dart';
 import 'package:codemvp/features/vision_lens/skincare/services/skincare_api_service.dart';
+import 'package:codemvp/features/vision_lens/shared/services/unified_vision_service.dart';
 
 void main() {
   group('Country Regulation Engine Tests', () {
@@ -96,6 +97,24 @@ void main() {
       // Comedogenic triggers score decrement of 20 for Acne, but only warnings for Normal.
       expect(acneProduct.zivoScore, lessThan(normalProduct.zivoScore));
       expect(acneProduct.acneRisk, equals('High'));
+    });
+  });
+
+  group('Unified Product Report Allergy & Local Rules Tests', () {
+    test('Should extract allergy warnings from ingredients list in local fallback engine', () {
+      final report = UnifiedVisionService.runLocalRuleEngine(
+        barcode: '1111',
+        productName: 'Allergen Bread',
+        brand: 'Brand X',
+        ingredients: ['Wheat Flour', 'Peanuts', 'Milk powder', 'Soy lecithin'],
+        category: 'food',
+      );
+      
+      expect(report.allergyWarnings, contains('Contains Gluten'));
+      expect(report.allergyWarnings, contains('Contains Nuts'));
+      expect(report.allergyWarnings, contains('Contains Dairy'));
+      expect(report.allergyWarnings, contains('Contains Soy'));
+      expect(report.allergyWarnings, isNot(contains('Contains Egg')));
     });
   });
 }

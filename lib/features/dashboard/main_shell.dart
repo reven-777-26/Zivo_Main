@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../core/theme.dart';
 import '../../models/user_profile.dart';
 import '../../models/reminder_setting.dart';
@@ -290,8 +290,6 @@ class _ProfilePlaceholderScreenState
   String? _healthCheckResult;
   bool _isLoadingHealthCheck = false;
 
-
-
   @override
   void initState() {
     super.initState();
@@ -320,8 +318,6 @@ class _ProfilePlaceholderScreenState
 
     _auraNotificationsEnabled = StorageService.getAuraNotificationsEnabled();
     _systemNotificationsEnabled = StorageService.getSystemNotificationsEnabled();
-
-
   }
 
   @override
@@ -386,7 +382,7 @@ class _ProfilePlaceholderScreenState
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Profile settings and calibration targets saved!'),
+          content: Text('Profile settings saved!'),
           backgroundColor: AppTheme.accentEmerald,
         ),
       );
@@ -608,73 +604,6 @@ class _ProfilePlaceholderScreenState
                 ],
               ),
             ),
-            const SizedBox(height: 32),
-
-            // Zivo Vision Lens Launch Card
-            const Text(
-              'AI Product Intelligence',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w900,
-                color: Colors.white,
-                letterSpacing: -0.5,
-              ),
-            ),
-            const SizedBox(height: 16),
-            GestureDetector(
-              onTap: () => context.push('/vision_lens'),
-              child: GlassCard(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: AppTheme.accentCyan.withOpacity(0.12),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.center_focus_strong_rounded,
-                        color: AppTheme.accentCyan,
-                        size: 26,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    const Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Zivo Vision Lens',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          SizedBox(height: 4),
-                          Text(
-                            'Scan and analyze ingredients of food, supplements, and skincare products using AI.',
-                            style: TextStyle(
-                              color: AppTheme.textSecondary,
-                              fontSize: 12,
-                              height: 1.3,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const Icon(
-                      Icons.chevron_right_rounded,
-                      color: AppTheme.accentCyan,
-                      size: 24,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
             const SizedBox(height: 32),
 
             // Target budgets editor
@@ -993,6 +922,56 @@ class _ProfilePlaceholderScreenState
                     },
                   ),
                 ],
+              ),
+            ),
+            const SizedBox(height: 32),
+            const Text(
+              'Support & Feedback',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w900,
+                color: Colors.white,
+                letterSpacing: -0.5,
+              ),
+            ),
+            const SizedBox(height: 16),
+            GestureDetector(
+              onTap: _launchWhatsAppSupport,
+              child: Container(
+                width: double.infinity,
+                height: 48,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF25D366), Color(0xFF075E54)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(14),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF25D366).withOpacity(0.25),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: const Center(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.chat_bubble_rounded, color: Colors.white, size: 18),
+                      SizedBox(width: 8),
+                      Text(
+                        'Help',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
             const SizedBox(height: 32),
@@ -1461,5 +1440,26 @@ class _ProfilePlaceholderScreenState
         ],
       ),
     );
+  }
+
+  Future<void> _launchWhatsAppSupport() async {
+    final url = Uri.parse('https://wa.me/918639473457?text=Hi%2C%20I%20need%20help%20with%20Zivofit%20App.');
+    try {
+      if (await canLaunchUrl(url)) {
+        await launchUrl(url, mode: LaunchMode.externalApplication);
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Could not launch WhatsApp. Please contact +91 8639473457.')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error launching WhatsApp: $e')),
+        );
+      }
+    }
   }
 }

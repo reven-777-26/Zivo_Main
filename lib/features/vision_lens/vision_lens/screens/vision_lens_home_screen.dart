@@ -261,31 +261,26 @@ class _VisionLensHomeScreenState extends ConsumerState<VisionLensHomeScreen> wit
     );
   }
 
-  Future<void> _runAssetBarcodeScan() async {
-    _showLoadingOverlay();
-    try {
-      final ByteData data = await rootBundle.load('assets/test_barcode.png');
-      final List<int> bytes = data.buffer.asUint8List();
-      final base64Content = base64Encode(bytes);
-      final fullBase64 = "data:image/png;base64,$base64Content";
+  void _triggerIngredientsScan() {
+    ImagePickerHelper.pickImage(
+      (base64, name, filePath) async {
+        _showLoadingOverlay();
+        await ref.read(unifiedVisionProvider.notifier).analyzeFromImage(
+          base64Content: base64,
+          fileName: name,
+          isIngredientLabel: true,
+        );
 
-      await ref.read(unifiedVisionProvider.notifier).analyzeFromImage(
-        base64Content: fullBase64,
-        fileName: 'test_barcode.png',
-      );
-
-      if (!mounted) return;
-      final state = ref.read(unifiedVisionProvider);
-      final barcodeToUse = state.currentReport.value?.barcode ?? '4901058851335';
-      _dismissLoadingAndNavigate(barcodeToUse);
-    } catch (e) {
-      if (!mounted) return;
-      if (Navigator.canPop(context)) Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to load asset: $e'), backgroundColor: AppTheme.accentCoral),
-      );
-    }
+        if (!mounted) return;
+        final state = ref.read(unifiedVisionProvider);
+        final barcodeToUse = state.currentReport.value?.barcode ?? 'unknown';
+        _dismissLoadingAndNavigate(barcodeToUse);
+      },
+      isBarcode: true,
+      fromCamera: false,
+    );
   }
+
 
   void _showLoadingOverlay() {
     showDialog(
@@ -577,7 +572,7 @@ class _VisionLensHomeScreenState extends ConsumerState<VisionLensHomeScreen> wit
             ),
             const SizedBox(height: 16),
 
-            // Actions Row
+            // Actions Row 1 (Image Upload & Ingredients Scan)
             Row(
               children: [
                 Expanded(
@@ -591,14 +586,15 @@ class _VisionLensHomeScreenState extends ConsumerState<VisionLensHomeScreen> wit
                 const SizedBox(width: 10),
                 Expanded(
                   child: _buildActionBtn(
-                    icon: Icons.bug_report_rounded,
-                    label: 'Use Test Barcode',
-                    color: AppTheme.accentPurple,
-                    onTap: _runAssetBarcodeScan,
+                    icon: Icons.receipt_long_rounded,
+                    label: 'Scan Ingredients',
+                    color: AppTheme.accentEmerald,
+                    onTap: _triggerIngredientsScan,
                   ),
                 ),
               ],
             ),
+
             const SizedBox(height: 16),
 
             // Manual lookup row
@@ -777,25 +773,40 @@ class _VisionLensHomeScreenState extends ConsumerState<VisionLensHomeScreen> wit
   }) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(18),
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
         decoration: BoxDecoration(
-          color: AppTheme.glassBackground,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppTheme.glassBorder),
+          gradient: LinearGradient(
+            colors: [
+              AppTheme.glassBackground,
+              color.withOpacity(0.08),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: color.withOpacity(0.25), width: 1.2),
+          boxShadow: [
+            BoxShadow(
+              color: color.withOpacity(0.04),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: color, size: 18),
-            const SizedBox(width: 8),
+            Icon(icon, color: color, size: 20),
+            const SizedBox(width: 10),
             Text(
               label,
               style: const TextStyle(
                 color: Colors.white,
-                fontSize: 11,
-                fontWeight: FontWeight.bold,
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.2,
               ),
             ),
           ],

@@ -215,20 +215,28 @@ class UnifiedVisionNotifier extends StateNotifier<UnifiedVisionState> {
   }) async {
     state = state.copyWith(
       isScanning: true,
-      progressMessage: 'Scanning image for barcode...',
+      progressMessage: isIngredientLabel
+          ? 'Analyzing ingredients label...'
+          : 'Scanning image for barcode...',
       currentReport: const AsyncValue.loading(),
     );
 
-    // 1. Try to extract EAN barcode from image locally
-    final barcode = await ImagePickerHelper.scanBarcode(base64Content, filePath: null);
-    if (barcode.isNotEmpty && !barcode.startsWith('ERROR')) {
-      // Found a barcode in the image — use the barcode flow
-      await scanBarcodeAndAnalyze(barcode: barcode);
-      return;
+    // 1. Try to extract EAN barcode from image locally (only if not scanning ingredient label directly)
+    if (!isIngredientLabel) {
+      final barcode = await ImagePickerHelper.scanBarcode(base64Content, filePath: null);
+      if (barcode.isNotEmpty && !barcode.startsWith('ERROR')) {
+        // Found a barcode in the image — use the barcode flow
+        await scanBarcodeAndAnalyze(barcode: barcode);
+        return;
+      }
     }
 
-    // 2. No barcode found — Use AI to identify the product from the image
-    state = state.copyWith(progressMessage: 'AI is identifying the product...');
+    // 2. No barcode found or isIngredientLabel — Use AI to identify the product from the image
+    state = state.copyWith(
+      progressMessage: isIngredientLabel
+          ? 'AI is extracting ingredients...'
+          : 'AI is identifying the product...',
+    );
     final fakeBarcode = 'img_${DateTime.now().millisecondsSinceEpoch}';
 
     try {
@@ -247,27 +255,31 @@ class UnifiedVisionNotifier extends StateNotifier<UnifiedVisionState> {
 
       debugPrint("AI identified: $productName by $brand (category: $category)");
 
-      // Step B: Search databases for this product to get real ingredient data
-      state = state.copyWith(progressMessage: 'Searching databases for $productName...');
-      final registryData = await UnifiedVisionService.lookupProductByName(productName, category);
-      
       List<String> ingredients = imageIngredients;
       String? imageUrl;
-      Map<String, dynamic>? rawProduct;
       
-      if (registryData != null) {
-        // Found in database — use real data
-        debugPrint("Found $productName in database!");
-        productName = registryData['product_name'] ?? productName;
-        brand = registryData['brand'] ?? brand;
-        ingredients = List<String>.from(registryData['ingredients'] ?? imageIngredients);
-        imageUrl = registryData['image_url'];
-        rawProduct = registryData['raw_product'] as Map<String, dynamic>?;
-        category = registryData['category'] ?? category;
+      // Step B: Search databases for this product to get real ingredient data (skip if scanning ingredients label directly)
+      if (!isIngredientLabel) {
+        state = state.copyWith(progressMessage: 'Searching databases for $productName...');
+        final registryData = await UnifiedVisionService.lookupProductByName(productName, category);
+        
+        if (registryData != null) {
+          // Found in database — use real data
+          debugPrint("Found $productName in database!");
+          productName = registryData['product_name'] ?? productName;
+          brand = registryData['brand'] ?? brand;
+          ingredients = List<String>.from(registryData['ingredients'] ?? imageIngredients);
+          imageUrl = registryData['image_url'];
+          category = registryData['category'] ?? category;
+        }
       }
 
       // Step C: Send everything to Gemini AI for deep health analysis
-      state = state.copyWith(progressMessage: 'AI is analyzing $productName...');
+      state = state.copyWith(
+        progressMessage: isIngredientLabel
+            ? 'AI is analyzing ingredients...'
+            : 'AI is analyzing $productName...',
+      );
       
       final report = await UnifiedVisionService.analyzeWithGemini(
         barcode: fakeBarcode,

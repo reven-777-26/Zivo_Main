@@ -166,6 +166,7 @@ class UnifiedProductReport {
   final List<DecodedIngredient> decodedIngredients;
   final List<ProductAlternative> alternatives;
   final DateTime scanDate;
+  final List<String> allergyWarnings;
 
   UnifiedProductReport({
     required this.barcode,
@@ -183,6 +184,7 @@ class UnifiedProductReport {
     required this.decodedIngredients,
     required this.alternatives,
     required this.scanDate,
+    required this.allergyWarnings,
   });
 
   factory UnifiedProductReport.fromJson(Map<String, dynamic> json) {
@@ -208,6 +210,7 @@ class UnifiedProductReport {
               .toList() ??
           [],
       scanDate: json['scanDate'] != null ? DateTime.parse(json['scanDate'].toString()) : DateTime.now(),
+      allergyWarnings: List<String>.from(json['allergyWarnings'] ?? []),
     );
   }
 
@@ -227,6 +230,7 @@ class UnifiedProductReport {
         'decodedIngredients': decodedIngredients.map((e) => e.toJson()).toList(),
         'alternatives': alternatives.map((e) => e.toJson()).toList(),
         'scanDate': scanDate.toIso8601String(),
+        'allergyWarnings': allergyWarnings,
       };
 }
 
@@ -637,6 +641,11 @@ class UnifiedVisionService {
       }
     }
 
+    final List<String> allergyWarnings = [];
+    if (data['allergyWarnings'] != null && data['allergyWarnings'] is List) {
+      allergyWarnings.addAll((data['allergyWarnings'] as List).map((e) => e.toString()));
+    }
+
     return UnifiedProductReport(
       barcode: barcode,
       productName: rawName,
@@ -653,6 +662,7 @@ class UnifiedVisionService {
       decodedIngredients: decoded,
       alternatives: alternatives,
       scanDate: DateTime.now(),
+      allergyWarnings: allergyWarnings,
     );
   }
 
@@ -879,6 +889,26 @@ class UnifiedVisionService {
       insights.removeRange(5, insights.length);
     }
 
+    final List<String> allergyWarnings = [];
+    for (var ing in ingredients) {
+      final lowIng = ing.toLowerCase().trim();
+      if (lowIng.contains('peanut') || lowIng.contains('almond') || lowIng.contains('cashew') || lowIng.contains('nut')) {
+        if (!allergyWarnings.contains('Contains Nuts')) allergyWarnings.add('Contains Nuts');
+      }
+      if (lowIng.contains('milk') || lowIng.contains('dairy') || lowIng.contains('whey') || lowIng.contains('casein') || lowIng.contains('lactose')) {
+        if (!allergyWarnings.contains('Contains Dairy')) allergyWarnings.add('Contains Dairy');
+      }
+      if (lowIng.contains('wheat') || lowIng.contains('gluten') || lowIng.contains('barley') || lowIng.contains('rye')) {
+        if (!allergyWarnings.contains('Contains Gluten')) allergyWarnings.add('Contains Gluten');
+      }
+      if (lowIng.contains('soy')) {
+        if (!allergyWarnings.contains('Contains Soy')) allergyWarnings.add('Contains Soy');
+      }
+      if (lowIng.contains('egg')) {
+        if (!allergyWarnings.contains('Contains Egg')) allergyWarnings.add('Contains Egg');
+      }
+    }
+
     return UnifiedProductReport(
       barcode: barcode,
       productName: productName,
@@ -908,6 +938,7 @@ class UnifiedVisionService {
       decodedIngredients: decoded,
       alternatives: [],
       scanDate: DateTime.now(),
+      allergyWarnings: allergyWarnings,
     );
   }
 

@@ -209,20 +209,11 @@ export const identifyProduct = onCall({
   try {
     const ai = new GoogleGenAI({apiKey});
     const prompt = [
-      "You are a product identification expert.",
-      "Look at this product image carefully.",
-      "",
-      "Identify:",
-      "1. Exact product name with variant/size",
-      "2. Brand name",
-      "3. Category: food, supplement, skincare",
-      "   food = packaged foods, snacks, drinks",
-      "   supplement = protein, vitamins, etc",
-      "   skincare = face wash, serum, etc",
-      "",
-      "If this is an ingredient label,",
-      "identify from visible text.",
-      "Be specific. Do not guess generic names.",
+      "Identify product from image:",
+      "1. productName: exact name with variant",
+      "2. brand",
+      "3. category: food (packaged food/drink/snack), supplement (vitamins/protein), skincare",
+      "4. ingredients: array of ingredients if visible (especially if scanning ingredient label)",
     ].join("\n");
 
     const contents = [
@@ -381,35 +372,15 @@ export const analyzeVisionProduct = onCall({
  */
 function buildFoodPrompt(payloadStr: string): string {
   return [
-    "You are an AI Health Advisor for Zivo.",
-    "Analyze this food product IN DEPTH",
-    "like a nutritionist would.",
-    "",
-    `Product Data: ${payloadStr}`,
-    "",
-    "YOUR JOB:",
-    "1. Calculate Zivo Health Score (0-100).",
-    "2. Assign grade A/B/C/D/E.",
-    "3. Write verdict (MAX 12 words).",
-    "4. Generate 3-5 insights starting with",
-    "   emoji: ❌ ⚠ or ✅",
-    "5. Decode EVERY ingredient - check for",
-    "   sneaky sugar names (maltodextrin,",
-    "   dextrose, HFCS, invert sugar, etc),",
-    "   palm oil (palmitate, palmitic acid,",
-    "   vegetable fat, etc), and additives.",
-    "6. Mark each ingredient safety as",
-    "   Safe, Caution, or Avoid, and limit",
-    "   its description to maximum 12 words.",
-    "7. Recommend 3 REAL healthier",
-    "   alternatives from Indian markets",
-    "   (Yoga Bar, True Elements, etc).",
-    "",
-    "IMPORTANT: Do NOT dump raw numbers.",
-    "Instead of 'sugar: 28g', say",
-    "'Contains enough sugar to cause a",
-    "significant glucose spike.'",
-    "Think like a health coach.",
+    `Analyze food: ${payloadStr}`,
+    "1. score: 0-100",
+    "2. grade: A/B/C/D/E",
+    "3. verdict: max 12 words",
+    "4. insights: 3-5, start with ❌, ⚠, ✅",
+    "5. decodedIngredients: decode all. Safety: Safe/Caution/Avoid. Max 12-word desc. Check for hidden sugars (maltodextrin, dextrose, HFCS, invert sugar), palm oil (palmitate, palmitic acid, vegetable fat), additives.",
+    "6. allergyWarnings: list allergen warnings (e.g. nuts, dairy, soy, gluten, wheat, egg).",
+    "7. alternatives: 3 real Indian products (e.g. Yoga Bar, True Elements).",
+    "Note: Focus on metabolic health & ingredient safety."
   ].join("\n");
 }
 
@@ -422,30 +393,15 @@ function buildSupplementPrompt(
   payloadStr: string
 ): string {
   return [
-    "You are an AI Health Advisor for Zivo.",
-    "Analyze this supplement product",
-    "like a sports nutritionist would.",
-    "",
-    `Product Data: ${payloadStr}`,
-    "",
-    "YOUR JOB:",
-    "1. Calculate Zivo Score (0-100).",
-    "2. Assign grade A/B/C/D/E.",
-    "3. Write verdict (MAX 12 words).",
-    "4. Generate 3-5 insights starting with",
-    "   emoji: ❌ ⚠ or ✅",
-    "5. Decode EVERY ingredient. Check for",
-    "   sucralose, aspartame, acesulfame-K,",
-    "   fillers (magnesium stearate, etc),",
-    "   artificial colors (Red 40, etc).",
-    "6. Mark safety: Safe, Caution, Avoid, and",
-    "   limit its description to maximum 12 words.",
-    "7. Recommend 3 REAL alternatives from",
-    "   Indian brands (Nutrabay, AS-IT-IS,",
-    "   MuscleBlaze Raw, Avvatar, etc).",
-    "",
-    "Focus on purity, bioavailability,",
-    "filler content, sweetener quality.",
+    `Analyze supplement: ${payloadStr}`,
+    "1. score: 0-100",
+    "2. grade: A/B/C/D/E",
+    "3. verdict: max 12 words",
+    "4. insights: 3-5, start with ❌, ⚠, ✅",
+    "5. decodedIngredients: decode all. Safety: Safe/Caution/Avoid. Max 12-word desc. Check for sweeteners (sucralose, aspartame, acesulfame-K), fillers (magnesium stearate), artificial colors (Red 40).",
+    "6. allergyWarnings: list allergen warnings (nuts, dairy, soy, gluten, etc).",
+    "7. alternatives: 3 real Indian products (Nutrabay, AS-IT-IS, MuscleBlaze, Avvatar).",
+    "Note: Focus on purity, bioavailability, sweeteners."
   ].join("\n");
 }
 
@@ -458,30 +414,15 @@ function buildSkincarePrompt(
   payloadStr: string
 ): string {
   return [
-    "You are an AI Skin Advisor for Zivo.",
-    "Analyze this skincare product",
-    "like a dermatologist would.",
-    "",
-    `Product Data: ${payloadStr}`,
-    "",
-    "YOUR JOB:",
-    "1. Calculate Zivo Skin Score (0-100).",
-    "2. Assign grade A/B/C/D/E.",
-    "3. Write verdict (MAX 12 words).",
-    "4. Generate 3-5 insights starting with",
-    "   emoji: ❌ ⚠ or ✅",
-    "5. Decode EVERY ingredient. Check for",
-    "   acne triggers, drying alcohols,",
-    "   fragrance/parfum, parabens,",
-    "   sulfates, silicones.",
-    "6. Mark safety: Safe, Caution, Avoid, and",
-    "   limit its description to maximum 12 words.",
-    "7. Recommend 3 REAL alternatives from",
-    "   brands in India (Minimalist,",
-    "   Cetaphil, CeraVe, Plum, etc).",
-    "",
-    "Focus on comedogenicity, irritation,",
-    "barrier health, pregnancy safety.",
+    `Analyze skincare: ${payloadStr}`,
+    "1. score: 0-100",
+    "2. grade: A/B/C/D/E",
+    "3. verdict: max 12 words",
+    "4. insights: 3-5, start with ❌, ⚠, ✅",
+    "5. decodedIngredients: decode all. Safety: Safe/Caution/Avoid. Max 12-word desc. Check for acne triggers, drying alcohols, fragrance, parabens, sulfates, silicones.",
+    "6. allergyWarnings: list contact allergens or irritants warnings (e.g. linalool, limonene, essential oils).",
+    "7. alternatives: 3 real Indian products (Minimalist, Cetaphil, CeraVe, Plum).",
+    "Note: Focus on comedogenicity, irritation, barrier health."
   ].join("\n");
 }
 
@@ -598,6 +539,11 @@ function buildAnalysisSchema(): Record<string, unknown> {
         },
         required: ["impact", "amount", "verdict"],
       },
+      allergyWarnings: {
+        type: "ARRAY",
+        items: {type: "STRING"},
+        description: "List of allergens present (e.g. gluten, dairy, nuts, soy, etc) or cross-contamination warnings",
+      },
     },
     required: [
       "productName",
@@ -611,6 +557,7 @@ function buildAnalysisSchema(): Record<string, unknown> {
       "sugarAnalysis",
       "palmOilAnalysis",
       "carbsAnalysis",
+      "allergyWarnings",
     ],
   };
 }

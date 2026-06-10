@@ -217,30 +217,26 @@ class _UnifiedVisionScannerDialogState extends ConsumerState<UnifiedVisionScanne
     );
   }
 
-  Future<void> _runAssetBarcodeScan() async {
+  void _triggerIngredientsScan() async {
     _disposeCamera();
-    try {
-      final ByteData data = await rootBundle.load('assets/test_barcode.png');
-      final List<int> bytes = data.buffer.asUint8List();
-      final base64Content = base64Encode(bytes);
-      final fullBase64 = "data:image/png;base64,$base64Content";
-
-      await ref.read(unifiedVisionProvider.notifier).analyzeFromImage(
-        base64Content: fullBase64,
-        fileName: 'test_barcode.png',
-      );
-
-      final state = ref.read(unifiedVisionProvider);
-      final barcodeToUse = state.currentReport.value?.barcode ?? '4901058851335';
-      _dismissAndNavigate(barcodeToUse);
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to load asset: $e'), backgroundColor: AppTheme.accentCoral),
+    ImagePickerHelper.pickImage(
+      (base64, name, filePath) async {
+        await ref.read(unifiedVisionProvider.notifier).analyzeFromImage(
+          base64Content: base64,
+          fileName: name,
+          isIngredientLabel: true,
         );
-      }
-    }
+
+        final state = ref.read(unifiedVisionProvider);
+        final barcodeToUse = state.currentReport.value?.barcode ?? 'unknown';
+        _dismissAndNavigate(barcodeToUse);
+      },
+      isBarcode: true,
+      fromCamera: false,
+    );
   }
+
+
 
   void _dismissAndNavigate(String barcode) {
     if (Navigator.canPop(context)) {
@@ -482,12 +478,13 @@ class _UnifiedVisionScannerDialogState extends ConsumerState<UnifiedVisionScanne
             const SizedBox(width: 8),
             Expanded(
               child: GestureDetector(
-                onTap: _runAssetBarcodeScan,
-                child: _buildSubActionBtn(Icons.bug_report_rounded, "Test Asset", AppTheme.accentPurple),
+                onTap: _triggerIngredientsScan,
+                child: _buildSubActionBtn(Icons.receipt_long_rounded, "Scan Ingredients", AppTheme.accentEmerald),
               ),
             ),
           ],
         ),
+
         const SizedBox(height: 10),
 
         // Manual text input EAN
@@ -577,20 +574,38 @@ class _UnifiedVisionScannerDialogState extends ConsumerState<UnifiedVisionScanne
 
   Widget _buildSubActionBtn(IconData icon, String label, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
       decoration: BoxDecoration(
-        color: AppTheme.glassBackground,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppTheme.glassBorder),
+        gradient: LinearGradient(
+          colors: [
+            AppTheme.glassBackground,
+            color.withOpacity(0.08),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: color.withOpacity(0.25), width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.04),
+            blurRadius: 8,
+          ),
+        ],
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, color: color, size: 14),
-          const SizedBox(width: 6),
+          Icon(icon, color: color, size: 16),
+          const SizedBox(width: 8),
           Text(
             label,
-            style: const TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.bold),
+            style: const TextStyle(
+              fontSize: 12,
+              color: Colors.white,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.2,
+            ),
           ),
         ],
       ),

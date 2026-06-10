@@ -212,20 +212,86 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-
-                // Header Section
-                const Text(
-                  'Metrics Trends',
-                  style: TextStyle(
-                    fontSize: 26,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: -0.5,
-                  ),
+              // Header Section
+              const Text(
+                'Metrics Trends',
+                style: TextStyle(
+                  fontSize: 26,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -0.5,
                 ),
+              ),
               const SizedBox(height: 4),
               const Text(
                 'Visualize weight projections, calorie inflows, water ratios, and muscle load distributions.',
                 style: TextStyle(color: AppTheme.textSecondary, fontSize: 13),
+              ),
+              const SizedBox(height: 20),
+
+              // Consistency Streak & Motivation Banner
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [
+                      Color(0xFF6366F1), // Indigo
+                      Color(0xFFEC4899), // Pink Sunset
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFFEC4899).withOpacity(0.2),
+                      blurRadius: 16,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.18),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Text(
+                        '🔥',
+                        style: TextStyle(fontSize: 24),
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '5-DAY CONSISTENCY STREAK',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 1.2,
+                            ),
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            "You are crushing it, Alex! You're in the top 3% of active athletes this week. Keep the fire burning!",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              height: 1.3,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 24),
 
@@ -274,10 +340,13 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                                       fontWeight: FontWeight.w900,
                                     ),
                                   ),
+                                  const SizedBox(height: 2),
                                   Text(
-                                    _selectedFilter == 'Days' || _selectedFilter == 'Weeks'
-                                        ? '-1.2 kg this week'
-                                        : '-2.4 kg this period',
+                                    profile?.goal == 'lose'
+                                        ? 'Active Fat Loss (-1.2kg) 🎯'
+                                        : (profile?.goal == 'gain'
+                                            ? 'Muscle Building (+0.4kg) 💪'
+                                            : 'Optimal Maintenance ⚡'),
                                     style: const TextStyle(
                                       color: AppTheme.accentCyan,
                                       fontSize: 10,
@@ -331,8 +400,11 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                                       fontWeight: FontWeight.w900,
                                     ),
                                   ),
+                                  const SizedBox(height: 2),
                                   Text(
-                                    '${(avgWater / ((profile?.waterGoal ?? 2500) / 1000) * 100).round()}% of goal',
+                                    avgWater >= (profile?.waterGoal ?? 2500) / 1000.0
+                                        ? 'Fully Hydrated! 💧'
+                                        : 'Drink 0.6L more to align 🌊',
                                     style: const TextStyle(
                                       color: AppTheme.accentOrange,
                                       fontSize: 10,
@@ -386,10 +458,9 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                                 fontWeight: FontWeight.w900,
                               ),
                             ),
+                            const SizedBox(height: 2),
                             Text(
-                              _selectedFilter == 'Days' || _selectedFilter == 'Weeks'
-                                  ? '+15% logs vs last week'
-                                  : '+30% logs vs last month',
+                              'Level Up progress: 80% to Gold Athlete tier! 🏆',
                               style: const TextStyle(
                                 color: AppTheme.accentPurple,
                                 fontSize: 10,
@@ -448,7 +519,6 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                         _buildSelectorChip('Weight', 0),
                         _buildSelectorChip('Calories', 1),
                         _buildSelectorChip('Water', 2),
-                        _buildSelectorChip('Gym', 3),
                       ],
                     ),
                   ),
@@ -475,6 +545,34 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                   currentWeight: currentWeight,
                 ),
               ),
+              const SizedBox(height: 24),
+
+              // AI Performance Coach Header
+              const Row(
+                children: [
+                  Icon(Icons.psychology_rounded, color: AppTheme.accentCyan, size: 20),
+                  SizedBox(width: 8),
+                  Text(
+                    'AI Performance Coach',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.white,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+
+              _buildInsightsPanel(
+                avgCalories: avgCalories,
+                avgWater: avgWater,
+                workoutsCount: workoutsThisPeriodCount,
+                currentWeight: currentWeight,
+                calorieGoal: (profile?.calorieGoal ?? 2000).toDouble(),
+                waterGoal: (profile?.waterGoal ?? 2500) / 1000.0,
+              ),
               const SizedBox(height: 20),
           ],
         ),
@@ -495,27 +593,46 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
           });
         },
         child: Container(
-          height: 36,
-          margin: const EdgeInsets.symmetric(horizontal: 2.5),
+          height: 38,
+          margin: const EdgeInsets.symmetric(horizontal: 3),
           decoration: BoxDecoration(
+            gradient: isSelected
+                ? const LinearGradient(
+                    colors: [
+                      AppTheme.accentPurple,
+                      Color(0xFF8B5CF6),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  )
+                : null,
             color: isSelected
-                ? AppTheme.accentPurple
+                ? null
                 : (isDark
-                      ? Colors.white.withOpacity(0.03)
-                      : Colors.black.withOpacity(0.015)),
-            borderRadius: BorderRadius.circular(10),
+                    ? Colors.white.withOpacity(0.02)
+                    : Colors.black.withOpacity(0.015)),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: isSelected ? AppTheme.accentCyan : AppTheme.glassBorder,
-              width: 1,
+              color: isSelected ? AppTheme.accentCyan : AppTheme.glassBorder.withOpacity(0.15),
+              width: 1.2,
             ),
+            boxShadow: [
+              if (isSelected)
+                BoxShadow(
+                  color: AppTheme.accentPurple.withOpacity(0.3),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+            ],
           ),
           child: Center(
             child: Text(
               label,
               style: TextStyle(
                 fontSize: 11,
-                fontWeight: FontWeight.bold,
+                fontWeight: isSelected ? FontWeight.w900 : FontWeight.bold,
                 color: isSelected ? Colors.white : AppTheme.textSecondary,
+                letterSpacing: 0.2,
               ),
             ),
           ),
@@ -1319,11 +1436,12 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     final filters = ['Days', 'Weeks', 'Months', 'Lifetime'];
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
-      height: 32,
+      height: 36,
+      padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
-        color: isDark ? Colors.white.withOpacity(0.02) : Colors.black.withOpacity(0.015),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppTheme.glassBorder, width: 1),
+        color: isDark ? Colors.white.withOpacity(0.015) : Colors.black.withOpacity(0.015),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppTheme.glassBorder.withOpacity(0.2), width: 1.2),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -1332,18 +1450,32 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
           return GestureDetector(
             onTap: () => setState(() => _selectedFilter = f),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 14),
               decoration: BoxDecoration(
-                color: isSelected ? AppTheme.accentCyan.withOpacity(0.15) : Colors.transparent,
-                borderRadius: BorderRadius.circular(7),
+                gradient: isSelected
+                    ? const LinearGradient(
+                        colors: [
+                          AppTheme.accentCyan,
+                          Color(0xFF0EA5E9),
+                        ],
+                      )
+                    : null,
+                borderRadius: BorderRadius.circular(8),
+                boxShadow: [
+                  if (isSelected)
+                    BoxShadow(
+                      color: AppTheme.accentCyan.withOpacity(0.2),
+                      blurRadius: 6,
+                    ),
+                ],
               ),
               alignment: Alignment.center,
               child: Text(
                 f,
                 style: TextStyle(
-                  color: isSelected ? AppTheme.accentCyan : AppTheme.textSecondary,
+                  color: isSelected ? Colors.black : AppTheme.textSecondary,
                   fontSize: 11,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w900,
                 ),
               ),
             ),

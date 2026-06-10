@@ -359,6 +359,67 @@ class _UnifiedProductDetailScreenState extends ConsumerState<UnifiedProductDetai
                 ),
                 const SizedBox(height: 24),
 
+                // SECTION 1.5: Allergy Warnings Banner
+                if (report.allergyWarnings.isNotEmpty) ...[
+                  Container(
+                    width: double.infinity,
+                    margin: const EdgeInsets.only(bottom: 24),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: AppTheme.accentCoral.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: AppTheme.accentCoral.withOpacity(0.3), width: 1.5),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(
+                          Icons.warning_amber_rounded,
+                          color: AppTheme.accentCoral,
+                          size: 24,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'ALLERGY WARNINGS',
+                                style: TextStyle(
+                                  color: AppTheme.accentCoral,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 1.5,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              ...report.allergyWarnings.map((warning) => Padding(
+                                    padding: const EdgeInsets.only(bottom: 4),
+                                    child: Row(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        const Text('• ', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
+                                        Expanded(
+                                          child: Text(
+                                            warning,
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  )),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+
                 // SECTION 2: Key Insights (Max 5 items)
                 if (report.insights.isNotEmpty) ...[
                   const Text(

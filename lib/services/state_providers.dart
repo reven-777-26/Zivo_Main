@@ -515,6 +515,18 @@ class ActiveWorkoutNotifier extends StateNotifier<ActiveWorkout> {
   ActiveWorkoutNotifier(this.ref)
     : super(ActiveWorkout(isActive: false, date: '', exercises: []));
 
+  ExerciseSet? _getLatestSetFromHistory(String name) {
+    final history = ref.read(workoutHistoryProvider);
+    for (final session in history.reversed) {
+      for (final ex in session.exercises) {
+        if (ex.name.toLowerCase() == name.toLowerCase() && ex.sets.isNotEmpty) {
+          return ex.sets.last;
+        }
+      }
+    }
+    return null;
+  }
+
   void startWorkout() {
     state = ActiveWorkout(
       isActive: true,
@@ -528,11 +540,22 @@ class ActiveWorkoutNotifier extends StateNotifier<ActiveWorkout> {
     state = ActiveWorkout(
       isActive: true,
       date: DateFormat('yyyy-MM-dd').format(DateTime.now()),
-      exercises: exercisesList.map((ex) => ExerciseLog(
-        name: ex['name']!,
-        category: ex['category']!,
-        sets: [ExerciseSet(weight: 0.0, reps: 0, isCompleted: false)],
-      )).toList(),
+      exercises: exercisesList.map((ex) {
+        final name = ex['name']!;
+        final category = ex['category']!;
+        double weight = 0.0;
+        int reps = 0;
+        final historicalSet = _getLatestSetFromHistory(name);
+        if (historicalSet != null) {
+          weight = historicalSet.weight;
+          reps = historicalSet.reps;
+        }
+        return ExerciseLog(
+          name: name,
+          category: category,
+          sets: [ExerciseSet(weight: weight, reps: reps, isCompleted: false)],
+        );
+      }).toList(),
       startTime: DateTime.now(),
     );
   }
@@ -548,10 +571,18 @@ class ActiveWorkoutNotifier extends StateNotifier<ActiveWorkout> {
     final exists = state.exercises.any((e) => e.name == name);
     if (exists) return;
 
+    double weight = 0.0;
+    int reps = 0;
+    final historicalSet = _getLatestSetFromHistory(name);
+    if (historicalSet != null) {
+      weight = historicalSet.weight;
+      reps = historicalSet.reps;
+    }
+
     final newExercise = ExerciseLog(
       name: name,
       category: category,
-      sets: [ExerciseSet(weight: 0.0, reps: 0, isCompleted: false)],
+      sets: [ExerciseSet(weight: weight, reps: reps, isCompleted: false)],
     );
 
     state = state.copyWith(exercises: [...state.exercises, newExercise]);

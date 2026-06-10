@@ -10,6 +10,8 @@ import '../../services/state_providers.dart';
 import '../../services/storage_service.dart';
 import '../../utils/image_picker_helper.dart';
 
+import 'package:fl_chart/fl_chart.dart';
+
 class WorkoutScreen extends ConsumerStatefulWidget {
   const WorkoutScreen({super.key});
 
@@ -46,6 +48,8 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
   String? _selectedBeforeDate;
   String? _selectedAfterDate;
   double _splitPercentage = 0.5;
+  String _analyticsTimeframe = '3m';
+  String? _selectedAnalyticsExercise;
 
 
   // Mock Gym Exercises Library (FitNotes categories)
@@ -460,7 +464,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
     final history = ref.watch(workoutHistoryProvider);
 
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: Colors.black,
       body: SafeArea(
         bottom: false,
         child: Padding(
@@ -551,78 +555,56 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
     );
   }
 
-  // ==========================================
-  // VIEW: START WORKOUT PANEL (LIVE SESSION CLOSED)
-  // ==========================================
+  Widget _buildAppleTabItem(String title, int index) {
+    final isSelected = _activeWorkoutTab == index;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _activeWorkoutTab = index),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeInOut,
+          decoration: BoxDecoration(
+            color: isSelected ? Colors.white.withOpacity(0.08) : Colors.transparent,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Center(
+            child: Text(
+              title,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                color: isSelected ? Colors.white : AppTheme.textSecondary,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildStartWorkoutPanel(List<WorkoutSession> history) {
     final templates = StorageService.getWorkoutTemplates();
     return Column(
       children: [
-        // Tab selector row
-        Row(
-          children: [
-            Expanded(
-              child: GestureDetector(
-                onTap: () => setState(() => _activeWorkoutTab = 0),
-                child: Container(
-                  height: 38,
-                  decoration: BoxDecoration(
-                    color: _activeWorkoutTab == 0
-                        ? AppTheme.accentCyan.withOpacity(0.08)
-                        : Colors.transparent,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                      color: _activeWorkoutTab == 0
-                          ? AppTheme.accentCyan
-                          : AppTheme.glassBorder,
-                      width: 1,
-                    ),
-                  ),
-                  child: Center(
-                    child: Text(
-                      'Workout Tracker',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: _activeWorkoutTab == 0 ? Colors.white : AppTheme.textSecondary,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
+        // Apple Segmented Tab Selector
+        Container(
+          height: 40,
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.035),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Colors.white.withOpacity(0.06),
+              width: 0.8,
             ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: GestureDetector(
-                onTap: () => setState(() => _activeWorkoutTab = 1),
-                child: Container(
-                  height: 38,
-                  decoration: BoxDecoration(
-                    color: _activeWorkoutTab == 1
-                        ? AppTheme.accentPurple.withOpacity(0.08)
-                        : Colors.transparent,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                      color: _activeWorkoutTab == 1
-                          ? AppTheme.accentPurple
-                          : AppTheme.glassBorder,
-                      width: 1,
-                    ),
-                  ),
-                  child: Center(
-                    child: Text(
-                      'Physique Analyzer',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: _activeWorkoutTab == 1 ? Colors.white : AppTheme.textSecondary,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
+          ),
+          child: Row(
+            children: [
+              _buildAppleTabItem('Log', 0),
+              _buildAppleTabItem('Analytics', 1),
+              _buildAppleTabItem('Physique', 2),
+            ],
+          ),
         ),
         const SizedBox(height: 16),
         Expanded(
@@ -1019,7 +1001,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
                                 margin: const EdgeInsets.only(bottom: 12),
                                 child: Opacity(
                                   opacity: 0.65,
-                                  child: GlassCard(
+                                  child: _GlassCard(
                                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                                     child: Row(
                                       children: [
@@ -1075,7 +1057,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
 
                               return Container(
                                 margin: const EdgeInsets.only(bottom: 12),
-                                child: GlassCard(
+                                child: _GlassCard(
                                   padding: EdgeInsets.zero,
                                   child: Column(
                                     children: [
@@ -1192,14 +1174,16 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
               ],
             ),
           )
-              : _buildPhysiqueAnalyzerPanel(),
+              : _activeWorkoutTab == 1
+                  ? _buildWorkoutAnalyticsPanel(history)
+                  : _buildPhysiqueAnalyzerPanel(),
         ),
       ],
     );
   }
 
   Widget _buildEmptyHistoryCard() {
-    return GlassCard(
+    return _GlassCard(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 36),
       child: Column(
@@ -1223,6 +1207,761 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
     );
   }
 
+  Widget _buildWorkoutAnalyticsPanel(List<WorkoutSession> history) {
+    final completedHistory = history.where((s) => s.exercises.isNotEmpty).toList();
+    if (completedHistory.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.analytics_outlined,
+              color: Colors.white.withOpacity(0.2),
+              size: 48,
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'No workout history found',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Start logging workouts to generate metrics!',
+              style: TextStyle(
+                color: AppTheme.textSecondary,
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // 1. Timeframe filtering logic
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    
+    final filteredHistory = completedHistory.where((session) {
+      try {
+        final parsedDate = DateFormat('yyyy-MM-dd').parse(session.date);
+        final diffDays = today.difference(parsedDate).inDays;
+        if (diffDays < 0) return false;
+        
+        switch (_analyticsTimeframe) {
+          case '1m':
+            return diffDays <= 30;
+          case '3m':
+            return diffDays <= 90;
+          case '6m':
+            return diffDays <= 180;
+          case 'All':
+          default:
+            return true;
+        }
+      } catch (_) {
+        return false;
+      }
+    }).toList();
+
+    // 2. Muscle Group Category Volume Grouping
+    final Map<String, double> categoryVolumeMap = {};
+    double totalPeriodVolume = 0.0;
+    
+    for (final session in filteredHistory) {
+      for (final ex in session.exercises) {
+        final category = ex.category.trim().isNotEmpty 
+            ? ex.category.trim() 
+            : 'Other';
+        
+        double exVolume = 0.0;
+        for (final set in ex.sets) {
+          if (set.isCompleted) {
+            // Treat bodyweight as 70kg base weight for realistic volume slice representation
+            final double effectiveWeight = set.weight > 0.0 ? set.weight : 70.0;
+            exVolume += effectiveWeight * set.reps;
+          }
+        }
+        
+        if (exVolume > 0) {
+          categoryVolumeMap[category] = (categoryVolumeMap[category] ?? 0.0) + exVolume;
+          totalPeriodVolume += exVolume;
+        }
+      }
+    }
+
+    // Sort categories by volume descending
+    final sortedCategories = categoryVolumeMap.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+
+    // Category Color Mapping
+    final List<Color> donutColors = [
+      AppTheme.accentCyan,
+      AppTheme.accentPurple,
+      AppTheme.accentOrange,
+      AppTheme.accentCoral,
+      AppTheme.accentEmerald,
+      Colors.blueAccent,
+      Colors.pinkAccent,
+    ];
+
+    // Gather unique exercises in history for dropdown
+    final Set<String> exercisesInHistory = {};
+    for (final session in history) {
+      for (final ex in session.exercises) {
+        if (ex.name.trim().isNotEmpty) {
+          exercisesInHistory.add(ex.name.trim());
+        }
+      }
+    }
+    final List<String> sortedExercises = exercisesInHistory.toList()..sort();
+    
+    if (_selectedAnalyticsExercise == null && sortedExercises.isNotEmpty) {
+      _selectedAnalyticsExercise = sortedExercises.first;
+    }
+
+    // 3. Peak 1RM progression aggregation for selected exercise
+    final List<FlSpot> lineSpots = [];
+    final List<Map<String, dynamic>> rawChartData = []; // To keep tooltips info
+    
+    if (_selectedAnalyticsExercise != null) {
+      final String targetExName = _selectedAnalyticsExercise!;
+      final Map<String, Map<String, dynamic>> dailyPeak1RM = {}; // dateStr -> details
+      
+      // Look through entire history (not just timeframe, we filter inside timeframe later)
+      for (final session in history) {
+        for (final ex in session.exercises) {
+          if (ex.name.toLowerCase() == targetExName.toLowerCase()) {
+            double dayPeak1RM = 0.0;
+            double peakWeight = 0.0;
+            int peakReps = 0;
+            
+            for (final set in ex.sets) {
+              if (set.isCompleted && set.reps > 0) {
+                // Epley formula: 1RM = W * (1 + R / 30.0)
+                final double w = set.weight > 0 ? set.weight : 70.0;
+                final double oneRepMax = w * (1.0 + set.reps / 30.0);
+                if (oneRepMax > dayPeak1RM) {
+                  dayPeak1RM = oneRepMax;
+                  peakWeight = set.weight;
+                  peakReps = set.reps;
+                }
+              }
+            }
+            
+            if (dayPeak1RM > 0) {
+              final dateStr = session.date;
+              final existingPeak = dailyPeak1RM[dateStr]?['1rm'] ?? 0.0;
+              if (dayPeak1RM > existingPeak) {
+                dailyPeak1RM[dateStr] = {
+                  '1rm': dayPeak1RM,
+                  'weight': peakWeight,
+                  'reps': peakReps,
+                  'date': dateStr,
+                };
+              }
+            }
+          }
+        }
+      }
+
+      // Sort dates
+      final sortedDailyPeaks = dailyPeak1RM.values.toList()
+        ..sort((a, b) => a['date'].toString().compareTo(b['date'].toString()));
+
+      // Filter and map to FlSpots
+      int index = 0;
+      for (final peak in sortedDailyPeaks) {
+        try {
+          final parsedDate = DateFormat('yyyy-MM-dd').parse(peak['date']);
+          final diffDays = today.difference(parsedDate).inDays;
+          
+          bool include = false;
+          switch (_analyticsTimeframe) {
+            case '1m':
+              include = diffDays <= 30;
+              break;
+            case '3m':
+              include = diffDays <= 90;
+              break;
+            case '6m':
+              include = diffDays <= 180;
+              break;
+            case 'All':
+            default:
+              include = true;
+          }
+          
+          if (include) {
+            lineSpots.add(FlSpot(index.toDouble(), peak['1rm']));
+            rawChartData.add({
+              'spotIndex': index,
+              'date': peak['date'],
+              '1rm': peak['1rm'],
+              'weight': peak['weight'],
+              'reps': peak['reps'],
+            });
+            index++;
+          }
+        } catch (_) {}
+      }
+    }
+
+    // Find PR lift from history
+    double pr1RM = 0.0;
+    double prWeight = 0.0;
+    int prReps = 0;
+    String prDate = '-';
+    
+    if (_selectedAnalyticsExercise != null) {
+      final String targetExName = _selectedAnalyticsExercise!;
+      for (final session in history) {
+        for (final ex in session.exercises) {
+          if (ex.name.toLowerCase() == targetExName.toLowerCase()) {
+            for (final set in ex.sets) {
+              if (set.isCompleted && set.reps > 0) {
+                final double w = set.weight > 0 ? set.weight : 70.0;
+                final double oneRepMax = w * (1.0 + set.reps / 30.0);
+                if (oneRepMax > pr1RM) {
+                  pr1RM = oneRepMax;
+                  prWeight = set.weight;
+                  prReps = set.reps;
+                  prDate = session.date;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.only(bottom: 120),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Timeframe segmented control
+          Container(
+            height: 36,
+            padding: const EdgeInsets.all(3),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.025),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: Colors.white.withOpacity(0.04), width: 0.8),
+            ),
+            child: Row(
+              children: [
+                _buildTimeframeChip('1m', '1 Month'),
+                _buildTimeframeChip('3m', '3 Months'),
+                _buildTimeframeChip('6m', '6 Months'),
+                _buildTimeframeChip('All', 'All Time'),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          // 1. Muscle Breakdown Section
+          const Text(
+            'Training Volume (By Category)',
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w900,
+              color: Colors.white,
+              letterSpacing: -0.3,
+            ),
+          ),
+          const SizedBox(height: 12),
+          
+          if (totalPeriodVolume == 0.0)
+            _GlassCard(
+              customBgColor: const Color(0xFF1C1C1E),
+              customBorder: Border.all(color: Colors.white.withOpacity(0.06), width: 0.8),
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 24),
+              child: const Center(
+                child: Text(
+                  'No training volume logged in this period.',
+                  style: TextStyle(color: AppTheme.textSecondary, fontSize: 13),
+                ),
+              ),
+            )
+          else
+            _GlassCard(
+              customBgColor: const Color(0xFF1C1C1E),
+              customBorder: Border.all(color: Colors.white.withOpacity(0.06), width: 0.8),
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  // Donut Chart Container
+                  SizedBox(
+                    height: 180,
+                    child: Stack(
+                      children: [
+                        PieChart(
+                          PieChartData(
+                            sectionsSpace: 3,
+                            centerSpaceRadius: 55,
+                            sections: List.generate(sortedCategories.length, (idx) {
+                              final entry = sortedCategories[idx];
+                              return PieChartSectionData(
+                                color: donutColors[idx % donutColors.length],
+                                value: entry.value,
+                                radius: 15,
+                                title: '',
+                                showTitle: false,
+                              );
+                            }),
+                          ),
+                        ),
+                        Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                'TOTAL VOLUME',
+                                style: TextStyle(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white.withOpacity(0.4),
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                totalPeriodVolume >= 1000.0
+                                    ? '${(totalPeriodVolume / 1000.0).toStringAsFixed(1)}k kg'
+                                    : '${totalPeriodVolume.round()} kg',
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w900,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  // Category Breakdown Table/List
+                  ListView.separated(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: sortedCategories.length,
+                    separatorBuilder: (ctx, idx) => Divider(color: Colors.white.withOpacity(0.04), height: 12),
+                    itemBuilder: (ctx, idx) {
+                      final entry = sortedCategories[idx];
+                      final pct = (entry.value / totalPeriodVolume) * 100.0;
+                      final Color col = donutColors[idx % donutColors.length];
+                      
+                      return Row(
+                        children: [
+                          Container(
+                            width: 8,
+                            height: 8,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: col,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              entry.key.toUpperCase(),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 11,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            entry.value >= 1000.0
+                                ? '${(entry.value / 1000.0).toStringAsFixed(1)}k kg'
+                                : '${entry.value.round()} kg',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 11,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            '${pct.toStringAsFixed(1)}%',
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.5),
+                              fontWeight: FontWeight.bold,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+
+          const SizedBox(height: 28),
+
+          // 2. Progression Section
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Estimated 1RM Progression',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w900,
+                  color: Colors.white,
+                  letterSpacing: -0.3,
+                ),
+              ),
+              if (sortedExercises.isNotEmpty)
+                _buildExerciseSelectorDropdown(sortedExercises),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          if (sortedExercises.isEmpty)
+            _GlassCard(
+              customBgColor: const Color(0xFF1C1C1E),
+              customBorder: Border.all(color: Colors.white.withOpacity(0.06), width: 0.8),
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 24),
+              child: const Center(
+                child: Text(
+                  'Log exercises to see Estimated 1RM trends.',
+                  style: TextStyle(color: AppTheme.textSecondary, fontSize: 13),
+                ),
+              ),
+            )
+          else if (lineSpots.isEmpty)
+            _GlassCard(
+              customBgColor: const Color(0xFF1C1C1E),
+              customBorder: Border.all(color: Colors.white.withOpacity(0.06), width: 0.8),
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 24),
+              child: const Center(
+                child: Text(
+                  'No completed reps/sets found in this period.',
+                  style: TextStyle(color: AppTheme.textSecondary, fontSize: 13),
+                ),
+              ),
+            )
+          else ...[
+            // Progression Line Chart Card
+            _GlassCard(
+              customBgColor: const Color(0xFF1C1C1E),
+              customBorder: Border.all(color: Colors.white.withOpacity(0.06), width: 0.8),
+              padding: const EdgeInsets.fromLTRB(12, 24, 24, 12),
+              child: Column(
+                children: [
+                  SizedBox(
+                    height: 200,
+                    child: LineChart(
+                      LineChartData(
+                        gridData: FlGridData(
+                          show: true,
+                          drawVerticalLine: false,
+                          getDrawingHorizontalLine: (val) => FlLine(
+                            color: Colors.white.withOpacity(0.03),
+                            strokeWidth: 1.0,
+                          ),
+                        ),
+                        titlesData: FlTitlesData(
+                          show: true,
+                          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                          bottomTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                          leftTitles: AxisTitles(
+                            sideTitles: SideTitles(
+                              showTitles: true,
+                              reservedSize: 32,
+                              getTitlesWidget: (value, meta) {
+                                return Text(
+                                  '${value.round()}',
+                                  style: TextStyle(
+                                    color: Colors.white.withOpacity(0.3),
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        ),
+                        borderData: FlBorderData(show: false),
+                        lineTouchData: LineTouchData(
+                          touchTooltipData: LineTouchTooltipData(
+                            getTooltipColor: (spot) => const Color(0xFF2C2C2E),
+                            tooltipBorder: BorderSide(color: Colors.white.withOpacity(0.12), width: 0.8),
+                            getTooltipItems: (touchedSpots) {
+                              return touchedSpots.map((spot) {
+                                final spotIndex = spot.x.toInt();
+                                if (spotIndex >= 0 && spotIndex < rawChartData.length) {
+                                  final details = rawChartData[spotIndex];
+                                  final originalDateStr = details['date'] as String;
+                                  final parsedDate = DateFormat('yyyy-MM-dd').parse(originalDateStr);
+                                  final formattedDate = DateFormat('MMM d, yyyy').format(parsedDate);
+                                  
+                                  return LineTooltipItem(
+                                    '$formattedDate\n1RM: ${details['1rm'].toStringAsFixed(1)} kg\nLift: ${details['weight'].toString().replaceAll(RegExp(r'\.0$'), '')}kg x ${details['reps']} reps',
+                                    const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  );
+                                }
+                                return LineTooltipItem(
+                                  '${spot.y.toStringAsFixed(1)} kg',
+                                  const TextStyle(color: Colors.white),
+                                );
+                              }).toList();
+                            },
+                          ),
+                        ),
+                        lineBarsData: [
+                          LineChartBarData(
+                            spots: lineSpots,
+                            isCurved: true,
+                            color: AppTheme.accentCyan,
+                            barWidth: 2.5,
+                            isStrokeCapRound: true,
+                            dotData: const FlDotData(show: false),
+                            belowBarData: BarAreaData(
+                              show: true,
+                              gradient: LinearGradient(
+                                colors: [
+                                  AppTheme.accentCyan.withOpacity(0.15),
+                                  AppTheme.accentPurple.withOpacity(0.01),
+                                ],
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  // Trophy achievement summary
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.02),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.white.withOpacity(0.04), width: 0.8),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: AppTheme.accentOrange.withOpacity(0.12),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.emoji_events_rounded,
+                            color: AppTheme.accentOrange,
+                            size: 20,
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'PERSONAL RECORD (PR)',
+                                style: TextStyle(
+                                  color: AppTheme.accentOrange,
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 8,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                '${prWeight.toString().replaceAll(RegExp(r'\.0$'), '')} kg x $prReps reps',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                ),
+                              ),
+                              Text(
+                                'Achieved on ${DateFormat('MMM d, yyyy').format(DateFormat('yyyy-MM-dd').parse(prDate))}',
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.4),
+                                  fontSize: 10,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            const Text(
+                              'EST. 1RM MAX',
+                              style: TextStyle(
+                                color: AppTheme.textSecondary,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 8,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              '${pr1RM.toStringAsFixed(1)} kg',
+                              style: const TextStyle(
+                                color: AppTheme.accentCyan,
+                                fontWeight: FontWeight.w900,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTimeframeChip(String key, String label) {
+    final isSelected = _analyticsTimeframe == key;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _analyticsTimeframe = key),
+        child: Container(
+          height: 30,
+          margin: const EdgeInsets.symmetric(horizontal: 2.5),
+          decoration: BoxDecoration(
+            color: isSelected ? Colors.white.withOpacity(0.08) : Colors.transparent,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Center(
+            child: Text(
+              key.toUpperCase(),
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
+                color: isSelected ? Colors.white : AppTheme.textSecondary,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildExerciseSelectorDropdown(List<String> exercises) {
+    return GestureDetector(
+      onTap: () {
+        showModalBottomSheet(
+          context: context,
+          backgroundColor: const Color(0xFF1C1C1E),
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(20),
+              topRight: Radius.circular(20),
+            ),
+          ),
+          builder: (ctx) {
+            return Container(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    'Select Exercise',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Expanded(
+                    child: ListView.builder(
+                      itemCount: exercises.length,
+                      itemBuilder: (ctx, idx) {
+                        final exName = exercises[idx];
+                        final isSelected = _selectedAnalyticsExercise == exName;
+                        return ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: Text(
+                            exName,
+                            style: TextStyle(
+                              color: isSelected ? AppTheme.accentCyan : Colors.white,
+                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                              fontSize: 14,
+                            ),
+                          ),
+                          trailing: isSelected
+                              ? const Icon(Icons.check_rounded, color: AppTheme.accentCyan, size: 20)
+                              : null,
+                          onTap: () {
+                            setState(() {
+                              _selectedAnalyticsExercise = exName;
+                            });
+                            Navigator.pop(ctx);
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.04),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.white.withOpacity(0.06), width: 0.8),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              _selectedAnalyticsExercise ?? 'Select',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(width: 4),
+            Icon(
+              Icons.arrow_drop_down_rounded,
+              color: Colors.white.withOpacity(0.6),
+              size: 16,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildHistorySessionCard(WorkoutSession session) {
     final parsedDate = DateFormat('yyyy-MM-dd').parse(session.date);
     final dateStr = DateFormat('EEEE, MMMM d').format(parsedDate);
@@ -1238,7 +1977,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      child: GlassCard(
+      child: _GlassCard(
         padding: const EdgeInsets.all(16),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
@@ -1468,7 +2207,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
   Widget _buildLiveExerciseCard(ExerciseLog exercise, int exerciseIndex) {
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
-      child: GlassCard(
+      child: _GlassCard(
         padding: const EdgeInsets.all(14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -2784,7 +3523,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
           const SizedBox(height: 12),
 
           if (datesWithPhotos.length < 2) ...[
-            GlassCard(
+            _GlassCard(
               width: double.infinity,
               padding: const EdgeInsets.all(20),
               child: Column(
@@ -3173,6 +3912,60 @@ class _RepsAdjusterState extends State<RepsAdjuster> {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _GlassCard extends StatelessWidget {
+  final Widget child;
+  final double? width;
+  final double? height;
+  final EdgeInsetsGeometry? padding;
+  final EdgeInsetsGeometry? margin;
+  final BorderRadiusGeometry? borderRadius;
+  final LinearGradient? borderGradient;
+  final Color? customBgColor;
+  final Border? customBorder;
+  final bool enableBlur;
+
+  const _GlassCard({
+    super.key,
+    required this.child,
+    this.width,
+    this.height,
+    this.padding = const EdgeInsets.all(16),
+    this.margin,
+    this.borderRadius,
+    this.borderGradient,
+    this.customBgColor,
+    this.customBorder,
+    this.enableBlur = true,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final effectiveRadius = borderRadius ?? BorderRadius.circular(16);
+    final cardBgColor = customBgColor ?? const Color(0xFF1C1C1E);
+    final cardBorderColor = Colors.white.withOpacity(0.06);
+    
+    return Container(
+      width: width,
+      height: height,
+      margin: margin,
+      padding: padding,
+      decoration: BoxDecoration(
+        color: cardBgColor,
+        borderRadius: effectiveRadius,
+        border: customBorder ?? Border.all(color: cardBorderColor, width: 0.8),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.15),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: child,
     );
   }
 }
