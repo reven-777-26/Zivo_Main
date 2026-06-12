@@ -197,18 +197,18 @@ Every single user on the **cheapest plan (Yearly ₹1,499)** hitting the **maxim
 | **Gemini AI (text scans)** | 1,000 × 25 text/day × 30 days × ₹0.006 | **₹4,500** |
 | **Gemini AI (photo scans)** | Not all 75 are photo — conservatively 25 photo × 30 × ₹0.024 | **₹18,000** |
 | **Gemini AI (Vision Lens)** | 1,000 × 25 Vision/day × 30 days × ₹0.03 | **₹22,500** |
-| **Firestore Writes** | ~2 writes/scan × 2.25M scans = 4.5M writes<br>Free: 600K → 3.9M billable × ₹7.50/100K | **₹2,925** |
-| **Firestore Reads** | ~3 reads/scan × 2.25M scans = 6.75M reads<br>Free: 1.5M → 5.25M billable × ₹2.50/100K | **₹1,312** |
-| **Cloud Functions** | 2,250,000 + 1,000,000 Vision 2nd calls = ~3.25M<br>Free: 2M → 1.25M billable (minimal) | **₹50** |
-| **Total Monthly Expense** | | **₹49,287** |
+| **Firestore Writes** | ~2 writes/scan × 2.25M scans = 4.5M writes<br>Free: 600K → 3.9M billable × ₹7.50/100K | **₹293** |
+| **Firestore Reads** | ~3 reads/scan × 2.25M scans = 6.75M reads<br>Free: 1.5M → 5.25M billable × ₹2.50/100K | **₹131** |
+| **Cloud Functions** | 2.25M + 1.0M Vision 2nd calls = 3.25M invocations<br>Free: 2.0M → 1.25M billable (with compute) | **₹1,762** |
+| **Total Monthly Expense** | | **₹47,186** |
 
 ### Worst-Case Profit / Loss Summary
 
 | Metric | Monthly | Yearly |
 | :--- | :--- | :--- |
 | Net Revenue | ₹1,06,179 | ₹12,74,150 |
-| Total Expenses | ₹49,287 | ₹5,91,444 |
-| **Net Profit** | **+₹56,892 / month** | **+₹6,82,706 / year** |
+| Total Expenses | ₹47,186 | ₹5,66,232 |
+| **Net Profit** | **+₹58,993 / month** | **+₹7,07,916 / year** |
 
 > **✅ Even the worst case is highly profitable.** With actual token pricing of ₹0.03 per Vision Lens scan, even 1,000 max-abusers on the cheapest plan still generate ~₹56.8K/month profit.
 
@@ -235,10 +235,10 @@ A realistic distribution of 1,000 paying users:
 | AI Cost (Power) | 120 × ₹6.48 | ₹778 |
 | AI Cost (Extreme) | 30 × ₹33.50 | ₹1,005 |
 | **Total AI Cost** | | **₹2,836** |
-| Firebase Infra | Firestore + Functions (mostly free tier) | **~₹300** |
-| **Total Expenses** | | **₹3,136 / month** |
-| **Net Profit** | | **+₹1,03,043 / month** (₹12,36,516 / year) |
-| **Profit Margin** | | **97.0%** |
+| Firebase Infra | Firestore + Functions (mostly free tier) | **~₹0** |
+| **Total Expenses** | | **₹2,836 / month** |
+| **Net Profit** | | **+₹103,343 / month** (₹12,40,116 / year) |
+| **Profit Margin** | | **97.3%** |
 
 ---
 
@@ -247,9 +247,9 @@ A realistic distribution of 1,000 paying users:
 | Metric | Value |
 |:---|:---|
 | **ARPU** (Avg Revenue Per User / Month, yearly plan) | ₹106.18 |
-| **COGS** (Avg Cost of Goods Served / User / Month) | ₹3.14 |
-| **Gross Margin** | 97.0% |
+| **COGS** (Avg Cost of Goods Served / User / Month) | ₹2.84 |
+| **Gross Margin** | 97.3% |
 | **LTV** (Lifetime Value, 12-month retention) | ₹1,274.15 |
-| **LTV-to-COGS Ratio** | 34:1 |
+| **LTV-to-COGS Ratio** | 37:1 |
 | **Breakeven** | Profitable from User #1 |
 | **Everything Else** | ₹0 (Auth, Hosting, OpenFoodFacts all free) |
