@@ -62,7 +62,7 @@ For developers earning under $1M annually, Google takes a **15% fee** on subscri
 | **Log food via photo** | 1× `analyzeMeal` (image) | **₹0.024** |
 | **Barcode scan (found in OpenFoodFacts)** | 0 (free API lookup) | **₹0.00** |
 | **Barcode scan (NOT found → AI fallback)** | 1× `analyzeMeal` (barcode_image) | **₹0.022** |
-| **Vision Lens scan (any category)** | 1× `identifyProduct` + 1× `analyzeVisionProduct` | **₹0.078** |
+| **Vision Lens scan (any category)** | 1× `identifyProduct` + 1× `analyzeVisionProduct` | **₹0.03** |
 
 ---
 
@@ -82,12 +82,12 @@ To protect the backend from abuse while marketing the app as having "unlimited" 
 | Cost Component | Calculation | Monthly Cost |
 |:---|:---|---:|
 | Gemini (text meal logs) | 45 × ₹0.006 | ₹0.27 |
-| Gemini (Vision Lens) | 15 × ₹0.078 | ₹1.17 |
+| Gemini (Vision Lens) | 15 × ₹0.03 | ₹0.45 |
 | Firestore / Functions | Within free tier | ₹0.00 |
-| **Total Cost** | | **₹1.44** |
+| **Total Cost** | | **₹0.72** |
 
-* **Monthly Subscription (₹249)**: Net Revenue ₹211.65 → **Profit: +₹210.21 / month** (99.3% Margin)
-* **Yearly Subscription (₹1,499)**: Net Revenue ₹106.18/mo → **Profit: +₹104.74 / month** (98.6% Margin)
+* **Monthly Subscription (₹249)**: Net Revenue ₹211.65 → **Profit: +₹210.93 / month** (99.7% Margin)
+* **Yearly Subscription (₹1,499)**: Net Revenue ₹106.18/mo → **Profit: +₹105.46 / month** (99.3% Margin)
 
 ### Scenario B: Regular User (35% of users)
 *Logs 3 meals/day (2 text + 1 photo) + 1 barcode (free) + 1 Vision Lens scan/day.*
@@ -96,12 +96,12 @@ To protect the backend from abuse while marketing the app as having "unlimited" 
 |:---|:---|---:|
 | Gemini (text logs) | 60 × ₹0.006 | ₹0.36 |
 | Gemini (photo logs) | 30 × ₹0.024 | ₹0.72 |
-| Gemini (Vision Lens) | 30 × ₹0.078 | ₹2.34 |
+| Gemini (Vision Lens) | 30 × ₹0.03 | ₹0.90 |
 | Firestore / Functions | Within free tier | ₹0.00 |
-| **Total Cost** | | **₹3.42** |
+| **Total Cost** | | **₹1.98** |
 
-* **Monthly Subscription (₹249)**: Net Revenue ₹211.65 → **Profit: +₹208.23 / month** (98.4% Margin)
-* **Yearly Subscription (₹1,499)**: Net Revenue ₹106.18/mo → **Profit: +₹102.76 / month** (96.8% Margin)
+* **Monthly Subscription (₹249)**: Net Revenue ₹211.65 → **Profit: +₹209.67 / month** (99.1% Margin)
+* **Yearly Subscription (₹1,499)**: Net Revenue ₹106.18/mo → **Profit: +₹104.20 / month** (98.1% Margin)
 
 ### Scenario C: Power User (12% of users)
 *Logs 5 meals/day (3 text + 2 photo) + 2 barcodes (free) + 5 Vision Lens scans/day.*
@@ -110,12 +110,12 @@ To protect the backend from abuse while marketing the app as having "unlimited" 
 |:---|:---|---:|
 | Gemini (text logs) | 90 × ₹0.006 | ₹0.54 |
 | Gemini (photo logs) | 60 × ₹0.024 | ₹1.44 |
-| Gemini (Vision Lens) | 150 × ₹0.078 | ₹11.70 |
+| Gemini (Vision Lens) | 150 × ₹0.03 | ₹4.50 |
 | Firestore / Functions | Within free tier | ₹0.00 |
-| **Total Cost** | | **₹13.68** |
+| **Total Cost** | | **₹6.48** |
 
-* **Monthly Subscription (₹249)**: Net Revenue ₹211.65 → **Profit: +₹197.97 / month** (93.5% Margin)
-* **Yearly Subscription (₹1,499)**: Net Revenue ₹106.18/mo → **Profit: +₹92.50 / month** (87.1% Margin)
+* **Monthly Subscription (₹249)**: Net Revenue ₹211.65 → **Profit: +₹205.17 / month** (96.9% Margin)
+* **Yearly Subscription (₹1,499)**: Net Revenue ₹106.18/mo → **Profit: +₹99.70 / month** (93.9% Margin)
 
 ### Scenario D: Extreme / Abuser (3% of users)
 *Hits 30-50 AI scans/day. Heavy mix of photo meals + Vision Lens.*
@@ -124,12 +124,12 @@ To protect the backend from abuse while marketing the app as having "unlimited" 
 |:---|:---|---:|
 | Gemini (text logs) | 150 × ₹0.006 | ₹0.90 |
 | Gemini (photo logs) | 150 × ₹0.024 | ₹3.60 |
-| Gemini (Vision Lens) | 900 × ₹0.078 | ₹70.20 |
+| Gemini (Vision Lens) | 900 × ₹0.03 | ₹27.00 |
 | Firestore | May exceed free tier slightly | ~₹2.00 |
-| **Total Cost** | | **₹76.70** |
+| **Total Cost** | | **₹33.50** |
 
-* **Monthly Subscription (₹249)**: Net Revenue ₹211.65 → **Profit: +₹134.95 / month** (63.8% Margin)
-* **Yearly Subscription (₹1,499)**: Net Revenue ₹106.18/mo → **Profit: +₹29.48 / month** (27.8% Margin)
+* **Monthly Subscription (₹249)**: Net Revenue ₹211.65 → **Profit: +₹178.15 / month** (84.2% Margin)
+* **Yearly Subscription (₹1,499)**: Net Revenue ₹106.18/mo → **Profit: +₹72.68 / month** (68.4% Margin)
 
 ### Scenario E: Maximum-Limit Abuser (Theoretical)
 *Hits the absolute maximum daily limit (75 AI scans/day) every single day for a month. (2,250 scans/month)*
@@ -137,12 +137,12 @@ To protect the backend from abuse while marketing the app as having "unlimited" 
 
 | Cost Component | Calculation | Monthly Cost |
 |:---|:---|---:|
-| Gemini (worst-case blend) | 750 text × ₹0.006 + 750 photo × ₹0.024 + 750 Vision × ₹0.078 | ₹81.00 |
+| Gemini (worst-case blend) | 750 text × ₹0.006 + 750 photo × ₹0.024 + 750 Vision × ₹0.03 | ₹45.00 |
 | Firestore | Exceeds free tier | ~₹5.00 |
-| **Total Cost** | | **~₹86.00** |
+| **Total Cost** | | **~₹50.00** |
 
-* **Monthly Subscription (₹249)**: Net Revenue ₹211.65 → **Profit: +₹125.65 / month** (59.4% Margin) ✅
-* **Yearly Subscription (₹1,499)**: Net Revenue ₹106.18/mo → **Profit: +₹20.18 / month** (19.0% Margin) ✅
+* **Monthly Subscription (₹249)**: Net Revenue ₹211.65 → **Profit: +₹161.65 / month** (76.4% Margin) ✅
+* **Yearly Subscription (₹1,499)**: Net Revenue ₹106.18/mo → **Profit: +₹56.18 / month** (52.9% Margin) ✅
 
 > **⚠️ Critical Update**: Unlike the old estimates (₹0.10/scan flat), the real per-token cost of Gemini 2.5 Flash-Lite is so low that **even worst-case abusers are still profitable on both plans**. There is no loss scenario.
 
@@ -196,21 +196,21 @@ Every single user on the **cheapest plan (Yearly ₹1,499)** hitting the **maxim
 | :--- | :--- | :--- |
 | **Gemini AI (text scans)** | 1,000 × 25 text/day × 30 days × ₹0.006 | **₹4,500** |
 | **Gemini AI (photo scans)** | Not all 75 are photo — conservatively 25 photo × 30 × ₹0.024 | **₹18,000** |
-| **Gemini AI (Vision Lens)** | 1,000 × 25 Vision/day × 30 days × ₹0.078 | **₹58,500** |
+| **Gemini AI (Vision Lens)** | 1,000 × 25 Vision/day × 30 days × ₹0.03 | **₹22,500** |
 | **Firestore Writes** | ~2 writes/scan × 2.25M scans = 4.5M writes<br>Free: 600K → 3.9M billable × ₹7.50/100K | **₹2,925** |
 | **Firestore Reads** | ~3 reads/scan × 2.25M scans = 6.75M reads<br>Free: 1.5M → 5.25M billable × ₹2.50/100K | **₹1,312** |
 | **Cloud Functions** | 2,250,000 + 1,000,000 Vision 2nd calls = ~3.25M<br>Free: 2M → 1.25M billable (minimal) | **₹50** |
-| **Total Monthly Expense** | | **₹85,287** |
+| **Total Monthly Expense** | | **₹49,287** |
 
 ### Worst-Case Profit / Loss Summary
 
 | Metric | Monthly | Yearly |
 | :--- | :--- | :--- |
 | Net Revenue | ₹1,06,179 | ₹12,74,150 |
-| Total Expenses | ₹85,287 | ₹10,23,444 |
-| **Net Profit** | **+₹20,892 / month** | **+₹2,50,706 / year** |
+| Total Expenses | ₹49,287 | ₹5,91,444 |
+| **Net Profit** | **+₹56,892 / month** | **+₹6,82,706 / year** |
 
-> **✅ Even the worst case is now profitable.** The old model showed a ₹1.2L/month loss because it assumed ₹0.10/scan. With actual token pricing, even 1,000 max-abusers on the cheapest plan still generates ~₹21K/month profit.
+> **✅ Even the worst case is highly profitable.** With actual token pricing of ₹0.03 per Vision Lens scan, even 1,000 max-abusers on the cheapest plan still generate ~₹56.8K/month profit.
 
 ---
 
@@ -220,25 +220,25 @@ A realistic distribution of 1,000 paying users:
 
 | User Type | % of Users | Count | AI Scans/Day | Monthly AI Cost (per user) |
 | :--- | :--- | :--- | :--- | :--- |
-| Light Users | 50% | 500 | 1–2 | ₹1.44 |
-| Regular Users | 35% | 350 | 3–5 | ₹3.42 |
-| Power Users | 12% | 120 | 8–15 | ₹13.68 |
-| Extreme Users | 3% | 30 | 30–50 | ₹76.70 |
+| Light Users | 50% | 500 | 1–2 | ₹0.72 |
+| Regular Users | 35% | 350 | 3–5 | ₹1.98 |
+| Power Users | 12% | 120 | 8–15 | ₹6.48 |
+| Extreme Users | 3% | 30 | 30–50 | ₹33.50 |
 
 ### Realistic Monthly P&L
 
 | Metric | Calculation | Amount |
 | :--- | :--- | :--- |
 | **Net Revenue** | 1,000 users × ₹106.18/month (yearly plan, after Play Store cut) | **₹1,06,179 / month** |
-| AI Cost (Light) | 500 × ₹1.44 | ₹720 |
-| AI Cost (Regular) | 350 × ₹3.42 | ₹1,197 |
-| AI Cost (Power) | 120 × ₹13.68 | ₹1,642 |
-| AI Cost (Extreme) | 30 × ₹76.70 | ₹2,301 |
-| **Total AI Cost** | | **₹5,860** |
+| AI Cost (Light) | 500 × ₹0.72 | ₹360 |
+| AI Cost (Regular) | 350 × ₹1.98 | ₹693 |
+| AI Cost (Power) | 120 × ₹6.48 | ₹778 |
+| AI Cost (Extreme) | 30 × ₹33.50 | ₹1,005 |
+| **Total AI Cost** | | **₹2,836** |
 | Firebase Infra | Firestore + Functions (mostly free tier) | **~₹300** |
-| **Total Expenses** | | **₹6,160 / month** |
-| **Net Profit** | | **+₹1,00,019 / month** (₹12,00,228 / year) |
-| **Profit Margin** | | **94.2%** |
+| **Total Expenses** | | **₹3,136 / month** |
+| **Net Profit** | | **+₹1,03,043 / month** (₹12,36,516 / year) |
+| **Profit Margin** | | **97.0%** |
 
 ---
 
@@ -247,11 +247,9 @@ A realistic distribution of 1,000 paying users:
 | Metric | Value |
 |:---|:---|
 | **ARPU** (Avg Revenue Per User / Month, yearly plan) | ₹106.18 |
-| **COGS** (Avg Cost of Goods Served / User / Month) | ₹5.86 |
-| **Gross Margin** | 94.5% |
+| **COGS** (Avg Cost of Goods Served / User / Month) | ₹3.14 |
+| **Gross Margin** | 97.0% |
 | **LTV** (Lifetime Value, 12-month retention) | ₹1,274.15 |
-| **LTV-to-COGS Ratio** | 18:1 |
+| **LTV-to-COGS Ratio** | 34:1 |
 | **Breakeven** | Profitable from User #1 |
-| **#1 Cost Driver** | Gemini AI tokens (95% of COGS) |
-| **#2 Cost Driver** | Firestore operations (5% of COGS, mostly free tier) |
 | **Everything Else** | ₹0 (Auth, Hosting, OpenFoodFacts all free) |
