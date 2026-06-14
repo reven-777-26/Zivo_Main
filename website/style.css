@@ -267,10 +267,9 @@ main {
     margin-bottom: 24px;
 }
 
-.gradient-text {
-    background: linear-gradient(135deg, var(--primary) 0%, #00ffd5 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+.highlight-text {
+    color: var(--primary);
+    text-shadow: 0 0 16px rgba(205, 242, 0, 0.2);
 }
 
 .hero-subtitle {
@@ -376,13 +375,13 @@ main {
 .phone-frame {
     width: 300px;
     height: 615px;
-    background: #1C1C1E;
-    border-radius: 46px;
-    padding: 10px;
-    border: 3.5px solid #2C2C2E;
+    background: #121212;
+    border-radius: 40px;
+    padding: 8px;
+    border: 4px solid #282828;
     box-shadow: 
         0 25px 50px -12px rgba(0,0,0,0.8),
-        inset 0 0 2px 2px rgba(255,255,255,0.05);
+        inset 0 0 2px 2px rgba(255,255,255,0.03);
     position: relative;
     overflow: visible;
 }
@@ -390,7 +389,7 @@ main {
 .phone-screen {
     width: 100%;
     height: 100%;
-    border-radius: 36px;
+    border-radius: 34px;
     overflow: hidden;
     background-color: var(--bg-black);
     position: relative;
@@ -425,57 +424,54 @@ main {
     transition: opacity 0.8s ease-in-out;
 }
 
-/* Hardware features */
-.phone-notch {
+/* Hardware features - Google Pixel Style */
+.phone-camera {
     position: absolute;
-    top: 18px;
+    top: 20px;
     left: 50%;
     transform: translateX(-50%);
-    width: 90px;
-    height: 24px;
-    background: var(--bg-black);
-    border-radius: 12px;
+    width: 12px;
+    height: 12px;
+    background: #101010;
+    border: 1.5px solid #222;
+    border-radius: 50%;
     z-index: 10;
     box-shadow: inset 0 0 1px 1px rgba(255,255,255,0.05);
 }
 
 .phone-speaker {
     position: absolute;
-    top: 12px;
+    top: 9px;
     left: 50%;
     transform: translateX(-50%);
-    width: 40px;
-    height: 4px;
+    width: 30px;
+    height: 3px;
     background: #2C2C2E;
-    border-radius: 2px;
+    border-radius: 1.5px;
     z-index: 10;
 }
 
-/* Buttons */
-.phone-volume-up, .phone-volume-down, .phone-power {
-    position: absolute;
-    width: 3.5px;
-    background: #2C2C2E;
-    border-radius: 1.5px 0 0 1.5px;
-    left: -7px;
-}
-
-.phone-volume-up {
-    top: 120px;
-    height: 45px;
-}
-
-.phone-volume-down {
-    top: 175px;
-    height: 45px;
-}
-
+/* Pixel Side Buttons (Power and Volume on same side) */
 .phone-power {
-    top: 150px;
-    height: 65px;
-    left: auto;
-    right: -7px;
-    border-radius: 0 1.5px 1.5px 0;
+    position: absolute;
+    width: 4px;
+    height: 40px;
+    background: #3a3a3a;
+    border-radius: 0 2px 2px 0;
+    top: 130px;
+    right: -8px;
+    z-index: 5;
+}
+
+.phone-volume {
+    position: absolute;
+    width: 4px;
+    height: 70px;
+    background: #3a3a3a;
+    border-radius: 0 2px 2px 0;
+    top: 190px;
+    right: -8px;
+    z-index: 5;
 }
 
 /* Reflection overlay */
