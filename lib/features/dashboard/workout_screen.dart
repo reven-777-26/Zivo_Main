@@ -116,27 +116,28 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
   }
 
   void _showCancelWorkoutDialog(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: AppTheme.obsidianBackground,
+        backgroundColor: isDark ? const Color(0xFF1C1E1B) : Colors.white,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
-          side: const BorderSide(color: AppTheme.glassBorder),
+          side: BorderSide(color: isDark ? const Color(0xFF323530) : AppTheme.glassBorder),
         ),
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.warning_amber_rounded, color: AppTheme.accentCoral),
-            SizedBox(width: 8),
+            const Icon(Icons.warning_amber_rounded, color: AppTheme.accentCoral),
+            const SizedBox(width: 8),
             Text(
               'Discard Session?',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              style: TextStyle(color: isDark ? Colors.white : AppTheme.textPrimary, fontWeight: FontWeight.bold),
             ),
           ],
         ),
-        content: const Text(
+        content: Text(
           'Are you sure you want to exit and discard this active workout session? Your current progress will not be saved.',
-          style: TextStyle(color: AppTheme.textSecondary),
+          style: TextStyle(color: isDark ? const Color(0xFF868685) : AppTheme.textSecondary),
         ),
         actions: [
           TextButton(
@@ -163,13 +164,14 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppTheme.accentCoral,
+              elevation: 0,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(24),
               ),
             ),
             child: const Text(
               'Discard',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
             ),
           ),
         ],
@@ -194,16 +196,21 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
               return name.contains(searchQuery);
             }).toList();
 
+            final isDark = Theme.of(sheetContext).brightness == Brightness.dark;
+            final sheetBg = isDark ? const Color(0xFF0E0F0C) : AppTheme.obsidianBackground;
+            final borderColor = isDark ? const Color(0xFF323530) : AppTheme.glassBorder;
+            final textColor = isDark ? Colors.white : AppTheme.textPrimary;
+
             return Container(
               height: MediaQuery.of(context).size.height * 0.75,
-              decoration: const BoxDecoration(
-                color: AppTheme.obsidianBackground,
-                borderRadius: BorderRadius.only(
+              decoration: BoxDecoration(
+                color: sheetBg,
+                borderRadius: const BorderRadius.only(
                   topLeft: Radius.circular(30),
                   topRight: Radius.circular(30),
                 ),
                 border: Border(
-                  top: BorderSide(color: AppTheme.glassBorder, width: 1.5),
+                  top: BorderSide(color: borderColor, width: 1.5),
                 ),
               ),
               child: ClipRRect(
@@ -212,8 +219,8 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
                   topRight: Radius.circular(30),
                 ),
                 child: Container(
-                  decoration: const BoxDecoration(
-                    gradient: AppTheme.bgGradient,
+                  decoration: BoxDecoration(
+                    color: sheetBg,
                   ),
                   child: Padding(
                     padding: const EdgeInsets.all(20.0),
@@ -235,16 +242,16 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text(
+                            Text(
                               'All Workout Presets',
                               style: TextStyle(
                                 fontSize: 22,
                                 fontWeight: FontWeight.w900,
-                                color: Colors.white,
+                                color: textColor,
                               ),
                             ),
                             IconButton(
-                              icon: const Icon(Icons.close_rounded, color: Colors.white),
+                              icon: Icon(Icons.close_rounded, color: textColor),
                               onPressed: () => Navigator.pop(sheetContext),
                             ),
                           ],
@@ -253,13 +260,13 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
                         // Search bar
                         Container(
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.03),
+                            color: isDark ? Colors.white.withOpacity(0.03) : Colors.black.withOpacity(0.02),
                             borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: AppTheme.glassBorder, width: 1.0),
+                            border: Border.all(color: borderColor, width: 1.0),
                           ),
                           child: TextField(
                             controller: _searchController,
-                            style: const TextStyle(color: Colors.white, fontSize: 14),
+                            style: TextStyle(color: textColor, fontSize: 14),
                             decoration: const InputDecoration(
                               hintText: 'Search presets...',
                               hintStyle: TextStyle(color: AppTheme.textSecondary, fontSize: 13),
@@ -424,14 +431,15 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
                                                         },
                                                         style: ElevatedButton.styleFrom(
                                                           backgroundColor: AppTheme.accentCyan,
+                                                          elevation: 0,
                                                           shape: RoundedRectangleBorder(
-                                                            borderRadius: BorderRadius.circular(10),
+                                                            borderRadius: BorderRadius.circular(24),
                                                           ),
-                                                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                                                         ),
                                                         child: const Text(
                                                           'Start',
-                                                          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 12),
+                                                          style: TextStyle(color: Color(0xFF0E0F0C), fontWeight: FontWeight.w600, fontSize: 12),
                                                         ),
                                                       ),
                                                     ],
@@ -691,34 +699,18 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
                                   height: 44,
                                   padding: const EdgeInsets.symmetric(horizontal: 24),
                                   decoration: BoxDecoration(
-                                    gradient: AppTheme.primaryGradient,
-                                    borderRadius: BorderRadius.circular(9999),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: AppTheme.accentCyan.withOpacity(0.2),
-                                        blurRadius: 16,
-                                        offset: const Offset(0, 4),
-                                      ),
-                                    ],
+                                    color: AppTheme.accentCyan,
+                                    borderRadius: BorderRadius.circular(24),
                                   ),
-                                  child: const Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        Icons.play_arrow_rounded,
-                                        color: Colors.white,
-                                        size: 20,
+                                  child: const Center(
+                                    child: Text(
+                                      'Start Empty Workout',
+                                      style: TextStyle(
+                                        color: Color(0xFF0E0F0C),
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 14,
                                       ),
-                                      SizedBox(width: 6),
-                                      Text(
-                                        'Start Live Session',
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 14,
-                                        ),
-                                      ),
-                                    ],
+                                    ),
                                   ),
                                 ),
                               ),
@@ -1208,6 +1200,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
   }
 
   Widget _buildWorkoutAnalyticsPanel(List<WorkoutSession> history) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final completedHistory = history.where((s) => s.exercises.isNotEmpty).toList();
     if (completedHistory.isEmpty) {
       return Center(
@@ -1448,9 +1441,9 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
             height: 36,
             padding: const EdgeInsets.all(3),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.025),
+              color: isDark ? Colors.white.withOpacity(0.025) : Colors.black.withOpacity(0.025),
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: Colors.white.withOpacity(0.04), width: 0.8),
+              border: Border.all(color: isDark ? Colors.white.withOpacity(0.04) : Colors.black.withOpacity(0.04), width: 0.8),
             ),
             child: Row(
               children: [
@@ -1464,12 +1457,12 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
           const SizedBox(height: 20),
 
           // 1. Muscle Breakdown Section
-          const Text(
+          Text(
             'Training Volume (By Category)',
             style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w900,
-              color: Colors.white,
+              color: isDark ? Colors.white : AppTheme.textPrimary,
               letterSpacing: -0.3,
             ),
           ),
@@ -1477,8 +1470,6 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
           
           if (totalPeriodVolume == 0.0)
             _GlassCard(
-              customBgColor: const Color(0xFF1C1C1E),
-              customBorder: Border.all(color: Colors.white.withOpacity(0.06), width: 0.8),
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 24),
               child: const Center(
@@ -1490,8 +1481,6 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
             )
           else
             _GlassCard(
-              customBgColor: const Color(0xFF1C1C1E),
-              customBorder: Border.all(color: Colors.white.withOpacity(0.06), width: 0.8),
               padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
@@ -1613,12 +1602,12 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 'Estimated 1RM Progression',
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w900,
-                  color: Colors.white,
+                  color: isDark ? Colors.white : AppTheme.textPrimary,
                   letterSpacing: -0.3,
                 ),
               ),
@@ -1630,8 +1619,6 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
 
           if (sortedExercises.isEmpty)
             _GlassCard(
-              customBgColor: const Color(0xFF1C1C1E),
-              customBorder: Border.all(color: Colors.white.withOpacity(0.06), width: 0.8),
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 24),
               child: const Center(
@@ -1643,8 +1630,6 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
             )
           else if (lineSpots.isEmpty)
             _GlassCard(
-              customBgColor: const Color(0xFF1C1C1E),
-              customBorder: Border.all(color: Colors.white.withOpacity(0.06), width: 0.8),
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 24),
               child: const Center(
@@ -1657,8 +1642,6 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
           else ...[
             // Progression Line Chart Card
             _GlassCard(
-              customBgColor: const Color(0xFF1C1C1E),
-              customBorder: Border.all(color: Colors.white.withOpacity(0.06), width: 0.8),
               padding: const EdgeInsets.fromLTRB(12, 24, 24, 12),
               child: Column(
                 children: [
@@ -1670,7 +1653,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
                           show: true,
                           drawVerticalLine: false,
                           getDrawingHorizontalLine: (val) => FlLine(
-                            color: Colors.white.withOpacity(0.03),
+                            color: isDark ? Colors.white.withOpacity(0.03) : Colors.black.withOpacity(0.03),
                             strokeWidth: 1.0,
                           ),
                         ),
@@ -1687,7 +1670,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
                                 return Text(
                                   '${value.round()}',
                                   style: TextStyle(
-                                    color: Colors.white.withOpacity(0.3),
+                                    color: (isDark ? Colors.white : Colors.black).withOpacity(0.3),
                                     fontSize: 9,
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -1699,8 +1682,8 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
                         borderData: FlBorderData(show: false),
                         lineTouchData: LineTouchData(
                           touchTooltipData: LineTouchTooltipData(
-                            getTooltipColor: (spot) => const Color(0xFF2C2C2E),
-                            tooltipBorder: BorderSide(color: Colors.white.withOpacity(0.12), width: 0.8),
+                            getTooltipColor: (spot) => isDark ? const Color(0xFF2C2C2E) : Colors.white,
+                            tooltipBorder: BorderSide(color: isDark ? Colors.white.withOpacity(0.12) : Colors.black.withOpacity(0.12), width: 0.8),
                             getTooltipItems: (touchedSpots) {
                               return touchedSpots.map((spot) {
                                 final spotIndex = spot.x.toInt();
@@ -1712,8 +1695,8 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
                                   
                                   return LineTooltipItem(
                                     '$formattedDate\n1RM: ${details['1rm'].toStringAsFixed(1)} kg\nLift: ${details['weight'].toString().replaceAll(RegExp(r'\.0$'), '')}kg x ${details['reps']} reps',
-                                    const TextStyle(
-                                      color: Colors.white,
+                                    TextStyle(
+                                      color: isDark ? Colors.white : AppTheme.textPrimary,
                                       fontSize: 10,
                                       fontWeight: FontWeight.w600,
                                     ),
@@ -1721,7 +1704,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
                                 }
                                 return LineTooltipItem(
                                   '${spot.y.toStringAsFixed(1)} kg',
-                                  const TextStyle(color: Colors.white),
+                                  TextStyle(color: isDark ? Colors.white : AppTheme.textPrimary),
                                 );
                               }).toList();
                             },
@@ -1756,9 +1739,9 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.02),
+                      color: isDark ? Colors.white.withOpacity(0.02) : Colors.black.withOpacity(0.02),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.white.withOpacity(0.04), width: 0.8),
+                      border: Border.all(color: isDark ? Colors.white.withOpacity(0.04) : Colors.black.withOpacity(0.04), width: 0.8),
                     ),
                     child: Row(
                       children: [
@@ -1791,8 +1774,8 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
                               const SizedBox(height: 2),
                               Text(
                                 '${prWeight.toString().replaceAll(RegExp(r'\.0$'), '')} kg x $prReps reps',
-                                style: const TextStyle(
-                                  color: Colors.white,
+                                style: TextStyle(
+                                  color: isDark ? Colors.white : AppTheme.textPrimary,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 13,
                                 ),
@@ -1800,7 +1783,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
                               Text(
                                 'Achieved on ${DateFormat('MMM d, yyyy').format(DateFormat('yyyy-MM-dd').parse(prDate))}',
                                 style: TextStyle(
-                                  color: Colors.white.withOpacity(0.4),
+                                  color: isDark ? Colors.white.withOpacity(0.4) : AppTheme.textSecondary,
                                   fontSize: 10,
                                 ),
                               ),
@@ -1843,6 +1826,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
   }
 
   Widget _buildTimeframeChip(String key, String label) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final isSelected = _analyticsTimeframe == key;
     return Expanded(
       child: GestureDetector(
@@ -1851,7 +1835,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
           height: 30,
           margin: const EdgeInsets.symmetric(horizontal: 2.5),
           decoration: BoxDecoration(
-            color: isSelected ? Colors.white.withOpacity(0.08) : Colors.transparent,
+            color: isSelected ? (isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.08)) : Colors.transparent,
             borderRadius: BorderRadius.circular(8),
           ),
           child: Center(
@@ -1860,7 +1844,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
               style: TextStyle(
                 fontSize: 10,
                 fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
-                color: isSelected ? Colors.white : AppTheme.textSecondary,
+                color: isSelected ? (isDark ? Colors.white : AppTheme.textPrimary) : AppTheme.textSecondary,
               ),
             ),
           ),
@@ -1870,16 +1854,18 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
   }
 
   Widget _buildExerciseSelectorDropdown(List<String> exercises) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return GestureDetector(
       onTap: () {
         showModalBottomSheet(
           context: context,
-          backgroundColor: const Color(0xFF1C1C1E),
-          shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.only(
+          backgroundColor: isDark ? const Color(0xFF1C1E1B) : Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: const BorderRadius.only(
               topLeft: Radius.circular(20),
               topRight: Radius.circular(20),
             ),
+            side: BorderSide(color: isDark ? const Color(0xFF323530) : AppTheme.glassBorder, width: 1.0),
           ),
           builder: (ctx) {
             return Container(
@@ -1888,10 +1874,10 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text(
+                  Text(
                     'Select Exercise',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: isDark ? Colors.white : AppTheme.textPrimary,
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                     ),
@@ -1908,7 +1894,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
                           title: Text(
                             exName,
                             style: TextStyle(
-                              color: isSelected ? AppTheme.accentCyan : Colors.white,
+                              color: isSelected ? AppTheme.accentCyan : (isDark ? Colors.white : AppTheme.textPrimary),
                               fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                               fontSize: 14,
                             ),
@@ -2501,8 +2487,9 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
             }).toList();
 
             final isDark = Theme.of(ctx).brightness == Brightness.dark;
-            final dialogBg = isDark ? AppTheme.glassBackground : Colors.white;
-            final dialogBorder = isDark ? AppTheme.glassBorder : const Color(0xFFEADBFF);
+            final dialogBg = isDark ? const Color(0xFF1C1E1B) : Colors.white;
+            final dialogBorder = isDark ? const Color(0xFF323530) : const Color(0xFFEADBFF);
+            final textColor = isDark ? Colors.white : AppTheme.textPrimary;
 
             return AlertDialog(
               backgroundColor: dialogBg,
@@ -2510,9 +2497,9 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
                 borderRadius: BorderRadius.circular(24),
                 side: BorderSide(color: dialogBorder, width: 1.0),
               ),
-              title: const Text(
+              title: Text(
                 'Add Gym Exercise',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 18),
               ),
               content: SizedBox(
                 width: double.maxFinite,
@@ -2522,21 +2509,22 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
                     // Search bar
                     Container(
                       decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.12),
+                        color: isDark ? Colors.white.withOpacity(0.04) : Colors.black.withOpacity(0.03),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: AppTheme.glassBorder,
+                          color: dialogBorder,
                           width: 1.0,
                         ),
                       ),
                       padding: const EdgeInsets.symmetric(horizontal: 12),
                       child: TextField(
                         controller: _searchController,
-                        style: const TextStyle(fontSize: 14),
-                        decoration: const InputDecoration(
+                        style: TextStyle(color: textColor, fontSize: 14),
+                        decoration: InputDecoration(
                           hintText: 'Search exercise...',
+                          hintStyle: const TextStyle(color: AppTheme.textSecondary),
                           border: InputBorder.none,
-                          icon: Icon(Icons.search_rounded, size: 18),
+                          icon: Icon(Icons.search_rounded, color: isDark ? Colors.white60 : AppTheme.textSecondary, size: 18),
                         ),
                         onChanged: (text) {
                           setStateDialog(() {});
@@ -2609,9 +2597,10 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
                                   contentPadding: EdgeInsets.zero,
                                   title: Text(
                                     item['name']!,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 14,
                                       fontWeight: FontWeight.bold,
+                                      color: textColor,
                                     ),
                                   ),
                                   subtitle: Text(
@@ -2669,23 +2658,32 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
                 ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: AppTheme.glassBorder),
+                  borderSide: BorderSide(color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF323530) : AppTheme.glassBorder, width: 1.0),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF323530) : AppTheme.glassBorder, width: 1.0),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: AppTheme.accentCyan, width: 1.5),
                 ),
               ),
             ),
             const SizedBox(height: 10),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.accentPurple,
+                backgroundColor: AppTheme.accentCyan,
+                foregroundColor: const Color(0xFF0E0F0C), // Ink Black
+                elevation: 0,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(24), // rounded.xl (24px)
                 ),
               ),
               child: const Text(
                 'Create Custom Exercise',
                 style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
               onPressed: () {
@@ -2715,7 +2713,9 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
       backgroundColor: Colors.transparent,
       builder: (ctx) {
         final isDark = Theme.of(ctx).brightness == Brightness.dark;
-        final bg = isDark ? AppTheme.glassBackground : Colors.white;
+        final bg = isDark ? const Color(0xFF1C1E1B) : Colors.white;
+        final textColor = isDark ? Colors.white : AppTheme.textPrimary;
+        final borderColor = isDark ? const Color(0xFF323530) : const Color(0xFFEADBFF);
 
         return StatefulBuilder(
           builder: (dialogCtx, setStateSheet) {
@@ -2728,6 +2728,10 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
                   color: bg,
                   borderRadius: const BorderRadius.vertical(
                     top: Radius.circular(32),
+                  ),
+                  border: Border.all(
+                    color: borderColor,
+                    width: 1.0,
                   ),
                 ),
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
@@ -2746,9 +2750,9 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
                       ),
                     ),
                     const SizedBox(height: 20),
-                    const Text(
+                    Text(
                       'Finish live Session',
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
+                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: textColor),
                     ),
                     const SizedBox(height: 6),
                     const Text(
@@ -2761,13 +2765,13 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
                     TextField(
                       controller: _notesController,
                       maxLines: 3,
-                      style: const TextStyle(fontSize: 14),
+                      style: TextStyle(color: textColor, fontSize: 14),
                       decoration: InputDecoration(
                         hintText:
                             'Add workout notes (e.g. felt strong on Squat)...',
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(14),
-                          borderSide: const BorderSide(color: AppTheme.glassBorder),
+                          borderSide: BorderSide(color: isDark ? const Color(0xFF323530) : AppTheme.glassBorder),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(14),
@@ -2802,7 +2806,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
                       const SizedBox(height: 8),
                       TextField(
                         controller: templateNameController,
-                        style: const TextStyle(fontSize: 13),
+                        style: TextStyle(color: textColor, fontSize: 13),
                         decoration: InputDecoration(
                           hintText: 'Enter template name (e.g. Heavy Legs)...',
                           labelText: 'Preset Template Name',
@@ -2812,7 +2816,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
                           ),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: AppTheme.glassBorder),
+                            borderSide: BorderSide(color: isDark ? const Color(0xFF323530) : AppTheme.glassBorder),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -3289,13 +3293,6 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
                                             decoration: const BoxDecoration(
                                               color: AppTheme.accentPurple,
                                               shape: BoxShape.circle,
-                                              boxShadow: [
-                                                BoxShadow(
-                                                  color: Colors.black26,
-                                                  blurRadius: 4,
-                                                  offset: Offset(0, 2),
-                                                ),
-                                              ],
                                             ),
                                             child: const Icon(
                                               Icons.unfold_more_rounded,
@@ -3418,13 +3415,6 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
                       decoration: const BoxDecoration(
                         color: AppTheme.accentPurple,
                         shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black26,
-                            blurRadius: 4,
-                            offset: Offset(0, 2),
-                          ),
-                        ],
                       ),
                       child: const Icon(
                         Icons.unfold_more_rounded,
@@ -3944,9 +3934,10 @@ class _GlassCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final effectiveRadius = borderRadius ?? BorderRadius.circular(16);
-    final cardBgColor = customBgColor ?? const Color(0xFF1C1C1E);
-    final cardBorderColor = Colors.white.withOpacity(0.06);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final effectiveRadius = borderRadius ?? BorderRadius.circular(18);
+    final cardBgColor = customBgColor ?? (isDark ? const Color(0xFF1C1E1B) : AppTheme.glassBackground);
+    final cardBorderColor = isDark ? const Color(0xFF323530) : AppTheme.glassBorder;
     
     return Container(
       width: width,
@@ -3956,14 +3947,7 @@ class _GlassCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: cardBgColor,
         borderRadius: effectiveRadius,
-        border: customBorder ?? Border.all(color: cardBorderColor, width: 0.8),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.15),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        border: customBorder ?? Border.all(color: cardBorderColor, width: 1.0),
       ),
       child: child,
     );

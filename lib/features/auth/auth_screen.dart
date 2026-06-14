@@ -114,10 +114,14 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? const Color(0xFFE8EBE6) : AppTheme.textPrimary;
+    final bgColor = isDark ? const Color(0xFF0E0F0C) : AppTheme.obsidianBackground;
+
     return Scaffold(
-      backgroundColor: AppTheme.obsidianBackground,
+      backgroundColor: bgColor,
       body: Container(
-        decoration: const BoxDecoration(gradient: AppTheme.bgGradient),
+        color: bgColor,
         child: SafeArea(
           child: Center(
             child: SingleChildScrollView(
@@ -129,21 +133,14 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                   Container(
                     width: 80,
                     height: 80,
-                    decoration: BoxDecoration(
+                    decoration: const BoxDecoration(
                       shape: BoxShape.circle,
-                      gradient: AppTheme.primaryGradient,
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppTheme.accentCyan.withOpacity(0.2),
-                          blurRadius: 16,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
+                      color: AppTheme.accentCyan,
                     ),
                     child: const Icon(
                       Icons.fitness_center_rounded,
                       size: 40,
-                      color: Colors.white,
+                      color: Color(0xFF0E0F0C), // Ink Black icon on Wise Green background
                     ),
                   ).animate().scale(duration: 600.ms, curve: Curves.easeOutBack),
                   const SizedBox(height: 16),
@@ -151,13 +148,13 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                     'FITNOTES 2',
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                           letterSpacing: 2,
-                          fontWeight: FontWeight.w900,
+                          fontWeight: FontWeight.w600,
                         ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     _isSignUp ? 'Create your profile to start syncing' : 'Welcome back! Sign in to sync data',
-                    style: const TextStyle(color: AppTheme.textSecondary),
+                    style: TextStyle(color: isDark ? const Color(0xFFCCCCCC) : AppTheme.textSecondary),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 32),
@@ -180,7 +177,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                               ),
                               child: Text(
                                 _errorMessage!,
-                                style: const TextStyle(color: AppTheme.accentCoral, fontSize: 13),
+                            style: TextStyle(color: isDark ? AppTheme.accentCoral : const Color(0xFFD03238), fontSize: 13),
                               ),
                             ),
                             const SizedBox(height: 16),
@@ -188,16 +185,24 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                           TextFormField(
                             controller: _emailController,
                             keyboardType: TextInputType.emailAddress,
-                            style: const TextStyle(color: AppTheme.textPrimary),
+                            style: TextStyle(color: isDark ? Colors.white : AppTheme.textPrimary),
                             decoration: InputDecoration(
                               hintText: 'Email Address',
-                              hintStyle: const TextStyle(color: AppTheme.textSecondary),
-                              prefixIcon: const Icon(Icons.email_outlined, color: AppTheme.textSecondary),
+                              hintStyle: TextStyle(color: isDark ? AppTheme.textSecondary : AppTheme.textTertiary),
+                              prefixIcon: Icon(Icons.email_outlined, color: isDark ? AppTheme.textSecondary : AppTheme.textTertiary),
                               filled: true,
-                              fillColor: Colors.black.withOpacity(0.2),
+                              fillColor: isDark ? Colors.black.withOpacity(0.4) : const Color(0xFFF0F2EE),
                               border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(16),
-                                borderSide: BorderSide.none,
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(color: isDark ? const Color(0xFF323530) : AppTheme.glassBorder, width: 1.0),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(color: isDark ? const Color(0xFF323530) : AppTheme.glassBorder, width: 1.0),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(color: AppTheme.accentCyan, width: 1.5),
                               ),
                             ),
                             validator: (val) {
@@ -211,16 +216,24 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                           TextFormField(
                             controller: _passwordController,
                             obscureText: true,
-                            style: const TextStyle(color: AppTheme.textPrimary),
+                            style: TextStyle(color: isDark ? Colors.white : AppTheme.textPrimary),
                             decoration: InputDecoration(
                               hintText: 'Password',
-                              hintStyle: const TextStyle(color: AppTheme.textSecondary),
-                              prefixIcon: const Icon(Icons.lock_outline, color: AppTheme.textSecondary),
+                              hintStyle: TextStyle(color: isDark ? AppTheme.textSecondary : AppTheme.textTertiary),
+                              prefixIcon: Icon(Icons.lock_outline, color: isDark ? AppTheme.textSecondary : AppTheme.textTertiary),
                               filled: true,
-                              fillColor: Colors.black.withOpacity(0.2),
+                              fillColor: isDark ? Colors.black.withOpacity(0.4) : const Color(0xFFF0F2EE),
                               border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(16),
-                                borderSide: BorderSide.none,
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(color: isDark ? const Color(0xFF323530) : AppTheme.glassBorder, width: 1.0),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(color: isDark ? const Color(0xFF323530) : AppTheme.glassBorder, width: 1.0),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(color: AppTheme.accentCyan, width: 1.5),
                               ),
                             ),
                             validator: (val) {
@@ -234,10 +247,11 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                           ElevatedButton(
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppTheme.accentCyan,
-                              foregroundColor: Colors.white,
+                              foregroundColor: const Color(0xFF0E0F0C), // Ink Black text
+                              elevation: 0,
                               padding: const EdgeInsets.symmetric(vertical: 16),
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
+                                borderRadius: BorderRadius.circular(24), // rounded.xl (24px)
                               ),
                             ),
                             onPressed: _isLoading ? null : _submit,
@@ -247,12 +261,12 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                                     width: 20,
                                     child: CircularProgressIndicator(
                                       strokeWidth: 2,
-                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                      valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF0E0F0C)),
                                     ),
                                   )
                                 : Text(
                                     _isSignUp ? 'Create Account' : 'Sign In',
-                                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                                   ),
                           ),
                         ],
@@ -270,12 +284,12 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                         padding: const EdgeInsets.symmetric(horizontal: 16.0),
                         child: Text(
                           'OR CONTINUE WITH',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: AppTheme.textSecondary.withOpacity(0.6),
-                            letterSpacing: 1.5,
-                            fontWeight: FontWeight.bold,
-                          ),
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: isDark ? const Color(0xFFCCCCCC).withOpacity(0.6) : AppTheme.textSecondary.withOpacity(0.6),
+                              letterSpacing: 1.5,
+                              fontWeight: FontWeight.w600,
+                            ),
                         ),
                       ),
                       const Expanded(child: Divider(color: AppTheme.glassBorder)),
@@ -292,17 +306,17 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                       Expanded(
                         child: OutlinedButton.icon(
                           style: OutlinedButton.styleFrom(
-                            side: const BorderSide(color: AppTheme.glassBorder),
+                            side: BorderSide(color: isDark ? const Color(0xFF323530) : AppTheme.glassBorder, width: 1.0),
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
+                              borderRadius: BorderRadius.circular(24), // rounded.xl (24px)
                             ),
                           ),
                           onPressed: _isLoading ? null : _signInWithGoogle,
-                          icon: const Icon(Icons.g_mobiledata, size: 28, color: AppTheme.accentCyan),
-                          label: const Text(
+                          icon: Icon(Icons.g_mobiledata, size: 28, color: isDark ? AppTheme.accentCyan : const Color(0xFF163300)),
+                          label: Text(
                             'Google',
-                            style: TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.bold),
+                            style: TextStyle(color: isDark ? Colors.white : AppTheme.textPrimary, fontWeight: FontWeight.w600),
                           ),
                         ),
                       ),
@@ -311,17 +325,17 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                       Expanded(
                         child: OutlinedButton.icon(
                           style: OutlinedButton.styleFrom(
-                            side: const BorderSide(color: AppTheme.glassBorder),
+                            side: BorderSide(color: isDark ? const Color(0xFF323530) : AppTheme.glassBorder, width: 1.0),
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
+                              borderRadius: BorderRadius.circular(24), // rounded.xl (24px)
                             ),
                           ),
                           onPressed: _isLoading ? null : _signInAnonymously,
-                          icon: const Icon(Icons.person_outline, color: AppTheme.textSecondary),
-                          label: const Text(
+                          icon: Icon(Icons.person_outline, color: isDark ? AppTheme.textSecondary : const Color(0xFF454745)),
+                          label: Text(
                             'Guest Mode',
-                            style: TextStyle(color: AppTheme.textSecondary, fontWeight: FontWeight.bold),
+                            style: TextStyle(color: isDark ? AppTheme.textSecondary : const Color(0xFF454745), fontWeight: FontWeight.w600),
                           ),
                         ),
                       ),
@@ -340,7 +354,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                     },
                     child: Text(
                       _isSignUp ? 'Already have an account? Sign In' : "Don't have an account? Sign Up",
-                      style: const TextStyle(color: AppTheme.accentCyan, fontWeight: FontWeight.bold),
+                      style: TextStyle(color: isDark ? AppTheme.accentCyan : const Color(0xFF163300), fontWeight: FontWeight.w600),
                     ),
                   ),
                 ],

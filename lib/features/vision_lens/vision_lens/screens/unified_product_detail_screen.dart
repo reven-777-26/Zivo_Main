@@ -22,14 +22,14 @@ class _UnifiedProductDetailScreenState extends ConsumerState<UnifiedProductDetai
   int _selectedAlternativeIndex = 0;
   final Set<String> _expandedIngredients = {};
 
-  Color _getGradeColor(String grade) {
+  Color _getGradeColor(String grade, bool isDark) {
     switch (grade.toUpperCase()) {
       case 'A':
       case 'B':
-        return AppTheme.accentEmerald;
+        return isDark ? AppTheme.accentEmerald : const Color(0xFF054D28);
       case 'C':
       case 'D':
-        return AppTheme.accentOrange;
+        return isDark ? const Color(0xFFFFC091) : const Color(0xFFB86700);
       case 'E':
         return AppTheme.accentCoral;
       default:
@@ -37,12 +37,12 @@ class _UnifiedProductDetailScreenState extends ConsumerState<UnifiedProductDetai
     }
   }
 
-  Color _getSafetyColor(String safety) {
+  Color _getSafetyColor(String safety, bool isDark) {
     switch (safety.toLowerCase()) {
       case 'safe':
-        return AppTheme.accentEmerald;
+        return isDark ? AppTheme.accentEmerald : const Color(0xFF054D28);
       case 'caution':
-        return AppTheme.accentOrange;
+        return isDark ? const Color(0xFFFFC091) : const Color(0xFFB86700);
       case 'avoid':
         return AppTheme.accentCoral;
       default:
@@ -211,13 +211,24 @@ class _UnifiedProductDetailScreenState extends ConsumerState<UnifiedProductDetai
     return visionState.currentReport.when(
       data: (report) {
         if (report == null) {
-          return const Scaffold(
-            backgroundColor: AppTheme.obsidianBackground,
-            body: Center(child: Text('No details loaded.', style: TextStyle(color: Colors.white))),
+          return Scaffold(
+            backgroundColor: isDark ? const Color(0xFF0E0F0C) : AppTheme.obsidianBackground,
+            appBar: AppBar(
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              leading: IconButton(
+                icon: Icon(Icons.arrow_back_ios_new_rounded, color: isDark ? Colors.white : AppTheme.textPrimary),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ),
+            body: const Center(
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(AppTheme.accentCyan),
+              ),
+            ),
           );
         }
-
-        final gradeColor = _getGradeColor(report.healthGrade);
+        final gradeColor = _getGradeColor(report.healthGrade, isDark);
 
         // Safely bounds-check selected alternative
         if (_selectedAlternativeIndex >= report.alternatives.length) {
@@ -234,20 +245,20 @@ class _UnifiedProductDetailScreenState extends ConsumerState<UnifiedProductDetai
         );
 
         return Scaffold(
-          backgroundColor: isDark ? AppTheme.obsidianBackground : const Color(0xFFF1F5F9),
+          backgroundColor: isDark ? const Color(0xFF0E0F0C) : AppTheme.obsidianBackground,
           appBar: AppBar(
             backgroundColor: Colors.transparent,
             elevation: 0,
             leading: IconButton(
-              icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
+              icon: Icon(Icons.arrow_back_ios_new_rounded, color: isDark ? Colors.white : AppTheme.textPrimary),
               onPressed: () {
                 ref.read(unifiedVisionProvider.notifier).resetCurrentReport();
                 Navigator.pop(context);
               },
             ),
-            title: const Text(
+            title: Text(
               'ZIVO VISION LENS',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 15, letterSpacing: 1.5),
+              style: TextStyle(color: isDark ? Colors.white : AppTheme.textPrimary, fontWeight: FontWeight.w900, fontSize: 15, letterSpacing: 1.5),
             ),
           ),
           body: SingleChildScrollView(
@@ -269,7 +280,7 @@ class _UnifiedProductDetailScreenState extends ConsumerState<UnifiedProductDetai
                             width: 84,
                             height: 84,
                             decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(20),
+                              borderRadius: BorderRadius.circular(24),
                               border: Border.all(color: AppTheme.glassBorder, width: 1.5),
                             ),
                             clipBehavior: Clip.antiAlias,
@@ -282,8 +293,8 @@ class _UnifiedProductDetailScreenState extends ConsumerState<UnifiedProductDetai
                               children: [
                                 Text(
                                   report.productName,
-                                  style: const TextStyle(
-                                    color: Colors.white,
+                                  style: TextStyle(
+                                    color: isDark ? Colors.white : AppTheme.textPrimary,
                                     fontSize: 20,
                                     fontWeight: FontWeight.w900,
                                     letterSpacing: -0.5,
@@ -311,7 +322,7 @@ class _UnifiedProductDetailScreenState extends ConsumerState<UnifiedProductDetai
                             height: 68,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              border: Border.all(color: gradeColor, width: 3),
+                              border: Border.all(color: gradeColor, width: 1.5), // hairline
                               color: gradeColor.withOpacity(0.08),
                             ),
                             child: Center(
@@ -320,7 +331,7 @@ class _UnifiedProductDetailScreenState extends ConsumerState<UnifiedProductDetai
                                 style: TextStyle(
                                   color: gradeColor,
                                   fontSize: 34,
-                                  fontWeight: FontWeight.w900,
+                                  fontWeight: FontWeight.w900, // heavy
                                 ),
                               ),
                             ),
@@ -335,15 +346,15 @@ class _UnifiedProductDetailScreenState extends ConsumerState<UnifiedProductDetai
                                   style: TextStyle(
                                     color: AppTheme.textSecondary,
                                     fontSize: 10,
-                                    fontWeight: FontWeight.bold,
+                                    fontWeight: FontWeight.w900,
                                     letterSpacing: 1.5,
                                   ),
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
                                   report.verdict,
-                                  style: const TextStyle(
-                                    color: Colors.white,
+                                  style: TextStyle(
+                                    color: isDark ? Colors.white : AppTheme.textPrimary,
                                     fontSize: 15,
                                     fontWeight: FontWeight.w600,
                                     height: 1.35,
@@ -367,8 +378,8 @@ class _UnifiedProductDetailScreenState extends ConsumerState<UnifiedProductDetai
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     decoration: BoxDecoration(
                       color: AppTheme.accentCoral.withOpacity(0.08),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: AppTheme.accentCoral.withOpacity(0.3), width: 1.5),
+                      borderRadius: BorderRadius.circular(24), // rounded.xl
+                      border: Border.all(color: AppTheme.accentCoral.withOpacity(0.2), width: 1.0), // hairline
                     ),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -388,7 +399,7 @@ class _UnifiedProductDetailScreenState extends ConsumerState<UnifiedProductDetai
                                 style: TextStyle(
                                   color: AppTheme.accentCoral,
                                   fontSize: 11,
-                                  fontWeight: FontWeight.bold,
+                                  fontWeight: FontWeight.w900,
                                   letterSpacing: 1.5,
                                 ),
                               ),
@@ -398,12 +409,12 @@ class _UnifiedProductDetailScreenState extends ConsumerState<UnifiedProductDetai
                                     child: Row(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        const Text('• ', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
+                                        Text('• ', style: TextStyle(color: isDark ? Colors.white : AppTheme.textPrimary, fontSize: 13, fontWeight: FontWeight.bold)),
                                         Expanded(
                                           child: Text(
                                             warning,
-                                            style: const TextStyle(
-                                              color: Colors.white,
+                                            style: TextStyle(
+                                              color: isDark ? Colors.white : AppTheme.textPrimary,
                                               fontSize: 13,
                                               fontWeight: FontWeight.bold,
                                             ),
@@ -427,7 +438,7 @@ class _UnifiedProductDetailScreenState extends ConsumerState<UnifiedProductDetai
                     style: TextStyle(
                       color: AppTheme.textSecondary,
                       fontSize: 11,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w900,
                       letterSpacing: 1.5,
                     ),
                   ),
@@ -459,8 +470,8 @@ class _UnifiedProductDetailScreenState extends ConsumerState<UnifiedProductDetai
                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                         decoration: BoxDecoration(
                           color: color.withOpacity(0.06),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: color.withOpacity(0.2)),
+                          borderRadius: BorderRadius.circular(24), // rounded.xl
+                          border: Border.all(color: color.withOpacity(0.15), width: 1.0), // hairline
                         ),
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -476,7 +487,7 @@ class _UnifiedProductDetailScreenState extends ConsumerState<UnifiedProductDetai
                               child: Text(
                                 cleanText,
                                 style: TextStyle(
-                                  color: color,
+                                  color: isDark ? color : (color == AppTheme.accentCyan ? const Color(0xFF054D28) : color),
                                   fontSize: 12.5,
                                   fontWeight: FontWeight.bold,
                                   height: 1.35,
@@ -497,7 +508,7 @@ class _UnifiedProductDetailScreenState extends ConsumerState<UnifiedProductDetai
                   style: TextStyle(
                     color: AppTheme.textSecondary,
                     fontSize: 11,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w900,
                     letterSpacing: 1.5,
                   ),
                 ),
@@ -518,6 +529,7 @@ class _UnifiedProductDetailScreenState extends ConsumerState<UnifiedProductDetai
                     children: List.generate(report.alternatives.length, (index) {
                       final alt = report.alternatives[index];
                       final isSelected = _selectedAlternativeIndex == index;
+                      final altGradeColor = _getGradeColor(alt.healthGrade, isDark);
 
                       return Container(
                         margin: const EdgeInsets.only(bottom: 12),
@@ -527,26 +539,21 @@ class _UnifiedProductDetailScreenState extends ConsumerState<UnifiedProductDetai
                               _selectedAlternativeIndex = index;
                             });
                           },
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: BorderRadius.circular(24),
                           child: AnimatedContainer(
                             duration: const Duration(milliseconds: 200),
                             padding: const EdgeInsets.all(18),
                             decoration: BoxDecoration(
-                              color: isSelected ? AppTheme.glassBackground : AppTheme.glassBackground.withOpacity(0.4),
-                              borderRadius: BorderRadius.circular(20),
+                              color: isSelected
+                                  ? (isDark ? const Color(0xFF1C1E1B) : AppTheme.glassBackground)
+                                  : (isDark ? Colors.white.withOpacity(0.02) : AppTheme.glassBackground.withOpacity(0.4)),
+                              borderRadius: BorderRadius.circular(24), // rounded.xl
                               border: Border.all(
-                                color: isSelected ? AppTheme.accentEmerald : AppTheme.glassBorder,
-                                width: isSelected ? 2.0 : 1.0,
+                                color: isSelected
+                                    ? (isDark ? AppTheme.accentCyan : const Color(0xFF054D28))
+                                    : AppTheme.glassBorder,
+                                width: 1.0, // Hairline
                               ),
-                              boxShadow: isSelected
-                                  ? [
-                                      BoxShadow(
-                                        color: AppTheme.accentEmerald.withOpacity(0.1),
-                                        blurRadius: 10,
-                                        offset: const Offset(0, 4),
-                                      ),
-                                    ]
-                                  : [],
                             ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -555,15 +562,17 @@ class _UnifiedProductDetailScreenState extends ConsumerState<UnifiedProductDetai
                                   children: [
                                     Icon(
                                       isSelected ? Icons.check_circle_rounded : Icons.radio_button_off_rounded,
-                                      color: isSelected ? AppTheme.accentEmerald : AppTheme.textSecondary,
+                                      color: isSelected
+                                          ? (isDark ? AppTheme.accentCyan : const Color(0xFF054D28))
+                                          : AppTheme.textSecondary,
                                       size: 20,
                                     ),
                                     const SizedBox(width: 10),
                                     Expanded(
                                       child: Text(
                                         alt.name,
-                                        style: const TextStyle(
-                                          color: Colors.white,
+                                        style: TextStyle(
+                                          color: isDark ? Colors.white : AppTheme.textPrimary,
                                           fontSize: 15,
                                           fontWeight: FontWeight.bold,
                                         ),
@@ -573,14 +582,14 @@ class _UnifiedProductDetailScreenState extends ConsumerState<UnifiedProductDetai
                                     Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                       decoration: BoxDecoration(
-                                        color: _getGradeColor(alt.healthGrade).withOpacity(0.12),
-                                        borderRadius: BorderRadius.circular(8),
-                                        border: Border.all(color: _getGradeColor(alt.healthGrade).withOpacity(0.3)),
+                                        color: isDark ? altGradeColor.withOpacity(0.12) : const Color(0xFFE2F6D5),
+                                        borderRadius: BorderRadius.circular(9999), // pill shape
+                                        border: Border.all(color: isDark ? altGradeColor.withOpacity(0.3) : const Color(0xFFC5EDAB)),
                                       ),
                                       child: Text(
                                         'Grade ${alt.healthGrade}',
                                         style: TextStyle(
-                                          color: _getGradeColor(alt.healthGrade),
+                                          color: isDark ? altGradeColor : const Color(0xFF054D28),
                                           fontSize: 10,
                                           fontWeight: FontWeight.w900,
                                         ),
@@ -612,8 +621,8 @@ class _UnifiedProductDetailScreenState extends ConsumerState<UnifiedProductDetai
                                               padding: const EdgeInsets.only(bottom: 4.0),
                                               child: Text(
                                                 bullet,
-                                                style: const TextStyle(
-                                                  color: AppTheme.textPrimary,
+                                                style: TextStyle(
+                                                  color: isDark ? Colors.white : AppTheme.textPrimary,
                                                   fontSize: 12.5,
                                                   height: 1.3,
                                                 ),
@@ -635,8 +644,8 @@ class _UnifiedProductDetailScreenState extends ConsumerState<UnifiedProductDetai
                 if (report.alternatives.isNotEmpty) ...[
                   Text(
                     'BUY ${report.alternatives[_selectedAlternativeIndex].name.toUpperCase()} ON:',
-                    style: const TextStyle(
-                      color: AppTheme.accentCyan,
+                    style: TextStyle(
+                      color: isDark ? AppTheme.accentCyan : const Color(0xFF054D28),
                       fontSize: 10,
                       fontWeight: FontWeight.w900,
                       letterSpacing: 1.5,
@@ -647,24 +656,18 @@ class _UnifiedProductDetailScreenState extends ConsumerState<UnifiedProductDetai
                     spacing: 8,
                     runSpacing: 8,
                     children: storeLinks.map((link) {
-                      final brandBg = _getBrandBgColor(link.storeName);
-                      final textColor = link.storeName.toLowerCase() == 'blinkit' ? Colors.black : Colors.white;
-
                       return InkWell(
                         onTap: () => VisionRecommendationEngine.launchSearchLink(link.searchUrl),
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: BorderRadius.circular(9999), // pill shape
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                           decoration: BoxDecoration(
-                            color: brandBg,
-                            borderRadius: BorderRadius.circular(14),
-                            boxShadow: [
-                              BoxShadow(
-                                color: brandBg.withOpacity(0.15),
-                                blurRadius: 6,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
+                            color: isDark ? AppTheme.accentCyan.withOpacity(0.12) : const Color(0xFFE2F6D5),
+                            borderRadius: BorderRadius.circular(9999), // pill shape
+                            border: Border.all(
+                              color: isDark ? AppTheme.accentCyan.withOpacity(0.3) : const Color(0xFFC5EDAB),
+                              width: 1.0, // hairline
+                            ),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
@@ -674,9 +677,9 @@ class _UnifiedProductDetailScreenState extends ConsumerState<UnifiedProductDetai
                               Text(
                                 link.storeName,
                                 style: TextStyle(
-                                  color: textColor,
+                                  color: isDark ? AppTheme.accentCyan : const Color(0xFF054D28),
                                   fontSize: 11,
-                                  fontWeight: FontWeight.w900,
+                                  fontWeight: FontWeight.w600, // semibold
                                 ),
                               ),
                             ],
@@ -694,22 +697,22 @@ class _UnifiedProductDetailScreenState extends ConsumerState<UnifiedProductDetai
                   child: Container(
                     width: double.infinity,
                     decoration: BoxDecoration(
-                      color: AppTheme.glassBackground.withOpacity(0.5),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: AppTheme.glassBorder),
+                      color: isDark ? AppTheme.glassBackground.withOpacity(0.05) : AppTheme.glassBackground,
+                      borderRadius: BorderRadius.circular(24), // rounded.xl
+                      border: Border.all(color: AppTheme.glassBorder, width: 1.0), // hairline
                     ),
                     child: ExpansionTile(
-                      title: const Text(
+                      title: Text(
                         'View Full Analysis',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: isDark ? Colors.white : AppTheme.textPrimary,
                           fontSize: 13,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w900,
                           letterSpacing: 0.5,
                         ),
                       ),
-                      iconColor: Colors.white,
-                      collapsedIconColor: Colors.white,
+                      iconColor: isDark ? Colors.white : AppTheme.textPrimary,
+                      collapsedIconColor: isDark ? Colors.white : AppTheme.textPrimary,
                       childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                       children: [
                         const Divider(color: AppTheme.glassBorder, height: 1),
@@ -727,24 +730,27 @@ class _UnifiedProductDetailScreenState extends ConsumerState<UnifiedProductDetai
                                       title: 'Added Sugars',
                                       status: report.sugarAnalysis.impact,
                                       description: report.sugarAnalysis.amount,
-                                      accentColor: _getStatusColor(report.sugarAnalysis.impact),
+                                      accentColor: _getStatusColor(report.sugarAnalysis.impact, isDark),
                                       icon: Icons.cookie_outlined,
+                                      isDark: isDark,
                                     ),
                                     const SizedBox(height: 10),
                                     _buildBentoCard(
                                       title: 'Palm Oil',
                                       status: report.palmOilAnalysis.present ? 'Present' : 'Clean',
                                       description: report.palmOilAnalysis.present ? '❌ Avoid palm oil usage' : '✅ Safe (No palm oil)',
-                                      accentColor: _getStatusColor(report.palmOilAnalysis.present ? 'present' : 'clean'),
+                                      accentColor: _getStatusColor(report.palmOilAnalysis.present ? 'present' : 'clean', isDark),
                                       icon: Icons.eco_outlined,
+                                      isDark: isDark,
                                     ),
                                     const SizedBox(height: 10),
                                     _buildBentoCard(
                                       title: 'Carbohydrate Level',
                                       status: report.carbsAnalysis.impact,
                                       description: report.carbsAnalysis.verdict,
-                                      accentColor: _getStatusColor(report.carbsAnalysis.impact),
+                                      accentColor: _getStatusColor(report.carbsAnalysis.impact, isDark),
                                       icon: Icons.donut_large_rounded,
+                                      isDark: isDark,
                                     ),
                                   ],
                                 );
@@ -758,8 +764,9 @@ class _UnifiedProductDetailScreenState extends ConsumerState<UnifiedProductDetai
                                             title: 'Added Sugars',
                                             status: report.sugarAnalysis.impact,
                                             description: report.sugarAnalysis.amount,
-                                            accentColor: _getStatusColor(report.sugarAnalysis.impact),
+                                            accentColor: _getStatusColor(report.sugarAnalysis.impact, isDark),
                                             icon: Icons.cookie_outlined,
+                                            isDark: isDark,
                                           ),
                                         ),
                                         const SizedBox(width: 10),
@@ -768,8 +775,9 @@ class _UnifiedProductDetailScreenState extends ConsumerState<UnifiedProductDetai
                                             title: 'Palm Oil',
                                             status: report.palmOilAnalysis.present ? 'Present' : 'Clean',
                                             description: report.palmOilAnalysis.present ? '❌ Avoid palm oil usage' : '✅ Safe (No palm oil)',
-                                            accentColor: _getStatusColor(report.palmOilAnalysis.present ? 'present' : 'clean'),
+                                            accentColor: _getStatusColor(report.palmOilAnalysis.present ? 'present' : 'clean', isDark),
                                             icon: Icons.eco_outlined,
+                                            isDark: isDark,
                                           ),
                                         ),
                                       ],
@@ -779,8 +787,9 @@ class _UnifiedProductDetailScreenState extends ConsumerState<UnifiedProductDetai
                                       title: 'Carbohydrate Level',
                                       status: report.carbsAnalysis.impact,
                                       description: report.carbsAnalysis.verdict,
-                                      accentColor: _getStatusColor(report.carbsAnalysis.impact),
+                                      accentColor: _getStatusColor(report.carbsAnalysis.impact, isDark),
                                       icon: Icons.donut_large_rounded,
+                                      isDark: isDark,
                                     ),
                                   ],
                                 );
@@ -816,14 +825,14 @@ class _UnifiedProductDetailScreenState extends ConsumerState<UnifiedProductDetai
                         else
                           Column(
                             children: report.decodedIngredients.map((ing) {
-                              final safetyColor = _getSafetyColor(ing.safety);
+                              final safetyColor = _getSafetyColor(ing.safety, isDark);
                               final isExpanded = _expandedIngredients.contains(ing.name);
 
                               return Container(
                                 margin: const EdgeInsets.only(bottom: 8),
                                 decoration: BoxDecoration(
-                                  color: AppTheme.obsidianBackground.withOpacity(0.3),
-                                  borderRadius: BorderRadius.circular(14),
+                                  color: isDark ? const Color(0xFF1C1E1B) : AppTheme.obsidianBackground.withOpacity(0.3),
+                                  borderRadius: BorderRadius.circular(24),
                                   border: Border.all(color: AppTheme.glassBorder),
                                 ),
                                 child: Theme(
@@ -853,8 +862,8 @@ class _UnifiedProductDetailScreenState extends ConsumerState<UnifiedProductDetai
                                         Expanded(
                                           child: Text(
                                             ing.name,
-                                            style: const TextStyle(
-                                              color: Colors.white,
+                                            style: TextStyle(
+                                              color: isDark ? Colors.white : AppTheme.textPrimary,
                                               fontSize: 13,
                                               fontWeight: FontWeight.bold,
                                             ),
@@ -866,7 +875,7 @@ class _UnifiedProductDetailScreenState extends ConsumerState<UnifiedProductDetai
                                             padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
                                             decoration: BoxDecoration(
                                               color: AppTheme.accentCoral.withOpacity(0.12),
-                                              borderRadius: BorderRadius.circular(5),
+                                              borderRadius: BorderRadius.circular(9999), // pill shape
                                             ),
                                             child: Text(
                                               'Sneaky ${ing.sneakyNameFor}',
@@ -883,7 +892,7 @@ class _UnifiedProductDetailScreenState extends ConsumerState<UnifiedProductDetai
                                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                       decoration: BoxDecoration(
                                         color: safetyColor.withOpacity(0.08),
-                                        borderRadius: BorderRadius.circular(6),
+                                        borderRadius: BorderRadius.circular(9999), // pill shape
                                         border: Border.all(color: safetyColor.withOpacity(0.2)),
                                       ),
                                       child: Text(
@@ -919,9 +928,9 @@ class _UnifiedProductDetailScreenState extends ConsumerState<UnifiedProductDetai
           ),
         );
       },
-      loading: () => const Scaffold(
-        backgroundColor: AppTheme.obsidianBackground,
-        body: Center(
+      loading: () => Scaffold(
+        backgroundColor: isDark ? const Color(0xFF0E0F0C) : AppTheme.obsidianBackground,
+        body: const Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -936,7 +945,7 @@ class _UnifiedProductDetailScreenState extends ConsumerState<UnifiedProductDetai
         ),
       ),
       error: (err, _) => Scaffold(
-        backgroundColor: AppTheme.obsidianBackground,
+        backgroundColor: isDark ? const Color(0xFF0E0F0C) : AppTheme.obsidianBackground,
         body: Padding(
           padding: const EdgeInsets.all(24.0),
           child: Center(
@@ -948,16 +957,24 @@ class _UnifiedProductDetailScreenState extends ConsumerState<UnifiedProductDetai
                 Text(
                   err.toString(),
                   textAlign: TextAlign.center,
-                  style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+                  style: TextStyle(color: isDark ? Colors.white : AppTheme.textPrimary, fontSize: 14, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 24),
                 ElevatedButton(
-                  style: ElevatedButton.styleFrom(backgroundColor: AppTheme.accentCyan),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.accentCyan,
+                    foregroundColor: AppTheme.textPrimary,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  ),
                   onPressed: () {
                     ref.read(unifiedVisionProvider.notifier).resetCurrentReport();
                     Navigator.pop(context);
                   },
-                  child: const Text('Back to Scanner', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                  child: const Text('Back to Scanner', style: TextStyle(fontWeight: FontWeight.bold)),
                 ),
               ],
             ),
@@ -967,14 +984,14 @@ class _UnifiedProductDetailScreenState extends ConsumerState<UnifiedProductDetai
     );
   }
 
-  Color _getStatusColor(String statusText) {
+  Color _getStatusColor(String statusText, bool isDark) {
     final lower = statusText.toLowerCase();
     if (lower.contains('high') || lower.contains('present') || lower.contains('avoid')) {
       return AppTheme.accentCoral;
     } else if (lower.contains('moderate') || lower.contains('caution') || lower.contains('warning')) {
-      return AppTheme.accentOrange;
+      return isDark ? const Color(0xFFFFC091) : const Color(0xFFB86700);
     } else {
-      return AppTheme.accentEmerald;
+      return isDark ? AppTheme.accentEmerald : const Color(0xFF054D28);
     }
   }
 
@@ -984,21 +1001,14 @@ class _UnifiedProductDetailScreenState extends ConsumerState<UnifiedProductDetai
     required String description,
     required Color accentColor,
     required IconData icon,
+    required bool isDark,
   }) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppTheme.obsidianBackground.withOpacity(0.4),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppTheme.glassBorder),
-        gradient: LinearGradient(
-          colors: [
-            AppTheme.obsidianBackground.withOpacity(0.5),
-            accentColor.withOpacity(0.04),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: isDark ? const Color(0xFF1C1E1B) : AppTheme.glassBackground,
+        borderRadius: BorderRadius.circular(24), // rounded.xl (24px)
+        border: Border.all(color: AppTheme.glassBorder, width: 1.0),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1011,7 +1021,7 @@ class _UnifiedProductDetailScreenState extends ConsumerState<UnifiedProductDetai
                 style: const TextStyle(
                   color: AppTheme.textSecondary,
                   fontSize: 9,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w600,
                   letterSpacing: 1.0,
                 ),
               ),
@@ -1035,8 +1045,8 @@ class _UnifiedProductDetailScreenState extends ConsumerState<UnifiedProductDetai
           const SizedBox(height: 6),
           Text(
             description,
-            style: const TextStyle(
-              color: Colors.white70,
+            style: TextStyle(
+              color: isDark ? Colors.white70 : AppTheme.textSecondary,
               fontSize: 11.5,
               height: 1.35,
             ),

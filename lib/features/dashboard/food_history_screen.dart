@@ -16,7 +16,7 @@ class FoodHistoryScreen extends ConsumerWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final loggedDates = StorageService.getAllLoggedDates();
 
-    final bgColor = isDark ? AppTheme.obsidianBackground : const Color(0xFFF1F5F9);
+    final bgColor = isDark ? const Color(0xFF0E0F0C) : AppTheme.obsidianBackground;
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -24,43 +24,7 @@ class FoodHistoryScreen extends ConsumerWidget {
         color: bgColor,
         child: Stack(
           children: [
-            // Ambient Backdrop Glows (matching Cyber theme)
-            if (isDark) ...[
-              Positioned(
-                top: -60,
-                right: -60,
-                child: Container(
-                  width: 320,
-                  height: 320,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: AppTheme.accentCyan.withOpacity(0.06),
-                  ),
-                ).animate(onPlay: (c) => c.repeat(reverse: true))
-                    .scale(begin: const Offset(1, 1), end: const Offset(1.15, 1.15), duration: 8.seconds, curve: Curves.easeInOut)
-                    .custom(builder: (context, val, child) => ImageFiltered(
-                          imageFilter: ImageFilter.blur(sigmaX: 80, sigmaY: 80),
-                          child: child,
-                        )),
-              ),
-              Positioned(
-                bottom: 120,
-                left: -80,
-                child: Container(
-                  width: 320,
-                  height: 320,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: AppTheme.accentPurple.withOpacity(0.04),
-                  ),
-                ).animate(onPlay: (c) => c.repeat(reverse: true))
-                    .scale(begin: const Offset(1, 1), end: const Offset(1.1, 1.1), duration: 10.seconds, curve: Curves.easeInOut)
-                    .custom(builder: (context, val, child) => ImageFiltered(
-                          imageFilter: ImageFilter.blur(sigmaX: 80, sigmaY: 80),
-                          child: child,
-                        )),
-              ),
-            ],
+            // No decorative background ambient glows in Wise Design System
 
             // Main Scroll Feed
             SafeArea(
@@ -157,7 +121,7 @@ class FoodHistoryScreen extends ConsumerWidget {
                                 margin: const EdgeInsets.only(bottom: 16),
                                 child: GlassCard(
                                   padding: const EdgeInsets.all(16),
-                                  borderRadius: BorderRadius.circular(20),
+                                  borderRadius: BorderRadius.circular(24),
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
@@ -179,18 +143,18 @@ class FoodHistoryScreen extends ConsumerWidget {
                                           Container(
                                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                             decoration: BoxDecoration(
-                                              color: AppTheme.accentCyan.withOpacity(0.08),
-                                              borderRadius: BorderRadius.circular(20),
+                                              color: isDark ? AppTheme.accentCyan.withOpacity(0.12) : const Color(0xFFE2F6D5),
+                                              borderRadius: BorderRadius.circular(9999),
                                               border: Border.all(
-                                                color: AppTheme.accentCyan.withOpacity(0.2),
+                                                color: isDark ? AppTheme.accentCyan.withOpacity(0.3) : const Color(0xFFC5EDAB),
                                               ),
                                             ),
                                             child: Text(
                                               '$totalCal KCAL',
-                                              style: const TextStyle(
+                                              style: TextStyle(
                                                 fontSize: 10,
                                                 fontWeight: FontWeight.w900,
-                                                color: AppTheme.accentCyan,
+                                                color: isDark ? AppTheme.accentCyan : const Color(0xFF054D28),
                                                 letterSpacing: 0.5,
                                               ),
                                             ),
@@ -280,39 +244,39 @@ class FoodHistoryScreen extends ConsumerWidget {
                                                   const SizedBox(width: 12),
                                                   
                                                   // Food detail texts
-                                                  Expanded(
-                                                    child: Column(
-                                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                                      children: [
-                                                        Text(
-                                                          name,
-                                                          style: const TextStyle(
-                                                            fontWeight: FontWeight.bold,
-                                                            fontSize: 13,
-                                                            color: Colors.white,
-                                                          ),
-                                                        ),
-                                                        const SizedBox(height: 2),
-                                                        Text(
-                                                          '$meal • $time',
-                                                          style: const TextStyle(
-                                                            color: AppTheme.textSecondary,
-                                                            fontSize: 10,
-                                                          ),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  ),
-                                                  
-                                                  // Calorie tag
-                                                  Text(
-                                                    '$calories kcal',
-                                                    style: const TextStyle(
-                                                      fontWeight: FontWeight.w900,
-                                                      fontSize: 13,
-                                                      color: AppTheme.accentCyan,
-                                                    ),
-                                                  ),
+                                                   Expanded(
+                                                     child: Column(
+                                                       crossAxisAlignment: CrossAxisAlignment.start,
+                                                       children: [
+                                                         Text(
+                                                           name,
+                                                           style: TextStyle(
+                                                             fontWeight: FontWeight.bold,
+                                                             fontSize: 13,
+                                                             color: isDark ? Colors.white : AppTheme.textPrimary,
+                                                           ),
+                                                         ),
+                                                         const SizedBox(height: 2),
+                                                         Text(
+                                                           '$meal • $time',
+                                                           style: const TextStyle(
+                                                             color: AppTheme.textSecondary,
+                                                             fontSize: 10,
+                                                           ),
+                                                         ),
+                                                       ],
+                                                     ),
+                                                   ),
+                                                   
+                                                   // Calorie tag
+                                                   Text(
+                                                     '$calories kcal',
+                                                     style: TextStyle(
+                                                       fontWeight: FontWeight.w900,
+                                                       fontSize: 13,
+                                                       color: isDark ? AppTheme.accentCyan : const Color(0xFF054D28),
+                                                     ),
+                                                   ),
                                                 ],
                                               ),
                                             ),
@@ -341,7 +305,7 @@ class FoodHistoryScreen extends ConsumerWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
         color: color.withOpacity(0.06),
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(color: color.withOpacity(0.12)),
       ),
       child: Row(
@@ -432,7 +396,7 @@ Future<dynamic> _showFoodDetailsDialog(
       padding: const EdgeInsets.symmetric(vertical: 14),
       decoration: BoxDecoration(
         color: col.withOpacity(0.06),
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(
           color: col.withOpacity(0.2),
           width: 1.2,
@@ -445,7 +409,7 @@ Future<dynamic> _showFoodDetailsDialog(
           Text(
             label,
             style: const TextStyle(
-              color: AppTheme.textSecondary,
+               color: AppTheme.textSecondary,
               fontSize: 8,
               fontWeight: FontWeight.w900,
               letterSpacing: 0.5,
@@ -454,8 +418,8 @@ Future<dynamic> _showFoodDetailsDialog(
           const SizedBox(height: 4),
           Text(
             val,
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: isDark ? Colors.white : AppTheme.textPrimary,
               fontSize: 14,
               fontWeight: FontWeight.w900,
             ),
@@ -481,12 +445,23 @@ Future<dynamic> _showFoodDetailsDialog(
         TextField(
           controller: controller,
           keyboardType: TextInputType.number,
-          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: isDark ? Colors.white : AppTheme.textPrimary),
           decoration: InputDecoration(
             filled: true,
-            fillColor: Colors.white.withOpacity(0.02),
+            fillColor: isDark ? Colors.white.withOpacity(0.02) : Colors.black.withOpacity(0.02),
             contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: isDark ? const Color(0xFF323530) : AppTheme.textPrimary),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: isDark ? const Color(0xFF323530) : AppTheme.textPrimary),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: AppTheme.accentCyan),
+            ),
           ),
         ),
       ],
@@ -510,25 +485,20 @@ Future<dynamic> _showFoodDetailsDialog(
             backgroundColor: Colors.transparent,
             insetPadding: const EdgeInsets.symmetric(horizontal: 24),
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(28),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: isDark ? const Color(0xEC090E18) : Colors.white,
-                    borderRadius: BorderRadius.circular(28),
-                    border: Border.all(
-                      color: isDark ? AppTheme.glassBorder : const Color(0xFFEADBFF),
-                      width: 1.5,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppTheme.accentCyan.withOpacity(0.12),
-                        blurRadius: 30,
-                        spreadRadius: 2,
-                      ),
-                    ],
+              borderRadius: BorderRadius.circular(24),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? const Color(0xFF1C1E1B)
+                      : AppTheme.glassBackground,
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(
+                    color: isDark
+                        ? const Color(0xFF323530)
+                        : AppTheme.glassBorder,
+                    width: 1.0,
                   ),
+                ),
                   padding: const EdgeInsets.all(24),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -542,10 +512,10 @@ Future<dynamic> _showFoodDetailsDialog(
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                               decoration: BoxDecoration(
-                                color: AppTheme.accentPurple.withOpacity(0.08),
-                                borderRadius: BorderRadius.circular(20),
+                                color: isDark ? AppTheme.accentCyan.withOpacity(0.12) : const Color(0xFFE2F6D5),
+                                borderRadius: BorderRadius.circular(9999),
                                 border: Border.all(
-                                  color: AppTheme.accentPurple.withOpacity(0.3),
+                                  color: isDark ? AppTheme.accentCyan.withOpacity(0.3) : const Color(0xFFC5EDAB),
                                   width: 1.2,
                                 ),
                               ),
@@ -553,8 +523,8 @@ Future<dynamic> _showFoodDetailsDialog(
                                 selectedMealKey == 'outside_food_cal'
                                     ? 'EATING OUT'
                                     : selectedMealKey.replaceAll('_cal', '').replaceAll('_', ' ').toUpperCase(),
-                                style: const TextStyle(
-                                  color: AppTheme.accentPurple,
+                                style: TextStyle(
+                                  color: isDark ? AppTheme.accentCyan : const Color(0xFF054D28),
                                   fontWeight: FontWeight.w900,
                                   fontSize: 10,
                                   letterSpacing: 0.8,
@@ -576,7 +546,7 @@ Future<dynamic> _showFoodDetailsDialog(
                             child: Container(
                               padding: const EdgeInsets.all(6),
                               decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.04),
+                                color: isDark ? Colors.white.withOpacity(0.04) : Colors.black.withOpacity(0.04),
                                 shape: BoxShape.circle,
                               ),
                               child: const Icon(
@@ -613,7 +583,7 @@ Future<dynamic> _showFoodDetailsDialog(
                                   Icon(
                                     cat['icon'] as IconData,
                                     size: 11,
-                                    color: isSelected ? Colors.black : Colors.white70,
+                                    color: isSelected ? Colors.black : (isDark ? Colors.white70 : AppTheme.textSecondary),
                                   ),
                                   const SizedBox(width: 4),
                                   Text(
@@ -621,20 +591,20 @@ Future<dynamic> _showFoodDetailsDialog(
                                     style: TextStyle(
                                       fontSize: 10,
                                       fontWeight: FontWeight.bold,
-                                      color: isSelected ? Colors.black : Colors.white70,
+                                      color: isSelected ? Colors.black : (isDark ? Colors.white70 : AppTheme.textPrimary),
                                     ),
                                   ),
                                 ],
                               ),
                               selected: isSelected,
                               selectedColor: AppTheme.accentCyan,
-                              backgroundColor: Colors.white.withOpacity(0.03),
+                              backgroundColor: isDark ? Colors.white.withOpacity(0.03) : Colors.black.withOpacity(0.03),
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
+                                borderRadius: BorderRadius.circular(24),
                                 side: BorderSide(
                                   color: isSelected
                                       ? AppTheme.accentCyan
-                                      : Colors.white.withOpacity(0.08),
+                                      : (isDark ? AppTheme.glassBorder : Colors.black.withOpacity(0.08)),
                                 ),
                               ),
                               showCheckmark: false,
@@ -675,21 +645,21 @@ Future<dynamic> _showFoodDetailsDialog(
                         const SizedBox(height: 6),
                         TextField(
                           controller: nameController,
-                          style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+                          style: TextStyle(fontWeight: FontWeight.bold, color: isDark ? Colors.white : AppTheme.textPrimary),
                           decoration: InputDecoration(
                             filled: true,
-                            fillColor: Colors.white.withOpacity(0.02),
+                            fillColor: isDark ? Colors.white.withOpacity(0.02) : Colors.black.withOpacity(0.02),
                             contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                             border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(14),
-                              borderSide: BorderSide(color: Colors.white.withOpacity(0.08)),
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: isDark ? const Color(0xFF323530) : AppTheme.textPrimary),
                             ),
                             enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(14),
-                              borderSide: BorderSide(color: Colors.white.withOpacity(0.08)),
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: isDark ? const Color(0xFF323530) : AppTheme.textPrimary),
                             ),
                             focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(14),
+                              borderRadius: BorderRadius.circular(12),
                               borderSide: const BorderSide(color: AppTheme.accentCyan),
                             ),
                           ),
@@ -726,7 +696,7 @@ Future<dynamic> _showFoodDetailsDialog(
                             height: 140,
                             decoration: BoxDecoration(
                               border: Border.all(
-                                color: Colors.white.withOpacity(0.06),
+                                color: isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.06),
                               ),
                             ),
                             child: () {
@@ -759,10 +729,10 @@ Future<dynamic> _showFoodDetailsDialog(
                           width: double.infinity,
                           padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
                           decoration: BoxDecoration(
-                            color: AppTheme.accentCyan.withOpacity(0.06),
-                            borderRadius: BorderRadius.circular(20),
+                            color: isDark ? AppTheme.accentCyan.withOpacity(0.06) : const Color(0xFFE2F6D5),
+                            borderRadius: BorderRadius.circular(24),
                             border: Border.all(
-                              color: AppTheme.accentCyan.withOpacity(0.25),
+                              color: isDark ? AppTheme.accentCyan.withOpacity(0.25) : const Color(0xFFC5EDAB),
                               width: 1.2,
                             ),
                           ),
@@ -774,23 +744,23 @@ Future<dynamic> _showFoodDetailsDialog(
                                   Container(
                                     padding: const EdgeInsets.all(8),
                                     decoration: BoxDecoration(
-                                      color: AppTheme.accentCyan.withOpacity(0.12),
+                                      color: isDark ? AppTheme.accentCyan.withOpacity(0.12) : const Color(0xFFC5EDAB),
                                       borderRadius: BorderRadius.circular(10),
                                     ),
-                                    child: const Icon(
+                                    child: Icon(
                                       Icons.local_fire_department_rounded,
-                                      color: AppTheme.accentCyan,
+                                      color: isDark ? AppTheme.accentCyan : const Color(0xFF054D28),
                                       size: 20,
                                     ),
                                   ),
                                   const SizedBox(width: 12),
                                   Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: const [
+                                    children: [
                                       Text(
                                         'CALORIES',
                                         style: TextStyle(
-                                          color: AppTheme.textSecondary,
+                                          color: isDark ? AppTheme.accentCyan : const Color(0xFF054D28),
                                           fontSize: 9,
                                           fontWeight: FontWeight.w900,
                                           letterSpacing: 0.8,
@@ -799,7 +769,7 @@ Future<dynamic> _showFoodDetailsDialog(
                                       Text(
                                         'Energy Output',
                                         style: TextStyle(
-                                          color: AppTheme.textSecondary,
+                                          color: isDark ? AppTheme.textSecondary : const Color(0xFF054D28),
                                           fontSize: 10,
                                           fontWeight: FontWeight.w500,
                                         ),
@@ -810,8 +780,8 @@ Future<dynamic> _showFoodDetailsDialog(
                               ),
                               Text(
                                 '${calController.text} kcal',
-                                style: const TextStyle(
-                                  color: Colors.white,
+                                style: TextStyle(
+                                  color: isDark ? Colors.white : AppTheme.textPrimary,
                                   fontSize: 18,
                                   fontWeight: FontWeight.w900,
                                 ),
@@ -833,23 +803,23 @@ Future<dynamic> _showFoodDetailsDialog(
                         TextField(
                           controller: calController,
                           keyboardType: TextInputType.number,
-                          style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+                          style: TextStyle(fontWeight: FontWeight.bold, color: isDark ? Colors.white : AppTheme.textPrimary),
                           decoration: InputDecoration(
                             filled: true,
-                            fillColor: Colors.white.withOpacity(0.02),
+                            fillColor: isDark ? Colors.white.withOpacity(0.02) : Colors.black.withOpacity(0.02),
                             contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                             suffixText: ' kcal',
                             suffixStyle: const TextStyle(color: AppTheme.textSecondary, fontSize: 12),
                             border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(14),
-                              borderSide: BorderSide(color: Colors.white.withOpacity(0.08)),
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: isDark ? const Color(0xFF323530) : AppTheme.textPrimary),
                             ),
                             enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(14),
-                              borderSide: BorderSide(color: Colors.white.withOpacity(0.08)),
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: isDark ? const Color(0xFF323530) : AppTheme.textPrimary),
                             ),
                             focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(14),
+                              borderRadius: BorderRadius.circular(12),
                               borderSide: const BorderSide(color: AppTheme.accentCyan),
                             ),
                           ),
@@ -941,7 +911,7 @@ Future<dynamic> _showFoodDetailsDialog(
                                   height: 46,
                                   decoration: BoxDecoration(
                                     color: AppTheme.accentCoral.withOpacity(0.12),
-                                    borderRadius: BorderRadius.circular(14),
+                                    borderRadius: BorderRadius.circular(24),
                                     border: Border.all(
                                       color: AppTheme.accentCoral.withOpacity(0.3),
                                       width: 1.2,
@@ -978,23 +948,23 @@ Future<dynamic> _showFoodDetailsDialog(
                                 child: Container(
                                   height: 46,
                                   decoration: BoxDecoration(
-                                    color: AppTheme.accentCyan.withOpacity(0.12),
-                                    borderRadius: BorderRadius.circular(14),
+                                    color: isDark ? AppTheme.accentCyan.withOpacity(0.12) : const Color(0xFFE2F6D5),
+                                    borderRadius: BorderRadius.circular(24),
                                     border: Border.all(
-                                      color: AppTheme.accentCyan.withOpacity(0.3),
+                                      color: isDark ? AppTheme.accentCyan.withOpacity(0.3) : const Color(0xFFC5EDAB),
                                       width: 1.2,
                                     ),
                                   ),
-                                  child: const Center(
+                                  child: Center(
                                     child: Row(
                                       mainAxisAlignment: MainAxisAlignment.center,
                                       children: [
-                                        Icon(Icons.edit_rounded, color: AppTheme.accentCyan, size: 18),
-                                        SizedBox(width: 8),
+                                        Icon(Icons.edit_rounded, color: isDark ? AppTheme.accentCyan : const Color(0xFF054D28), size: 18),
+                                        const SizedBox(width: 8),
                                         Text(
                                           "Edit Entry",
                                           style: TextStyle(
-                                            color: AppTheme.accentCyan,
+                                            color: isDark ? AppTheme.accentCyan : const Color(0xFF054D28),
                                             fontSize: 13,
                                             fontWeight: FontWeight.bold,
                                           ),
@@ -1031,10 +1001,10 @@ Future<dynamic> _showFoodDetailsDialog(
                                 child: Container(
                                   height: 46,
                                   decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.04),
-                                    borderRadius: BorderRadius.circular(14),
+                                    color: isDark ? Colors.white.withOpacity(0.04) : Colors.black.withOpacity(0.03),
+                                    borderRadius: BorderRadius.circular(24),
                                     border: Border.all(
-                                      color: Colors.white.withOpacity(0.08),
+                                      color: isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.05),
                                       width: 1.2,
                                     ),
                                   ),
@@ -1123,23 +1093,16 @@ Future<dynamic> _showFoodDetailsDialog(
                                 child: Container(
                                   height: 46,
                                   decoration: BoxDecoration(
-                                    gradient: AppTheme.primaryGradient,
-                                    borderRadius: BorderRadius.circular(14),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: AppTheme.accentCyan.withOpacity(0.15),
-                                        blurRadius: 8,
-                                        offset: const Offset(0, 3),
-                                      ),
-                                    ],
+                                    color: AppTheme.accentCyan,
+                                    borderRadius: BorderRadius.circular(24),
                                   ),
                                   child: const Center(
                                     child: Text(
                                       "Save Changes",
                                       style: TextStyle(
-                                        color: Colors.black,
+                                        color: AppTheme.textPrimary,
                                         fontSize: 13,
-                                        fontWeight: FontWeight.bold,
+                                        fontWeight: FontWeight.w600,
                                       ),
                                     ),
                                   ),
@@ -1152,10 +1115,9 @@ Future<dynamic> _showFoodDetailsDialog(
                   ),
                 ),
               ),
-            ),
-          );
-        },
-      );
-    },
-  );
+            );
+          },
+        );
+      },
+    );
 }

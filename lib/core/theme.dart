@@ -2,22 +2,22 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 
 class AppTheme {
-  // Brand New Color Palette: Zivo Premium Deep Space Blue Cockpit
-  static const Color obsidianBackground = Color(0xFF070B16); // Deep Obsidian Velvet Midnight
-  static const Color glassBackground = Color(0xFF121626); // Premium Dark Space Sapphire
-  static const Color glassBorder = Color(0xFF1F243B); // Subtle Frost-Slate Ice Border
+  // Wise Design System Color Palette
+  static const Color obsidianBackground = Color(0xFFE8EBE6); // Canvas Soft (Sage)
+  static const Color glassBackground = Color(0xFFFFFFFF); // Canvas (White)
+  static const Color glassBorder = Color(0xFFE8EBE6); // Muted sage border
 
-  static const Color accentEmerald = Color(0xFF00E676); // Jade Green (Success Accent)
-  static const Color accentCyan = Color(0xFF00E5FF); // Ice Cyan (Primary Accent)
-  static const Color accentCoral = Color(0xFFFF3B6F); // Rose Crimson (Warning/Danger)
-  static const Color accentOrange = Color(0xFFFF9100); // Amber Gold (Alert/Trend)
-  static const Color accentPurple = Color(0xFF8C52FF); // Electric Purple (Secondary Accent)
+  static const Color accentEmerald = Color(0xFF2EAD4B); // Positive Green
+  static const Color accentCyan = Color(0xFFCDF200); // ZivoFit Neon Lime (Primary Accent)
+  static const Color accentCoral = Color(0xFFD03238); // Negative Red
+  static const Color accentOrange = Color(0xFFFFC091); // Accent Peach Orange
+  static const Color accentPurple = Color(0xFFCDF200); // ZivoFit Neon Lime
 
-  static const Color textPrimary = Color(0xFFF1F5F9); // Primary Text (Clear Slate-White)
-  static const Color textSecondary = Color(0xFF8F9BB3); // Secondary Text (Cool Silver-Grey)
-  static const Color textTertiary = Color(0xFF3B4867); // Muted Dark Slate
+  static const Color textPrimary = Color(0xFF0E0F0C); // Ink Black
+  static const Color textSecondary = Color(0xFF868685); // Body Text / Mute Text
+  static const Color textTertiary = Color(0xFF868685); // Mute Text
 
-  // Solid flat gradients to retain compile safety while completely eliminating gradients
+  // Flat linear gradients to comply with "no decorative gradients" rule
   static const LinearGradient primaryGradient = LinearGradient(
     colors: [accentCyan, accentCyan],
     begin: Alignment.topLeft,
@@ -31,7 +31,7 @@ class AppTheme {
   );
 
   static const LinearGradient purpleGradient = LinearGradient(
-    colors: [accentPurple, accentPurple],
+    colors: [accentCyan, accentCyan],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
@@ -44,41 +44,40 @@ class AppTheme {
 
   static ThemeData get lightTheme {
     return ThemeData.light().copyWith(
-      useMaterial3: true,
-      scaffoldBackgroundColor: const Color(0xFFF1F5F9),
-      cardColor: const Color(0xFFFFFFFF),
-      dividerColor: const Color(0xFFE2E8F0),
+      scaffoldBackgroundColor: obsidianBackground,
+      cardColor: glassBackground,
+      dividerColor: const Color(0xFFE8EBE6),
       colorScheme: const ColorScheme.light().copyWith(
         primary: accentCyan,
         secondary: accentPurple,
-        surface: const Color(0xFFFFFFFF),
+        surface: glassBackground,
       ),
       textTheme: const TextTheme(
         headlineLarge: TextStyle(
-          color: Color(0xFF0F172A),
+          color: textPrimary,
           fontSize: 32,
-          fontWeight: FontWeight.w900,
+          fontWeight: FontWeight.w900, // Wise Sans heavy display weight
           letterSpacing: -0.8,
         ),
         headlineMedium: TextStyle(
-          color: Color(0xFF0F172A),
+          color: textPrimary,
           fontSize: 24,
-          fontWeight: FontWeight.bold,
+          fontWeight: FontWeight.w900,
           letterSpacing: -0.6,
         ),
         titleLarge: TextStyle(
-          color: Color(0xFF0F172A),
+          color: textPrimary,
           fontSize: 20,
-          fontWeight: FontWeight.w700,
+          fontWeight: FontWeight.w900,
           letterSpacing: -0.3,
         ),
         bodyLarge: TextStyle(
-          color: Color(0xFF0F172A),
+          color: textSecondary,
           fontSize: 16,
           fontWeight: FontWeight.normal,
         ),
         bodyMedium: TextStyle(
-          color: Color(0xFF475569),
+          color: textTertiary,
           fontSize: 14,
           fontWeight: FontWeight.normal,
         ),
@@ -88,41 +87,40 @@ class AppTheme {
 
   static ThemeData get darkTheme {
     return ThemeData.dark().copyWith(
-      useMaterial3: true,
-      scaffoldBackgroundColor: obsidianBackground,
-      cardColor: glassBackground,
-      dividerColor: glassBorder,
+      scaffoldBackgroundColor: const Color(0xFF000000), // AMOLED Pure Black
+      cardColor: const Color(0xFF1C1C1E), // ZivoFit Level 1 card surface
+      dividerColor: const Color(0xFF2C2C2E), // ZivoFit Level 2 interactive boundary
       colorScheme: const ColorScheme.dark().copyWith(
         primary: accentCyan,
         secondary: accentPurple,
-        surface: glassBackground,
+        surface: const Color(0xFF1C1C1E),
       ),
       textTheme: const TextTheme(
         headlineLarge: TextStyle(
-          color: textPrimary,
+          color: Color(0xFFE8EBE6),
           fontSize: 32,
           fontWeight: FontWeight.w900,
           letterSpacing: -0.8,
         ),
         headlineMedium: TextStyle(
-          color: textPrimary,
+          color: Color(0xFFE8EBE6),
           fontSize: 24,
-          fontWeight: FontWeight.bold,
+          fontWeight: FontWeight.w900,
           letterSpacing: -0.6,
         ),
         titleLarge: TextStyle(
-          color: textPrimary,
+          color: Color(0xFFE8EBE6),
           fontSize: 20,
-          fontWeight: FontWeight.w700,
+          fontWeight: FontWeight.w900,
           letterSpacing: -0.3,
         ),
         bodyLarge: TextStyle(
-          color: textPrimary,
+          color: Colors.white,
           fontSize: 16,
           fontWeight: FontWeight.normal,
         ),
         bodyMedium: TextStyle(
-          color: textSecondary,
+          color: Color(0xFF868685),
           fontSize: 14,
           fontWeight: FontWeight.normal,
         ),
@@ -154,23 +152,20 @@ class GlassCard extends StatelessWidget {
     this.borderGradient,
     this.customBgColor,
     this.customBorder,
-    this.enableBlur = true,
+    this.enableBlur = false,
   });
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final effectiveRadius = borderRadius ?? BorderRadius.circular(24);
+    final effectiveRadius = borderRadius ?? BorderRadius.circular(24); // Default 24px (rounded.xl)
 
     final cardBgColor =
         customBgColor ??
-        (isDark ? AppTheme.glassBackground : const Color(0xFFFFFFFF));
+        (isDark ? const Color(0xFF1C1C1E) : AppTheme.glassBackground);
     final cardBorderColor = isDark
-        ? AppTheme.glassBorder
-        : const Color(0xFFCFD8DC);
-    final cardShadowColor = isDark
-        ? Colors.black.withOpacity(0.4)
-        : Colors.black.withOpacity(0.04);
+        ? const Color(0xFF2C2C2E)
+        : AppTheme.glassBorder;
 
     Widget cardContent = Container(
       width: width,
@@ -180,13 +175,6 @@ class GlassCard extends StatelessWidget {
         color: cardBgColor,
         borderRadius: effectiveRadius,
         border: customBorder ?? Border.all(color: cardBorderColor, width: 1.0),
-        boxShadow: [
-          BoxShadow(
-            color: cardShadowColor,
-            blurRadius: 18,
-            offset: const Offset(0, 6),
-          ),
-        ],
       ),
       child: child,
     );
@@ -197,7 +185,7 @@ class GlassCard extends StatelessWidget {
         child: ClipRRect(
           borderRadius: effectiveRadius,
           child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+            filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
             child: cardContent,
           ),
         ),

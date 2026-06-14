@@ -25,6 +25,8 @@ class DashboardScreen extends ConsumerStatefulWidget {
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   String _selectedMacro = 'Protein';
 
+  bool get isDark => Theme.of(context).brightness == Brightness.dark;
+
   @override
   Widget build(BuildContext context) {
     final selectedDate = ref.watch(selectedDateProvider);
@@ -74,43 +76,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       backgroundColor: Colors.transparent,
       body: Stack(
         children: [
-          // 1. Ambient Background Glows (Google Stitch Cyber Theme)
-          if (isDark) ...[
-            Positioned(
-              top: -60,
-              right: -60,
-              child: Container(
-                width: 320,
-                height: 320,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: AppTheme.accentCyan.withOpacity(0.08),
-                ),
-              ).animate(onPlay: (c) => c.repeat(reverse: true))
-                  .scale(begin: const Offset(1, 1), end: const Offset(1.15, 1.15), duration: 8.seconds, curve: Curves.easeInOut)
-                  .custom(builder: (context, val, child) => ImageFiltered(
-                        imageFilter: ImageFilter.blur(sigmaX: 80, sigmaY: 80),
-                        child: child,
-                      )),
-            ),
-            Positioned(
-              bottom: 120,
-              left: -80,
-              child: Container(
-                width: 320,
-                height: 320,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: AppTheme.accentPurple.withOpacity(0.06),
-                ),
-              ).animate(onPlay: (c) => c.repeat(reverse: true))
-                  .scale(begin: const Offset(1, 1), end: const Offset(1.1, 1.1), duration: 10.seconds, curve: Curves.easeInOut)
-                  .custom(builder: (context, val, child) => ImageFiltered(
-                        imageFilter: ImageFilter.blur(sigmaX: 80, sigmaY: 80),
-                        child: child,
-                      )),
-            ),
-          ],
+          // No ambient background glows per Apple Design System (quiet aesthetic)
 
           // 2. Main Scrollable Container
           SafeArea(
@@ -141,77 +107,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     waterConsumed: wConsumed,
                     waterGoal: waterGoal,
                     selectedDate: selectedDate,
+                    proteinConsumed: pConsumed,
+                    proteinGoal: proteinGoal,
+                    carbConsumed: cConsumed,
+                    carbGoal: carbGoal,
+                    fatConsumed: fConsumed,
+                    fatGoal: fatGoal,
                   ),
-                  const SizedBox(height: 28),
-
-                  // Macros Bento Section Title
-                  Row(
-                    children: [
-                      const Icon(Icons.analytics_rounded, color: AppTheme.accentCyan, size: 20),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Macro Targets',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: -0.5,
-                          color: isDark ? Colors.white : AppTheme.textPrimary,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Compact Premium Macro Targets Row (Side-by-Side)
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildMacroCard(
-                          title: 'Protein',
-                          value: '${pConsumed.round()}g',
-                          target: '${proteinGoal.round()}g',
-                          imageUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuB2brSlsBgFFmGsip9c_GbksCXBfFKCIgXcey-f5BrJwkkPWEQjC-sUEd1tVxXASMRu__FqDDxIF9MhDwLZ_UCW5XLrEky021sbzy5pb5bQh3ObP3rtU3zoNA0dYNdHPKB1KcM1KgAvTflJikH-Uz8Pkd4w7ZwXidpEHOLubS0bPb_yX6LuQIFmy2TfeRp9iLTjR_BZSV7G44gZ6Ry9IIZiH3jp86HDRnqI_HoYoht8sgs4yTMO4ugB_i6sd0X9f44R7CjTKNqUiiQ',
-                          isActive: _selectedMacro == 'Protein',
-                          onTap: () {
-                            setState(() {
-                              _selectedMacro = 'Protein';
-                            });
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: _buildMacroCard(
-                          title: 'Carbs',
-                          value: '${cConsumed.round()}g',
-                          target: '${carbGoal.round()}g',
-                          imageUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuD4gdf3X8OnLsapm-Piw4rPMArGDzOLo7p-gnURZNjggLn2rmRQIqqpNSf6EjXEsUd3dA08wsh92W55i7CbD8kSLNRrJuH63mIq5BKmseO1WDdDPX571SnULDG3XSh9-f9dWXPw5C2E8KjF-h9VCbgmJXTsTHY6dU7_3QXHCty5DG9-5FufNgPt93xmFEdXz-VMh-h6mmpuD87hpUSw-DDrrn3Fhz-JcqZaU_Kh2E3KcqLScTzCoMaPsWqik1DaMNmFSdCQLmwlp38',
-                          isActive: _selectedMacro == 'Carbs',
-                          onTap: () {
-                            setState(() {
-                              _selectedMacro = 'Carbs';
-                            });
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: _buildMacroCard(
-                          title: 'Fats',
-                          value: '${fConsumed.round()}g',
-                          target: '${fatGoal.round()}g',
-                          imageUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCFm2XsMjmJXAwf6NI19eSwHEj0P9zTCPYixIxf-0z0TEcCuUHilYMI3P4tUgUe-PdA9HXvnTLZZ1ndshzFd3I3DnyErcUadkcQJa9YLl1imhnDgQgG5Sze7_tsXER8ycWlX977B9ZhqsctcZIxLZVgAaulUYjOvqimZIh7pOZ4R0Tq-KJeeQ_vAi6NQACiSB_5dxlxijqCH2Smr5IoNorK8wcS2dHSA8j7v2W89G_EGOKHVnmkUg2OhkglDg0MKzwIWAJxCyJJaCQ',
-                          isActive: _selectedMacro == 'Fats',
-                          onTap: () {
-                            setState(() {
-                              _selectedMacro = 'Fats';
-                            });
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 24),
 
 
 
@@ -316,8 +219,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   'Alex',
                   style: TextStyle(
                     fontSize: 22,
-                    fontWeight: FontWeight.w900,
-                    color: AppTheme.accentCyan,
+                    fontWeight: FontWeight.w900, // Wise Sans display weight
+                    color: isDark ? AppTheme.accentCyan : const Color(0xFF163300),
                     letterSpacing: -0.5,
                   ),
                 ),
@@ -332,18 +235,18 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: AppTheme.accentCyan.withOpacity(0.08),
-                borderRadius: BorderRadius.circular(20),
+                color: isDark ? const Color(0xFF272C24) : const Color(0xFFE2F6D5), // Wise Green Pale
+                borderRadius: BorderRadius.circular(9999), // pill shape
                 border: Border.all(
-                  color: AppTheme.accentCyan.withOpacity(0.15),
+                  color: isDark ? const Color(0xFF323530) : const Color(0xFFC5EDAB),
                   width: 1.0,
                 ),
               ),
-              child: const Row(
+              child: Row(
                 children: [
-                  Text('7', style: TextStyle(color: AppTheme.accentCyan, fontWeight: FontWeight.w900, fontSize: 12)),
-                  SizedBox(width: 2),
-                  Text('🔥', style: TextStyle(fontSize: 12)),
+                  Text('7', style: TextStyle(color: isDark ? AppTheme.accentCyan : const Color(0xFF054D28), fontWeight: FontWeight.w900, fontSize: 12)),
+                  const SizedBox(width: 2),
+                  const Text('🔥', style: TextStyle(fontSize: 12)),
                 ],
               ),
             ),
@@ -380,18 +283,18 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             },
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
-              width: 50,
+              width: 54,
               margin: const EdgeInsets.only(right: 8),
               decoration: BoxDecoration(
                 color: isSelected
-                    ? AppTheme.accentCyan.withOpacity(0.08)
-                    : (isDark ? Colors.white.withOpacity(0.02) : Colors.black.withOpacity(0.015)),
-                borderRadius: BorderRadius.circular(16),
+                    ? AppTheme.accentCyan
+                    : (isDark ? const Color(0xFF1C1C1E) : AppTheme.glassBackground),
+                borderRadius: BorderRadius.circular(12), // rounded-lg
                 border: Border.all(
                   color: isSelected
                       ? AppTheme.accentCyan
-                      : (isDark ? Colors.white.withOpacity(0.06) : AppTheme.glassBorder),
-                  width: isSelected ? 2.0 : 1.0,
+                      : (isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder),
+                  width: 1.0,
                 ),
               ),
               child: Column(
@@ -401,27 +304,28 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     weekdayStr.toUpperCase(),
                     style: TextStyle(
                       fontSize: 8,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 0.5,
-                      color: isSelected ? AppTheme.accentCyan : AppTheme.textSecondary,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1.0,
+                      color: isSelected ? const Color(0xFF5A6B00) : const Color(0xFFC5C9AC),
                     ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     dayNumStr,
                     style: TextStyle(
-                      fontSize: 15,
+                      fontSize: 20,
                       fontWeight: FontWeight.w900,
-                      color: isSelected ? AppTheme.accentCyan : (isDark ? Colors.white : AppTheme.textPrimary),
+                      color: isSelected ? const Color(0xFF5A6B00) : (isDark ? Colors.white : AppTheme.textPrimary),
                     ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     monthStr,
                     style: TextStyle(
-                      fontSize: 7.5,
-                      fontWeight: FontWeight.bold,
-                      color: isSelected ? AppTheme.accentCyan.withOpacity(0.85) : AppTheme.textSecondary.withOpacity(0.7),
+                      fontSize: 8,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1.0,
+                      color: isSelected ? const Color(0xFF5A6B00).withOpacity(0.7) : const Color(0xFFC5C9AC).withOpacity(0.7),
                     ),
                   ),
                 ],
@@ -440,6 +344,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     required int waterConsumed,
     required double waterGoal,
     required String selectedDate,
+    required double proteinConsumed,
+    required double proteinGoal,
+    required double carbConsumed,
+    required double carbGoal,
+    required double fatConsumed,
+    required double fatGoal,
   }) {
     final calorieLeftText = remaining >= 0 ? '$remaining' : '${remaining.abs()}';
     final calorieLabel = remaining >= 0 ? 'KCAL REMAINING' : 'KCAL SURPLUS';
@@ -447,261 +357,354 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final double waterPercent = (waterConsumed / waterGoal).clamp(0.0, 1.0);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
+    final cardBgColor = isDark ? const Color(0xFF1C1C1E) : AppTheme.glassBackground;
+    final interactiveBgColor = isDark ? const Color(0xFF2C2C2E) : const Color(0xFFE8EBE6);
+    final borderColor = isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder;
+    final textColor = isDark ? Colors.white : AppTheme.textPrimary;
+    final textMutedColor = isDark ? const Color(0xFF868685) : AppTheme.textSecondary;
+
     return GlassCard(
       width: double.infinity,
       padding: const EdgeInsets.all(22),
-      borderRadius: BorderRadius.circular(24),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      borderRadius: BorderRadius.circular(28),
+      customBgColor: cardBgColor,
+      customBorder: Border.all(color: borderColor, width: 1.0),
+      child: Column(
         children: [
-          // Left side - Circular percent indicator
-          CircularPercentIndicator(
-            radius: 72.0,
-            lineWidth: 12.0,
-            percent: percent,
-            animation: true,
-            animationDuration: 800,
-            curve: Curves.easeInOutQuad,
-            circularStrokeCap: CircularStrokeCap.round,
-            backgroundColor: Colors.white.withOpacity(0.04),
-            progressColor: calorieColor,
-            center: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  calorieLeftText,
+          // Row 1: Header Goal Text & Edit Action
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Daily Goal: ${consumed + remaining}',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: textColor,
+                ),
+              ),
+              GestureDetector(
+                onTap: () => _showEditDailyGoalDialog(context, selectedDate),
+                child: const Text(
+                  'Edit',
                   style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.w900,
-                    color: calorieColor,
-                    letterSpacing: -1,
-                  ),
-                ),
-                Text(
-                  calorieLabel,
-                  style: const TextStyle(
-                    fontSize: 7,
+                    fontSize: 14,
                     fontWeight: FontWeight.bold,
-                    letterSpacing: 0.8,
-                    color: AppTheme.textSecondary,
+                    color: AppTheme.accentCyan,
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-          const SizedBox(width: 24),
+          const SizedBox(height: 20),
 
-          // Right side - Info headers & Hydration details
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          // Row 2: Calories Ring & Hydration
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // Left side - Circular percent indicator
+              CircularPercentIndicator(
+                radius: 64.0,
+                lineWidth: 8.0,
+                percent: percent,
+                animation: true,
+                animationDuration: 800,
+                curve: Curves.easeInOutQuad,
+                circularStrokeCap: CircularStrokeCap.round,
+                backgroundColor: interactiveBgColor,
+                progressColor: calorieColor,
+                center: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Expanded(
-                      child: Text(
-                        'Daily Goal Completion',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: -0.5,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                    Text(
+                      calorieLeftText,
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w900,
+                        color: calorieColor,
+                        letterSpacing: -0.5,
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    GestureDetector(
-                      onTap: () => _showEditDailyGoalDialog(context, selectedDate),
-                      child: const Text(
-                        'Edit',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: AppTheme.accentCyan,
-                        ),
+                    Text(
+                      calorieLabel,
+                      style: const TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.5,
+                        color: Colors.white,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
+              ),
+              const SizedBox(width: 24),
 
-                // Hydration Row wrapped in GestureDetector to manage logs
-                GestureDetector(
-                  onTap: () => _showHydrationDialog(context, selectedDate, waterConsumed, waterGoal),
-                  behavior: HitTestBehavior.opaque,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              // Right side - Hydration details
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    GestureDetector(
+                      onTap: () => _showHydrationDialog(context, selectedDate, waterConsumed, waterGoal),
+                      behavior: HitTestBehavior.opaque,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              const Icon(
-                                Icons.water_drop_rounded,
-                                color: AppTheme.accentPurple,
-                                size: 14,
+                              Row(
+                                children: [
+                                  const Icon(
+                                    Icons.water_drop_rounded,
+                                    color: AppTheme.accentCyan,
+                                    size: 14,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'Hydration',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.bold,
+                                      color: textColor,
+                                    ),
+                                  ),
+                                ],
                               ),
-                              const SizedBox(width: 4),
                               Text(
-                                'Hydration',
-                                style: TextStyle(
+                                '${(waterPercent * 100).round()}%',
+                                style: const TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.bold,
-                                  color: isDark ? Colors.white : AppTheme.textPrimary,
+                                  color: AppTheme.accentCyan,
                                 ),
                               ),
                             ],
                           ),
+                          const SizedBox(height: 6),
                           Text(
-                            '${(waterPercent * 100).round()}%',
-                            style: const TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                              color: AppTheme.accentPurple,
+                            '$waterConsumed ml / ${waterGoal.toInt()} ml',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w900,
+                              color: textColor,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+
+                          // Hydration progress bar
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(4),
+                            child: Container(
+                              height: 6,
+                              width: double.infinity,
+                              color: interactiveBgColor,
+                              child: Stack(
+                                children: [
+                                  FractionallySizedBox(
+                                    alignment: Alignment.centerLeft,
+                                    widthFactor: waterPercent,
+                                    child: Container(
+                                      decoration: const BoxDecoration(
+                                        color: AppTheme.accentCyan,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 6),
-                      Text(
-                        '$waterConsumed ml / ${waterGoal.toInt()} ml',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w900,
-                          color: isDark ? Colors.white : AppTheme.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
+                    ),
+                    const SizedBox(height: 12),
 
-                      // Custom refreshing water bar indicator
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(4),
-                        child: Container(
-                          height: 6,
-                          width: double.infinity,
-                          color: Colors.white.withOpacity(0.04),
-                          child: Stack(
-                            children: [
-                              FractionallySizedBox(
-                                alignment: Alignment.centerLeft,
-                                widthFactor: waterPercent,
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      colors: [
-                                        AppTheme.accentPurple.withOpacity(0.8),
-                                        AppTheme.accentPurple,
-                                      ],
+                    // Quick tap log buttons
+                    Row(
+                      children: [
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () async {
+                              await ref
+                                  .read(dailyMetricsProvider(selectedDate).notifier)
+                                  .addWater(250);
+                              showWebNotification(
+                                '💧 Hydration Logged!',
+                                'Logged 250ml of clean drinking water. Total: ${waterConsumed + 250}ml.',
+                              );
+                            },
+                            child: Container(
+                              height: 32,
+                              decoration: BoxDecoration(
+                                color: interactiveBgColor,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Center(
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.add, size: 12, color: textColor),
+                                    const SizedBox(width: 2),
+                                    Text(
+                                      '250 ml',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold,
+                                        color: textColor,
+                                      ),
                                     ),
-                                  ),
+                                  ],
                                 ),
                               ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 10),
-
-                // Quick tap log buttons
-                Row(
-                  children: [
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () async {
-                          await ref
-                              .read(dailyMetricsProvider(selectedDate).notifier)
-                              .addWater(250);
-                          showWebNotification(
-                            '💧 Hydration Logged!',
-                            'Logged 250ml of clean drinking water. Total: ${waterConsumed + 250}ml.',
-                          );
-                        },
-                        child: Container(
-                          height: 26,
-                          decoration: BoxDecoration(
-                            color: AppTheme.accentPurple.withOpacity(0.08),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: AppTheme.accentPurple.withOpacity(0.2),
-                              width: 1.0,
                             ),
                           ),
-                          child: const Center(
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.add, size: 10, color: AppTheme.accentPurple),
-                                SizedBox(width: 2),
-                                Text(
-                                  '250 ml',
-                                  style: TextStyle(
-                                    fontSize: 9,
-                                    fontWeight: FontWeight.bold,
-                                    color: AppTheme.accentPurple,
-                                  ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () async {
+                              await ref
+                                  .read(dailyMetricsProvider(selectedDate).notifier)
+                                  .addWater(500);
+                              showWebNotification(
+                                '💧 Hydration Logged!',
+                                'Logged 500ml of clean drinking water. Total: ${waterConsumed + 500}ml.',
+                              );
+                            },
+                            child: Container(
+                              height: 32,
+                              decoration: BoxDecoration(
+                                color: interactiveBgColor,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Center(
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.add, size: 12, color: textColor),
+                                    const SizedBox(width: 2),
+                                    Text(
+                                      '500 ml',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold,
+                                        color: textColor,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ],
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () async {
-                          await ref
-                              .read(dailyMetricsProvider(selectedDate).notifier)
-                              .addWater(500);
-                          showWebNotification(
-                            '💧 Hydration Logged!',
-                            'Logged 500ml of clean drinking water. Total: ${waterConsumed + 500}ml.',
-                          );
-                        },
-                        child: Container(
-                          height: 26,
-                          decoration: BoxDecoration(
-                            color: AppTheme.accentPurple.withOpacity(0.08),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: AppTheme.accentPurple.withOpacity(0.2),
-                              width: 1.0,
-                            ),
-                          ),
-                          child: const Center(
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.add_circle_outline_rounded, size: 10, color: AppTheme.accentPurple),
-                                SizedBox(width: 2),
-                                Text(
-                                  '500 ml',
-                                  style: TextStyle(
-                                    fontSize: 9,
-                                    fontWeight: FontWeight.bold,
-                                    color: AppTheme.accentPurple,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
+                      ],
                     ),
                   ],
                 ),
-              ],
-            ),
+              ),
+            ],
+          ),
+          
+          // Divider
+          Container(
+            height: 1.0,
+            margin: const EdgeInsets.symmetric(vertical: 20),
+            color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFE8EBE6),
+          ),
+
+          // Row 3: Macro Rings
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              Expanded(
+                child: _buildMacroProgressRing(
+                  label: 'Protein',
+                  value: '${proteinConsumed.round()}g/${proteinGoal.round()}g',
+                  percent: (proteinConsumed / proteinGoal).clamp(0.0, 1.0),
+                  color: const Color(0xFF22D3EE),
+                  centerWidget: const Text(
+                    '🍗',
+                    style: TextStyle(fontSize: 16),
+                  ),
+                  isDark: isDark,
+                ),
+              ),
+              Expanded(
+                child: _buildMacroProgressRing(
+                  label: 'Carbs',
+                  value: '${carbConsumed.round()}g/${carbGoal.round()}g',
+                  percent: (carbConsumed / carbGoal).clamp(0.0, 1.0),
+                  color: const Color(0xFF4ADE80),
+                  centerWidget: const Text(
+                    '🍚',
+                    style: TextStyle(fontSize: 16),
+                  ),
+                  isDark: isDark,
+                ),
+              ),
+              Expanded(
+                child: _buildMacroProgressRing(
+                  label: 'Fats',
+                  value: '${fatConsumed.round()}g/${fatGoal.round()}g',
+                  percent: (fatConsumed / fatGoal).clamp(0.0, 1.0),
+                  color: const Color(0xFFF87171),
+                  centerWidget: const Text(
+                    '💧',
+                    style: TextStyle(fontSize: 16),
+                  ),
+                  isDark: isDark,
+                ),
+              ),
+            ],
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildMacroProgressRing({
+    required String label,
+    required String value,
+    required double percent,
+    required Color color,
+    required Widget centerWidget,
+    required bool isDark,
+  }) {
+    return Column(
+      children: [
+        CircularPercentIndicator(
+          radius: 30.0,
+          lineWidth: 4.0,
+          percent: percent,
+          animation: true,
+          animationDuration: 800,
+          curve: Curves.easeInOutQuad,
+          circularStrokeCap: CircularStrokeCap.round,
+          backgroundColor: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFE8EBE6),
+          progressColor: color,
+          center: centerWidget,
+        ),
+        const SizedBox(height: 8),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label.toUpperCase(),
+          style: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 1.0,
+            color: Colors.white,
+          ),
+        ),
+      ],
     );
   }
 
@@ -722,19 +725,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         curve: Curves.easeInOut,
         clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(24), // rounded.xl (24px)
           border: Border.all(
-            color: isActive ? AppTheme.accentCyan : Colors.white.withOpacity(0.04),
-            width: 1.8,
+            color: isActive ? AppTheme.accentCyan : (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF323530) : AppTheme.glassBorder),
+            width: 1.5,
           ),
-          boxShadow: [
-            if (isActive)
-              BoxShadow(
-                color: AppTheme.accentCyan.withOpacity(0.15),
-                blurRadius: 10,
-                spreadRadius: 1,
-              ),
-          ],
         ),
         child: Stack(
           children: [
@@ -749,16 +744,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             // Dark elegant overlay to guarantee extreme text contrast
             Positioned.fill(
               child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      const Color(0xFF131722).withOpacity(0.35),
-                      const Color(0xFF131722).withOpacity(0.88),
-                    ],
-                  ),
-                ),
+                color: const Color(0xFF0E0F0C).withOpacity(0.75), // Near-black solid translucent overlay
               ),
             ),
             
@@ -810,41 +796,47 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     return Row(
       children: [
         Expanded(
-          child: _buildQuickActionButton(
-            label: 'Add Meal',
-            icon: Icons.restaurant_rounded,
-            color: AppTheme.accentCyan,
-            onTap: () {
-              showDialog(
-                context: context,
-                builder: (context) => const FoodLoggerDialog(),
-              );
-            },
+          child: AspectRatio(
+            aspectRatio: 1.0,
+            child: _buildQuickActionButton(
+              label: 'Add Meal',
+              icon: Icons.restaurant_rounded,
+              onTap: () {
+                showDialog(
+                  context: context,
+                  builder: (context) => const FoodLoggerDialog(),
+                );
+              },
+            ),
           ),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: 12),
         Expanded(
-          child: _buildQuickActionButton(
-            label: 'Scan Barcode',
-            icon: Icons.qr_code_scanner_rounded,
-            color: AppTheme.accentOrange,
-            onTap: () {
-              showDialog(
-                context: context,
-                builder: (context) => const UnifiedVisionScannerDialog(),
-              );
-            },
+          child: AspectRatio(
+            aspectRatio: 1.0,
+            child: _buildQuickActionButton(
+              label: 'Product Analyser',
+              icon: Icons.qr_code_scanner_rounded,
+              onTap: () {
+                showDialog(
+                  context: context,
+                  builder: (context) => const UnifiedVisionScannerDialog(),
+                );
+              },
+            ),
           ),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: 12),
         Expanded(
-          child: _buildQuickActionButton(
-            label: 'Workout Log',
-            icon: Icons.fitness_center_rounded,
-            color: AppTheme.accentPurple,
-            onTap: () {
-              ref.read(activeTabProvider.notifier).state = 1; // Go to Workouts
-            },
+          child: AspectRatio(
+            aspectRatio: 1.0,
+            child: _buildQuickActionButton(
+              label: 'Workout Log',
+              icon: Icons.fitness_center_rounded,
+              onTap: () {
+                ref.read(activeTabProvider.notifier).state = 1; // Go to Workouts
+              },
+            ),
           ),
         ),
       ],
@@ -854,42 +846,49 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   Widget _buildQuickActionButton({
     required String label,
     required IconData icon,
-    required Color color,
     required VoidCallback onTap,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBgColor = isDark ? const Color(0xFF1C1C1E) : AppTheme.glassBackground;
+    final innerBgColor = isDark ? const Color(0xFF2C2C2E) : const Color(0xFFE8EBE6);
+    final borderColor = isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder;
+    final textColor = isDark ? Colors.white : AppTheme.textPrimary;
+
     return GestureDetector(
       onTap: onTap,
-      child: GlassCard(
-        padding: const EdgeInsets.symmetric(vertical: 14),
+      child: Container(
+        decoration: BoxDecoration(
+          color: cardBgColor,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: borderColor, width: 1.0),
+        ),
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              width: 44,
-              height: 44,
+              width: 48,
+              height: 48,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: color,
-                boxShadow: [
-                  BoxShadow(
-                    color: color.withOpacity(0.2),
-                    blurRadius: 8,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
+                color: innerBgColor,
               ),
               child: Icon(
                 icon,
-                color: const Color(0xFF051424),
-                size: 20,
+                color: AppTheme.accentCyan,
+                size: 22,
               ),
             ),
-            const SizedBox(height: 8),
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 9,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 0.5,
+            const SizedBox(height: 12),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: Text(
+                label,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: textColor,
+                ),
               ),
             ),
           ],
@@ -907,7 +906,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           children: [
             Icon(
               Icons.restaurant_rounded,
-              color: Colors.white.withOpacity(0.15),
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? Colors.white.withOpacity(0.15)
+                  : Colors.black.withOpacity(0.1),
               size: 36,
             ),
             const SizedBox(height: 8),
@@ -923,6 +924,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         ),
       );
     }
+
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBgColor = isDark ? const Color(0xFF1C1C1E) : AppTheme.glassBackground;
+    final borderColor = isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder;
+    final textColor = isDark ? Colors.white : AppTheme.textPrimary;
+    final textMutedColor = isDark ? const Color(0xFFC5C9AC) : AppTheme.textSecondary;
 
     return Column(
       children: loggedItems.reversed.map((item) {
@@ -962,27 +969,32 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         }
 
         return Container(
-          margin: const EdgeInsets.only(bottom: 10),
+          margin: const EdgeInsets.only(bottom: 12),
           child: GestureDetector(
             onTap: () => _showFoodDetailsDialog(context, Map<String, dynamic>.from(item)),
-            child: GlassCard(
-              padding: const EdgeInsets.all(12),
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: cardBgColor,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: borderColor, width: 1.0),
+              ),
               child: Row(
                 children: [
-                  // Rounded Image Thumbnail
+                  // Circular Image Thumbnail
                   Container(
                     width: 56,
                     height: 56,
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.white.withOpacity(0.06), width: 1.0),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: borderColor, width: 1.0),
                       image: DecorationImage(
                         image: imageProvider,
                         fit: BoxFit.cover,
                       ),
                     ),
                   ),
-                  const SizedBox(width: 14),
+                  const SizedBox(width: 16),
 
                   // Title details
                   Expanded(
@@ -991,19 +1003,31 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       children: [
                         Text(
                           name,
-                          style: const TextStyle(
-                            fontSize: 15,
+                          style: TextStyle(
+                            fontSize: 16,
                             fontWeight: FontWeight.bold,
+                            color: textColor,
                           ),
                         ),
-                        const SizedBox(height: 2),
-                        Text(
-                          '$meal • $time',
-                          style: const TextStyle(
-                            fontSize: 8,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 0.5,
-                            color: AppTheme.textSecondary,
+                        const SizedBox(height: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFE8EBE6),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: isDark ? const Color(0xFF3A3A3C) : AppTheme.glassBorder,
+                              width: 1.0,
+                            ),
+                          ),
+                          child: Text(
+                            '$meal • $time'.toUpperCase(),
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.5,
+                              color: isDark ? Colors.white : AppTheme.textPrimary,
+                            ),
                           ),
                         ),
                       ],
@@ -1017,18 +1041,18 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       Text(
                         '$calories',
                         style: TextStyle(
-                          fontSize: 18,
+                          fontSize: 20,
                           fontWeight: FontWeight.w900,
-                          color: AppTheme.accentCyan,
+                          color: textColor,
                         ),
                       ),
-                      const Text(
+                      Text(
                         'KCAL',
                         style: TextStyle(
                           fontSize: 8,
-                          color: AppTheme.textSecondary,
+                          color: textMutedColor,
                           fontWeight: FontWeight.bold,
-                          letterSpacing: 0.5,
+                          letterSpacing: 1.0,
                         ),
                       ),
                     ],
@@ -1098,19 +1122,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
                   child: Container(
                     decoration: BoxDecoration(
-                      color: isDark ? const Color(0xEC090E18) : Colors.white,
-                      borderRadius: BorderRadius.circular(28),
+                      color: isDark ? const Color(0xEC1C1E1B) : Colors.white,
+                      borderRadius: BorderRadius.circular(24), // rounded.xl (24px)
                       border: Border.all(
-                        color: isDark ? AppTheme.glassBorder : const Color(0xFFEADBFF),
-                        width: 1.5,
+                        color: isDark ? const Color(0xFF323530) : AppTheme.glassBorder,
+                        width: 1.0,
                       ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppTheme.accentCyan.withOpacity(0.12),
-                          blurRadius: 30,
-                          spreadRadius: 2,
-                        ),
-                      ],
                     ),
                     padding: const EdgeInsets.all(24),
                     child: Column(
@@ -2471,10 +2488,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               child: Container(
                 constraints: BoxConstraints(maxHeight: MediaQuery.of(ctx).size.height * 0.85),
                 decoration: BoxDecoration(
-                  color: isDark ? AppTheme.glassBackground : Colors.white,
+                  color: isDark ? const Color(0xFF1C1E1B) : Colors.white,
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
                   border: Border.all(
-                    color: isDark ? AppTheme.glassBorder : const Color(0xFFEADBFF),
+                    color: isDark ? const Color(0xFF323530) : const Color(0xFFEADBFF),
                     width: 1.0,
                   ),
                 ),
@@ -2496,12 +2513,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      const Text(
+                      Text(
                         'Zivo Nutrient Logger',
                         style: TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.w900,
-                          color: AppTheme.textPrimary,
+                          color: isDark ? Colors.white : AppTheme.textPrimary,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -2939,7 +2956,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                               final String fName = food['name'] ?? 'Favourite';
                               final int fCalories = food['calories'] ?? 0;
                               final int fProtein = food['protein'] ?? 0;
-                              final int fCarbs = food['carbs'] ?? 0;
+                                      final int fCarbs = food['carbs'] ?? 0;
                               final int fFat = food['fat'] ?? 0;
                               final String fImage = food['imageUrl'] ?? 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&q=80&w=200';
 
@@ -2956,9 +2973,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                 },
                                 child: Container(
                                   decoration: BoxDecoration(
-                                    color: AppTheme.obsidianBackground,
+                                    color: isDark ? const Color(0xFF0E0F0C) : AppTheme.obsidianBackground,
                                     borderRadius: BorderRadius.circular(14),
-                                    border: Border.all(color: AppTheme.glassBorder, width: 1.0),
+                                    border: Border.all(color: isDark ? const Color(0xFF323530) : AppTheme.glassBorder, width: 1.0),
                                   ),
                                   padding: const EdgeInsets.all(8),
                                   child: Row(
@@ -2986,10 +3003,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                                 Expanded(
                                                   child: Text(
                                                     fName,
-                                                    style: const TextStyle(
+                                                    style: TextStyle(
                                                       fontSize: 10,
                                                       fontWeight: FontWeight.bold,
-                                                      color: Colors.white,
+                                                      color: isDark ? Colors.white : AppTheme.textPrimary,
                                                     ),
                                                     maxLines: 1,
                                                     overflow: TextOverflow.ellipsis,
@@ -3058,6 +3075,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         '',
                         Icons.restaurant_menu_rounded,
                         AppTheme.accentCyan,
+                        isDark: isDark,
                         isText: true,
                       ),
                       const SizedBox(height: 12),
@@ -3068,6 +3086,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         'kcal',
                         Icons.bolt_rounded,
                         AppTheme.accentCyan,
+                        isDark: isDark,
                       ),
                       const SizedBox(height: 12),
 
@@ -3080,6 +3099,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                               'g',
                               Icons.egg_rounded,
                               AppTheme.accentOrange,
+                              isDark: isDark,
                             ),
                           ),
                           const SizedBox(width: 8),
@@ -3090,6 +3110,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                               'g',
                               Icons.bakery_dining_rounded,
                               AppTheme.accentCyan,
+                              isDark: isDark,
                             ),
                           ),
                           const SizedBox(width: 8),
@@ -3100,6 +3121,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                               'g',
                               Icons.water_drop_rounded,
                               AppTheme.accentCoral,
+                              isDark: isDark,
                             ),
                           ),
                         ],
@@ -3215,28 +3237,29 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     String suffix,
     IconData icon,
     Color color, {
+    bool isDark = false,
     bool isText = false,
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: AppTheme.obsidianBackground,
+        color: isDark ? const Color(0xFF0E0F0C) : AppTheme.obsidianBackground,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppTheme.glassBorder, width: 1.0),
+        border: Border.all(color: isDark ? const Color(0xFF323530) : AppTheme.glassBorder, width: 1.0),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
       child: TextField(
         controller: ctrl,
         keyboardType: isText ? TextInputType.text : TextInputType.number,
-        style: const TextStyle(
-          color: AppTheme.textPrimary,
+        style: TextStyle(
+          color: isDark ? Colors.white : AppTheme.textPrimary,
           fontWeight: FontWeight.bold,
           fontSize: 15,
         ),
         decoration: InputDecoration(
           icon: Icon(icon, color: color, size: 18),
           labelText: label,
-          labelStyle: const TextStyle(
-            color: AppTheme.textSecondary,
+          labelStyle: TextStyle(
+            color: isDark ? const Color(0xFF868685) : AppTheme.textSecondary,
             fontSize: 12,
           ),
           suffixText: suffix.isEmpty ? null : suffix,
@@ -3268,23 +3291,27 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             final displayAura = isAuraEnabled ? auraNotifications : <AppNotification>[];
             final displaySystem = isSystemEnabled ? systemNotifications : <AppNotification>[];
 
-            final isEmpty = displayAura.isEmpty && displaySystem.isEmpty;
+            final isDark = Theme.of(context).brightness == Brightness.dark;
+            final sheetBg = isDark ? const Color(0xFF0E0F0C) : AppTheme.obsidianBackground;
+            final glassBg = isDark ? const Color(0xFF1C1E1B) : AppTheme.glassBackground;
+            final borderColor = isDark ? const Color(0xFF323530) : AppTheme.glassBorder;
+            final textColor = isDark ? Colors.white : AppTheme.textPrimary;
 
             return Container(
               height: MediaQuery.of(sheetContext).size.height * 0.75,
-              decoration: const BoxDecoration(
-                color: AppTheme.obsidianBackground,
-                borderRadius: BorderRadius.only(
+              decoration: BoxDecoration(
+                color: sheetBg,
+                borderRadius: const BorderRadius.only(
                   topLeft: Radius.circular(30),
                   topRight: Radius.circular(30),
                 ),
                 border: Border(
-                  top: BorderSide(color: AppTheme.glassBorder, width: 1.5),
+                  top: BorderSide(color: borderColor, width: 1.5),
                 ),
               ),
               child: Container(
-                decoration: const BoxDecoration(
-                  gradient: AppTheme.bgGradient,
+                decoration: BoxDecoration(
+                  color: sheetBg,
                 ),
                 child: Padding(
                   padding: const EdgeInsets.all(24.0),
@@ -3295,12 +3322,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text(
+                          Text(
                             'Notifications & Alerts',
                             style: TextStyle(
                               fontSize: 22,
                               fontWeight: FontWeight.w900,
-                              color: Colors.white,
+                              color: textColor,
                             ),
                           ),
                           Row(
@@ -3320,7 +3347,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                   ),
                                 ),
                               IconButton(
-                                icon: const Icon(Icons.close_rounded, color: Colors.white),
+                                icon: Icon(Icons.close_rounded, color: textColor),
                                 onPressed: () => Navigator.pop(sheetContext),
                               ),
                             ],
@@ -3331,14 +3358,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
                       // List
                       Expanded(
-                        child: isEmpty
+                        child: (displayAura.isEmpty && displaySystem.isEmpty)
                             ? Center(
                                 child: Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
                                     Icon(
                                       Icons.notifications_off_rounded,
-                                      color: Colors.white.withOpacity(0.15),
+                                      color: textColor.withOpacity(0.15),
                                       size: 56,
                                     ),
                                     const SizedBox(height: 16),
@@ -3394,9 +3421,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                       return Container(
                                         margin: const EdgeInsets.only(bottom: 12),
                                         decoration: BoxDecoration(
-                                          color: AppTheme.glassBackground,
+                                          color: glassBg,
                                           borderRadius: BorderRadius.circular(16),
-                                          border: Border.all(color: AppTheme.glassBorder, width: 1),
+                                          border: Border.all(color: borderColor, width: 1),
                                         ),
                                         child: ClipRRect(
                                           borderRadius: BorderRadius.circular(16),
@@ -3434,10 +3461,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                                         children: [
                                                           Text(
                                                             notif.title,
-                                                            style: const TextStyle(
+                                                            style: TextStyle(
                                                               fontWeight: FontWeight.bold,
                                                               fontSize: 14,
-                                                              color: Colors.white,
+                                                              color: textColor,
                                                             ),
                                                           ),
                                                           const SizedBox(height: 3),
@@ -3509,10 +3536,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                                       children: [
                                                         Text(
                                                           notif.title,
-                                                          style: const TextStyle(
+                                                          style: TextStyle(
                                                             fontWeight: FontWeight.bold,
                                                             fontSize: 14,
-                                                            color: Colors.white,
+                                                            color: textColor,
                                                           ),
                                                         ),
                                                         Text(
@@ -3563,8 +3590,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     double waterGoal,
   ) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final dialogBg = isDark ? AppTheme.glassBackground : Colors.white;
-    final dialogBorder = isDark ? AppTheme.glassBorder : const Color(0xFFEADBFF);
+    final dialogBg = isDark ? const Color(0xFF1C1E1B) : Colors.white;
+    final dialogBorder = isDark ? const Color(0xFF323530) : const Color(0xFFEADBFF);
     final textColor = isDark ? Colors.white : AppTheme.textPrimary;
     final controller = TextEditingController(text: waterConsumed.toString());
 

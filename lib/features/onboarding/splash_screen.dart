@@ -1,10 +1,10 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme.dart';
 import '../../services/state_providers.dart';
-import '../../services/firebase_service.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
@@ -32,123 +32,93 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
       context.go('/onboarding');
     }
   }
-
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark ? AppTheme.obsidianBackground : Colors.white;
-    final textColor = isDark ? AppTheme.textPrimary : const Color(0xFF0F172A);
+    final textColor = isDark ? const Color(0xFFE8EBE6) : AppTheme.textPrimary;
+    final bgColor = isDark ? const Color(0xFF0E0F0C) : AppTheme.obsidianBackground;
 
     return Scaffold(
       backgroundColor: bgColor,
-      body: Container(
-        color: bgColor,
-        child: Stack(
-          children: [
-            // Ambient soft glowing background light in the center
-            Center(
-              child: Container(
-                width: 250,
-                height: 250,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppTheme.accentCyan.withOpacity(0.04),
-                      blurRadius: 100,
-                      spreadRadius: 10,
-                    ),
-                  ],
+      body: Stack(
+        children: [
+          Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Clean Wise logo container
+                Container(
+                  width: 80,
+                  height: 80,
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: AppTheme.accentCyan, // Wise Green
+                  ),
+                  child: const Icon(
+                    Icons.fitness_center_rounded,
+                    size: 40,
+                    color: Color(0xFF0E0F0C), // Ink Black
+                  ),
+                )
+                .animate()
+                .fadeIn(duration: 800.ms)
+                .scale(
+                  begin: const Offset(0.7, 0.7),
+                  curve: Curves.easeOutBack,
+                  duration: 800.ms,
                 ),
-              ),
+                const SizedBox(height: 32),
+                
+                // App Title (ZIVO) in Heavy Display Weight
+                Text(
+                  'ZIVO',
+                  style: TextStyle(
+                    fontSize: 38,
+                    fontWeight: FontWeight.w900, // Wise Sans heavy display weight
+                    color: textColor,
+                    letterSpacing: -0.8,
+                  ),
+                )
+                .animate()
+                .fadeIn(delay: 200.ms, duration: 600.ms)
+                .slideY(begin: 0.15, end: 0, curve: Curves.easeOutCubic),
+                const SizedBox(height: 12),
+                
+                // App Subtitle
+                Text(
+                  'HEALTH & PHYSIQUE COCKPIT',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: isDark ? AppTheme.textTertiary : const Color(0xFF868685),
+                    letterSpacing: 0.196,
+                  ),
+                )
+                .animate()
+                .fadeIn(delay: 400.ms, duration: 600.ms)
+                .slideY(begin: 0.15, end: 0, curve: Curves.easeOutCubic),
+              ],
             ),
-            Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // Logo Circle
-                  Container(
-                        width: 96,
-                        height: 96,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: AppTheme.primaryGradient,
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppTheme.accentCyan.withOpacity(0.2),
-                              blurRadius: 20,
-                              spreadRadius: 1,
-                            ),
-                          ],
-                        ),
-                        child: const Icon(
-                          Icons.fitness_center_rounded,
-                          size: 52,
-                          color: Colors.white,
-                        ),
-                      )
-                      .animate()
-                      .fadeIn(duration: 800.ms)
-                      .scale(
-                        begin: const Offset(0.7, 0.7),
-                        curve: Curves.easeOutBack,
-                        duration: 800.ms,
-                      )
-                      .then()
-                      .shimmer(
-                        duration: 1200.ms,
-                        color: Colors.white.withOpacity(0.4),
-                      ),
-                  const SizedBox(height: 24),
-                  // App Title
-                  Text(
-                        'FITNOTES 2',
-                        style: TextStyle(
-                          fontSize: 32,
-                          fontWeight: FontWeight.w900,
-                          color: textColor,
-                          letterSpacing: 4,
-                        ),
-                      )
-                      .animate()
-                      .fadeIn(delay: 200.ms, duration: 600.ms)
-                      .slideY(begin: 0.2, end: 0, curve: Curves.easeOutQuad),
-                  const SizedBox(height: 8),
-                  // App Subtitle
-                  const Text(
-                        'FITMAX WORKOUT & DIET',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w800,
-                          color: AppTheme.accentCyan,
-                          letterSpacing: 2,
-                        ),
-                      )
-                      .animate()
-                      .fadeIn(delay: 400.ms, duration: 600.ms)
-                      .slideY(begin: 0.2, end: 0, curve: Curves.easeOutQuad),
-                ],
-              ),
-            ),
-            // Loading spinner at the bottom
-            Align(
-              alignment: Alignment.bottomCenter,
-              child: Padding(
-                padding: const EdgeInsets.only(bottom: 48.0),
-                child: SizedBox(
-                  width: 40,
-                  height: 40,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2.5,
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      AppTheme.accentCyan.withOpacity(0.4),
-                    ),
+          ),
+
+          // Loading spinner at the bottom
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 64.0),
+              child: SizedBox(
+                width: 32,
+                height: 32,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: const AlwaysStoppedAnimation<Color>(
+                    AppTheme.accentCyan,
                   ),
                 ),
               ),
-            ).animate().fadeIn(delay: 600.ms),
-          ],
-        ),
+            ),
+          ).animate().fadeIn(delay: 600.ms),
+        ],
       ),
     );
   }

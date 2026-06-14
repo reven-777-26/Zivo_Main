@@ -29,6 +29,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   String _selectedActivity =
       'moderate'; // 'sedentary', 'light', 'moderate', 'very'
 
+  bool get isDark => Theme.of(context).brightness == Brightness.dark;
+
   // Text Editing Controllers for Direct Typing
   late TextEditingController _ageController;
   late TextEditingController _heightController;
@@ -130,7 +132,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     return Scaffold(
       backgroundColor: AppTheme.obsidianBackground,
       body: Container(
-        decoration: const BoxDecoration(gradient: AppTheme.bgGradient),
+        color: AppTheme.obsidianBackground,
         child: SafeArea(
           child: Column(
             children: [
@@ -164,7 +166,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                               Container(
                                 height: 6,
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.05),
+                                  color: isDark ? Colors.white.withOpacity(0.12) : const Color(0xFFD2D2D7),
                                   borderRadius: BorderRadius.circular(3),
                                 ),
                               ),
@@ -176,16 +178,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                     ((_currentStep) / (_totalSteps - 1)) *
                                     0.65,
                                 decoration: BoxDecoration(
-                                  gradient: AppTheme.primaryGradient,
+                                  color: AppTheme.accentCyan,
                                   borderRadius: BorderRadius.circular(3),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: AppTheme.accentCyan.withOpacity(
-                                        0.2,
-                                      ),
-                                      blurRadius: 4,
-                                    ),
-                                  ],
                                 ),
                               ),
                             ],
@@ -200,7 +194,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                           'Skip',
                           style: TextStyle(
                             color: AppTheme.textSecondary,
-                            fontWeight: FontWeight.bold,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       )
@@ -248,23 +242,16 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           const Spacer(),
           // Glowing gym logo graphic
           Container(
-            width: 108,
-            height: 108,
-            decoration: BoxDecoration(
+            width: 96,
+            height: 96,
+            decoration: const BoxDecoration(
               shape: BoxShape.circle,
-              gradient: AppTheme.primaryGradient,
-              boxShadow: [
-                BoxShadow(
-                  color: AppTheme.accentCyan.withOpacity(0.25),
-                  blurRadius: 20,
-                  offset: const Offset(0, 6),
-                ),
-              ],
+              color: AppTheme.accentCyan, // Wise Green
             ),
             child: const Icon(
               Icons.fitness_center_rounded,
-              size: 54,
-              color: Colors.white,
+              size: 48,
+              color: Color(0xFF0E0F0C), // Ink Black
             ),
           ).animate().scale(duration: 800.ms, curve: Curves.elasticOut),
           const SizedBox(height: 36),
@@ -296,23 +283,16 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               width: double.infinity,
               height: 56,
               decoration: BoxDecoration(
-                gradient: AppTheme.primaryGradient,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppTheme.accentCyan.withOpacity(0.2),
-                    blurRadius: 12,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
+                color: AppTheme.accentCyan,
+                borderRadius: BorderRadius.circular(24), // rounded.xl (24px)
               ),
               child: const Center(
                 child: Text(
                   'Start Setup',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: Color(0xFF0E0F0C), // Ink Black
                     fontSize: 16,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
@@ -344,21 +324,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           margin: const EdgeInsets.only(bottom: 14),
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           decoration: BoxDecoration(
-            color: isSelected
-                ? AppTheme.glassBackground
-                : Colors.white.withOpacity(0.02),
-            borderRadius: BorderRadius.circular(20),
+            color: isDark
+                ? (isSelected ? const Color(0xFF272C24) : const Color(0xFF1C1E1B))
+                : AppTheme.glassBackground,
+            borderRadius: BorderRadius.circular(24), // rounded.xl (24px)
             border: Border.all(
-              color: isSelected ? AppTheme.accentCyan : AppTheme.glassBorder,
+              color: isSelected ? AppTheme.accentCyan : (isDark ? const Color(0xFF323530) : AppTheme.glassBorder),
               width: isSelected ? 2.0 : 1.0,
             ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(isSelected ? 0.2 : 0.05),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
           ),
           child: Row(
             children: [
@@ -367,13 +340,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: isSelected
-                      ? AppTheme.accentCyan.withOpacity(0.12)
-                      : Colors.white.withOpacity(0.04),
+                      ? AppTheme.accentCyan.withOpacity(0.24)
+                      : (isDark ? Colors.white.withOpacity(0.04) : const Color(0xFFF0F2EE)),
                 ),
                 child: Icon(
                   icon,
                   color: isSelected
-                      ? AppTheme.accentCyan
+                      ? (isDark ? AppTheme.accentCyan : const Color(0xFF163300))
                       : AppTheme.textSecondary,
                   size: 24,
                 ),
@@ -389,7 +362,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                         color: isSelected
-                            ? AppTheme.accentCyan
+                            ? (isDark ? AppTheme.accentCyan : const Color(0xFF163300))
                             : AppTheme.textPrimary,
                       ),
                     ),
@@ -471,21 +444,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           margin: const EdgeInsets.only(bottom: 14),
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           decoration: BoxDecoration(
-            color: isSelected
-                ? AppTheme.glassBackground
-                : Colors.white.withOpacity(0.02),
-            borderRadius: BorderRadius.circular(20),
+            color: isDark
+                ? (isSelected ? const Color(0xFF272C24) : const Color(0xFF1C1E1B))
+                : AppTheme.glassBackground,
+            borderRadius: BorderRadius.circular(24), // rounded.xl (24px)
             border: Border.all(
-              color: isSelected ? AppTheme.accentCyan : AppTheme.glassBorder,
+              color: isSelected ? AppTheme.accentCyan : (isDark ? const Color(0xFF323530) : AppTheme.glassBorder),
               width: isSelected ? 2.0 : 1.0,
             ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(isSelected ? 0.2 : 0.05),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
           ),
           child: Row(
             children: [
@@ -512,7 +478,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                   color: isSelected
-                      ? AppTheme.accentCyan
+                      ? (isDark ? AppTheme.accentCyan : const Color(0xFF163300))
                       : AppTheme.textPrimary,
                 ),
               ),
@@ -591,10 +557,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   Container(
                     width: 120,
                     decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(16),
+                      color: isDark ? Colors.black.withOpacity(0.4) : const Color(0xFFF0F2EE),
+                      borderRadius: BorderRadius.circular(12), // rounded.md (12px)
                       border: Border.all(
-                        color: AppTheme.glassBorder,
+                        color: isDark ? const Color(0xFF323530) : AppTheme.glassBorder,
                         width: 1.2,
                       ),
                     ),
@@ -602,10 +568,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                       controller: _ageController,
                       keyboardType: TextInputType.number,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 48,
                         fontWeight: FontWeight.w900,
-                        color: AppTheme.accentCyan,
+                        color: isDark ? AppTheme.accentCyan : const Color(0xFF163300),
                       ),
                       decoration: const InputDecoration(
                         border: InputBorder.none,
@@ -692,18 +658,18 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 Container(
                   width: 90,
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.2),
+                    color: isDark ? Colors.black.withOpacity(0.4) : const Color(0xFFF0F2EE),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppTheme.glassBorder, width: 1.0),
+                    border: Border.all(color: isDark ? const Color(0xFF323530) : AppTheme.glassBorder, width: 1.0),
                   ),
                   child: TextField(
                     controller: _heightController,
                     keyboardType: TextInputType.number,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.accentCyan,
+                      fontWeight: FontWeight.w900,
+                      color: isDark ? AppTheme.accentCyan : const Color(0xFF163300),
                     ),
                     decoration: const InputDecoration(
                       border: InputBorder.none,
@@ -737,7 +703,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           SliderTheme(
             data: SliderThemeData(
               activeTrackColor: AppTheme.accentCyan,
-              inactiveTrackColor: Colors.white.withOpacity(0.04),
+              inactiveTrackColor: isDark ? Colors.white.withOpacity(0.04) : const Color(0xFFD2D2D7),
               thumbColor: AppTheme.accentCyan,
               overlayColor: AppTheme.accentCyan.withOpacity(0.12),
               thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 12),
@@ -798,18 +764,18 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 Container(
                   width: 90,
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.2),
+                    color: isDark ? Colors.black.withOpacity(0.4) : const Color(0xFFF0F2EE),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppTheme.glassBorder, width: 1.0),
+                    border: Border.all(color: isDark ? const Color(0xFF323530) : AppTheme.glassBorder, width: 1.0),
                   ),
                   child: TextField(
                     controller: _weightController,
                     keyboardType: TextInputType.number,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.accentCyan,
+                      fontWeight: FontWeight.w900,
+                      color: isDark ? AppTheme.accentCyan : const Color(0xFF163300),
                     ),
                     decoration: const InputDecoration(
                       border: InputBorder.none,
@@ -843,7 +809,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           SliderTheme(
             data: SliderThemeData(
               activeTrackColor: AppTheme.accentCyan,
-              inactiveTrackColor: Colors.white.withOpacity(0.04),
+              inactiveTrackColor: isDark ? Colors.white.withOpacity(0.04) : const Color(0xFFD2D2D7),
               thumbColor: AppTheme.accentCyan,
               overlayColor: AppTheme.accentCyan.withOpacity(0.12),
               thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 12),
@@ -888,13 +854,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           margin: const EdgeInsets.only(bottom: 12),
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
           decoration: BoxDecoration(
-            color: isSelected
-                ? AppTheme.glassBackground
-                : Colors.white.withOpacity(0.02),
-            borderRadius: BorderRadius.circular(16),
+            color: isDark
+                ? (isSelected ? const Color(0xFF272C24) : const Color(0xFF1C1E1B))
+                : AppTheme.glassBackground,
+            borderRadius: BorderRadius.circular(24), // rounded.xl (24px)
             border: Border.all(
-              color: isSelected ? AppTheme.accentCyan : AppTheme.glassBorder,
-              width: isSelected ? 1.8 : 1.0,
+              color: isSelected ? AppTheme.accentCyan : (isDark ? const Color(0xFF323530) : AppTheme.glassBorder),
+              width: isSelected ? 2.0 : 1.0,
             ),
           ),
           child: Row(
@@ -917,7 +883,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
                         color: isSelected
-                            ? AppTheme.accentCyan
+                            ? (isDark ? AppTheme.accentCyan : const Color(0xFF163300))
                             : AppTheme.textPrimary,
                       ),
                     ),
@@ -1090,23 +1056,16 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               width: double.infinity,
               height: 56,
               decoration: BoxDecoration(
-                gradient: AppTheme.primaryGradient,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppTheme.accentCyan.withOpacity(0.2),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
+                color: AppTheme.accentCyan,
+                borderRadius: BorderRadius.circular(24), // rounded.xl (24px)
               ),
               child: const Center(
                 child: Text(
                   'Launch Workspace',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: Color(0xFF0E0F0C), // Ink Black
                     fontSize: 16,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
@@ -1129,15 +1088,15 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         width: double.infinity,
         height: 54,
         decoration: BoxDecoration(
-          gradient: AppTheme.primaryGradient,
-          borderRadius: BorderRadius.circular(16),
+          color: AppTheme.accentCyan,
+          borderRadius: BorderRadius.circular(24), // rounded.xl (24px)
         ),
         child: const Center(
           child: Text(
             'Continue Integration',
             style: TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
+              color: Color(0xFF0E0F0C), // Ink Black
+              fontWeight: FontWeight.w600,
               fontSize: 15,
             ),
           ),
@@ -1147,6 +1106,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
   Widget _buildRoundAdjuster(IconData icon, VoidCallback onTap) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -1154,10 +1114,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         height: 48,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: Colors.white.withOpacity(0.04),
-          border: Border.all(color: AppTheme.glassBorder, width: 1.0),
+          color: isDark ? Colors.white.withOpacity(0.04) : const Color(0xFFFFFFFF),
+          border: Border.all(color: isDark ? const Color(0xFF323530) : AppTheme.glassBorder, width: 1.0),
         ),
-        child: Icon(icon, color: AppTheme.accentCyan, size: 20),
+        child: Icon(icon, color: AppTheme.textPrimary, size: 20),
       ),
     );
   }
@@ -1207,14 +1167,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.02),
+              color: isDark ? Colors.white.withOpacity(0.02) : const Color(0xFFF0F2EE),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: AppTheme.glassBorder, width: 1),
+              border: Border.all(color: isDark ? const Color(0xFF323530) : AppTheme.glassBorder, width: 1),
             ),
             child: Text(
               subvalue,
               style: TextStyle(
-                color: color,
+                color: color == AppTheme.accentCyan ? (isDark ? AppTheme.accentCyan : const Color(0xFF163300)) : color,
                 fontSize: 10,
                 fontWeight: FontWeight.bold,
               ),

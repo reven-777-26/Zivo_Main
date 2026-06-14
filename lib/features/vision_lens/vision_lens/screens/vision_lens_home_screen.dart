@@ -2,10 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:camera/camera.dart';
-import 'package:image/image.dart' as img;
 import 'package:flutter/foundation.dart';
 import '../../../../core/theme.dart';
 import '../../../../services/state_providers.dart';
@@ -290,6 +288,7 @@ class _VisionLensHomeScreenState extends ConsumerState<VisionLensHomeScreen> wit
         return Consumer(
           builder: (context, ref, child) {
             final state = ref.watch(unifiedVisionProvider);
+            final isDark = Theme.of(context).brightness == Brightness.dark;
             return WillPopScope(
               onWillPop: () async => false,
               child: Center(
@@ -297,24 +296,27 @@ class _VisionLensHomeScreenState extends ConsumerState<VisionLensHomeScreen> wit
                   padding: const EdgeInsets.all(32),
                   margin: const EdgeInsets.symmetric(horizontal: 40),
                   decoration: BoxDecoration(
-                    color: AppTheme.glassBackground,
-                    borderRadius: BorderRadius.circular(28),
-                    border: Border.all(color: AppTheme.accentCyan.withOpacity(0.3), width: 1.5),
+                    color: isDark ? const Color(0xFF1C1E1B) : AppTheme.glassBackground,
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(
+                      color: isDark ? const Color(0xFF323530) : AppTheme.glassBorder,
+                      width: 1.0,
+                    ),
                   ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       const CircularProgressIndicator(
                         valueColor: AlwaysStoppedAnimation<Color>(AppTheme.accentCyan),
-                        strokeWidth: 3,
+                        strokeWidth: 2,
                       ),
                       const SizedBox(height: 24),
-                      const Text(
+                      Text(
                         'Zivo Vision AI',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: isDark ? Colors.white : AppTheme.textPrimary,
                           fontSize: 18,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w900,
                           decoration: TextDecoration.none,
                         ),
                       ),
@@ -322,8 +324,8 @@ class _VisionLensHomeScreenState extends ConsumerState<VisionLensHomeScreen> wit
                       Text(
                         state.progressMessage.isNotEmpty ? state.progressMessage : 'Analyzing product...',
                         textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          color: AppTheme.textSecondary,
+                        style: TextStyle(
+                          color: isDark ? const Color(0xFF868685) : AppTheme.textSecondary,
                           fontSize: 13,
                           fontWeight: FontWeight.normal,
                           decoration: TextDecoration.none,
@@ -385,22 +387,22 @@ class _VisionLensHomeScreenState extends ConsumerState<VisionLensHomeScreen> wit
     });
 
     return Scaffold(
-      backgroundColor: isDark ? AppTheme.obsidianBackground : const Color(0xFFF1F5F9),
+      backgroundColor: isDark ? const Color(0xFF0E0F0C) : AppTheme.obsidianBackground,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
+          icon: Icon(Icons.arrow_back_ios_new_rounded, color: isDark ? Colors.white : AppTheme.textPrimary),
           onPressed: () => ref.read(activeTabProvider.notifier).state = 0,
         ),
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.center_focus_strong_rounded, color: AppTheme.accentCyan, size: 22),
-            SizedBox(width: 8),
+            Icon(Icons.center_focus_strong_rounded, color: isDark ? AppTheme.accentCyan : AppTheme.textPrimary, size: 22),
+            const SizedBox(width: 8),
             Text(
               'ZIVO VISION LENS',
               style: TextStyle(
-                color: Colors.white,
+                color: isDark ? Colors.white : AppTheme.textPrimary,
                 fontWeight: FontWeight.w900,
                 fontSize: 18,
                 letterSpacing: -0.5,
@@ -410,7 +412,7 @@ class _VisionLensHomeScreenState extends ConsumerState<VisionLensHomeScreen> wit
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.history_rounded, color: Colors.white),
+            icon: Icon(Icons.history_rounded, color: isDark ? Colors.white : AppTheme.textPrimary),
             onPressed: () {
               ref.read(unifiedVisionProvider.notifier).loadHistory();
               ScaffoldMessenger.of(context).showSnackBar(
@@ -430,24 +432,26 @@ class _VisionLensHomeScreenState extends ConsumerState<VisionLensHomeScreen> wit
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    AppTheme.accentCyan.withOpacity(0.08),
-                    AppTheme.accentPurple.withOpacity(0.08),
-                  ],
+                color: isDark ? AppTheme.accentCyan.withOpacity(0.08) : const Color(0xFFE2F6D5),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: isDark ? AppTheme.accentCyan.withOpacity(0.15) : const Color(0xFFC5EDAB),
+                  width: 1.0,
                 ),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: AppTheme.accentCyan.withOpacity(0.2)),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.auto_awesome_rounded, color: AppTheme.accentCyan, size: 16),
+                  Icon(
+                    Icons.auto_awesome_rounded,
+                    color: isDark ? AppTheme.accentCyan : const Color(0xFF054D28),
+                    size: 16,
+                  ),
                   const SizedBox(width: 8),
-                  const Expanded(
+                  Expanded(
                     child: Text(
                       'AI auto-detects Food, Supplements & Skincare',
                       style: TextStyle(
-                        color: AppTheme.textSecondary,
+                        color: isDark ? AppTheme.textSecondary : const Color(0xFF054D28),
                         fontSize: 11,
                         fontWeight: FontWeight.bold,
                       ),
@@ -466,17 +470,11 @@ class _VisionLensHomeScreenState extends ConsumerState<VisionLensHomeScreen> wit
                 color: Colors.black.withOpacity(0.3),
                 borderRadius: BorderRadius.circular(24),
                 border: Border.all(
-                  color: _isCameraInitialized ? AppTheme.accentCyan : AppTheme.glassBorder,
-                  width: 1.5,
+                  color: _isCameraInitialized
+                      ? AppTheme.accentCyan
+                      : (isDark ? const Color(0xFF323530) : AppTheme.glassBorder),
+                  width: 1.0,
                 ),
-                boxShadow: [
-                  if (_isCameraInitialized)
-                    BoxShadow(
-                      color: AppTheme.accentCyan.withOpacity(0.12),
-                      blurRadius: 16,
-                      spreadRadius: 2,
-                    ),
-                ],
               ),
               clipBehavior: Clip.antiAlias,
               child: Stack(
@@ -520,8 +518,11 @@ class _VisionLensHomeScreenState extends ConsumerState<VisionLensHomeScreen> wit
                       width: 240,
                       height: 110,
                       decoration: BoxDecoration(
-                        border: Border.all(color: AppTheme.accentCyan, width: 2.0),
-                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: isDark ? AppTheme.accentCyan : const Color(0xFF054D28),
+                          width: 1.5,
+                        ),
+                        borderRadius: BorderRadius.circular(8),
                       ),
                     ),
 
@@ -536,16 +537,9 @@ class _VisionLensHomeScreenState extends ConsumerState<VisionLensHomeScreen> wit
                           left: 40,
                           right: 40,
                           child: Container(
-                            height: 3,
+                            height: 2,
                             decoration: BoxDecoration(
-                              color: AppTheme.accentCyan,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: AppTheme.accentCyan.withOpacity(0.8),
-                                  blurRadius: 8,
-                                  spreadRadius: 1,
-                                ),
-                              ],
+                              color: isDark ? AppTheme.accentCyan : const Color(0xFF054D28),
                             ),
                           ),
                         );
@@ -599,11 +593,14 @@ class _VisionLensHomeScreenState extends ConsumerState<VisionLensHomeScreen> wit
 
             // Manual lookup row
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
               decoration: BoxDecoration(
-                color: AppTheme.glassBackground,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppTheme.glassBorder),
+                color: isDark ? const Color(0xFF1C1E1B) : AppTheme.glassBackground,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: isDark ? const Color(0xFF323530) : AppTheme.textPrimary,
+                  width: 1.0,
+                ),
               ),
               child: Row(
                 children: [
@@ -611,10 +608,13 @@ class _VisionLensHomeScreenState extends ConsumerState<VisionLensHomeScreen> wit
                     child: TextField(
                       controller: _barcodeInputController,
                       keyboardType: TextInputType.number,
-                      style: TextStyle(color: primaryTextColor, fontSize: 13, fontWeight: FontWeight.bold),
-                      decoration: const InputDecoration(
+                      style: TextStyle(color: primaryTextColor, fontSize: 13, fontWeight: FontWeight.w600),
+                      decoration: InputDecoration(
                         hintText: 'Or type barcode digits manually...',
-                        hintStyle: TextStyle(color: AppTheme.textSecondary, fontSize: 11),
+                        hintStyle: TextStyle(
+                          color: isDark ? const Color(0xFF868685) : AppTheme.textSecondary,
+                          fontSize: 11,
+                        ),
                         border: InputBorder.none,
                       ),
                     ),
@@ -631,10 +631,10 @@ class _VisionLensHomeScreenState extends ConsumerState<VisionLensHomeScreen> wit
                     child: Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        gradient: AppTheme.primaryGradient,
-                        borderRadius: BorderRadius.circular(12),
+                        color: AppTheme.accentCyan,
+                        borderRadius: BorderRadius.circular(24),
                       ),
-                      child: const Icon(Icons.arrow_forward_rounded, color: Colors.black, size: 18),
+                      child: const Icon(Icons.arrow_forward_rounded, color: AppTheme.textPrimary, size: 18),
                     ),
                   ),
                 ],
@@ -646,12 +646,12 @@ class _VisionLensHomeScreenState extends ConsumerState<VisionLensHomeScreen> wit
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   'RECENT PRODUCT SCANS',
                   style: TextStyle(
-                    color: AppTheme.textSecondary,
+                    color: isDark ? const Color(0xFF868685) : AppTheme.textSecondary,
                     fontSize: 10,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w900,
                     letterSpacing: 1.0,
                   ),
                 ),
@@ -660,7 +660,7 @@ class _VisionLensHomeScreenState extends ConsumerState<VisionLensHomeScreen> wit
                     onTap: () => ref.read(unifiedVisionProvider.notifier).clearHistory(),
                     child: const Text(
                       'Clear History',
-                      style: TextStyle(color: AppTheme.accentCoral, fontSize: 11, fontWeight: FontWeight.bold),
+                      style: TextStyle(color: AppTheme.accentCoral, fontSize: 11, fontWeight: FontWeight.w600),
                     ),
                   ),
               ],
@@ -673,22 +673,32 @@ class _VisionLensHomeScreenState extends ConsumerState<VisionLensHomeScreen> wit
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: 40),
                 decoration: BoxDecoration(
-                  color: AppTheme.glassBackground,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: AppTheme.glassBorder),
+                  color: isDark ? const Color(0xFF1C1E1B) : AppTheme.glassBackground,
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(
+                    color: isDark ? const Color(0xFF323530) : AppTheme.glassBorder,
+                    width: 1.0,
+                  ),
                 ),
                 child: Column(
                   children: [
                     Icon(Icons.center_focus_weak_rounded, color: AppTheme.textSecondary.withOpacity(0.3), size: 36),
                     const SizedBox(height: 10),
-                    const Text(
+                    Text(
                       'No Scan History',
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                      style: TextStyle(
+                        color: isDark ? Colors.white : AppTheme.textPrimary,
+                        fontWeight: FontWeight.w900,
+                        fontSize: 13,
+                      ),
                     ),
                     const SizedBox(height: 4),
-                    const Text(
+                    Text(
                       'Scan a barcode or upload a product photo to get started.',
-                      style: TextStyle(color: AppTheme.textSecondary, fontSize: 11),
+                      style: TextStyle(
+                        color: isDark ? const Color(0xFF868685) : AppTheme.textSecondary,
+                        fontSize: 11,
+                      ),
                     ),
                   ],
                 ),
@@ -700,7 +710,7 @@ class _VisionLensHomeScreenState extends ConsumerState<VisionLensHomeScreen> wit
                 itemCount: visionState.history.length,
                 itemBuilder: (context, idx) {
                   final item = visionState.history[idx];
-                  final scoreColor = _getGradeColor(item.healthGrade);
+                  final scoreColor = _getGradeColor(item.healthGrade, isDark);
                   final categoryIcon = item.category.toLowerCase() == 'skincare'
                       ? '🧴'
                       : (item.category.toLowerCase() == 'supplement' ? '💊' : '🍔');
@@ -708,9 +718,12 @@ class _VisionLensHomeScreenState extends ConsumerState<VisionLensHomeScreen> wit
                   return Container(
                     margin: const EdgeInsets.only(bottom: 8),
                     decoration: BoxDecoration(
-                      color: AppTheme.glassBackground,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: AppTheme.glassBorder),
+                      color: isDark ? const Color(0xFF1C1E1B) : AppTheme.glassBackground,
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(
+                        color: isDark ? const Color(0xFF323530) : AppTheme.glassBorder,
+                        width: 1.0,
+                      ),
                     ),
                     child: ListTile(
                       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -720,7 +733,7 @@ class _VisionLensHomeScreenState extends ConsumerState<VisionLensHomeScreen> wit
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           color: scoreColor.withOpacity(0.08),
-                          border: Border.all(color: scoreColor.withOpacity(0.3), width: 1.5),
+                          border: Border.all(color: scoreColor.withOpacity(0.3), width: 1.0),
                         ),
                         child: Center(
                           child: Text(
@@ -737,13 +750,24 @@ class _VisionLensHomeScreenState extends ConsumerState<VisionLensHomeScreen> wit
                         item.productName,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                        style: TextStyle(
+                          color: isDark ? Colors.white : AppTheme.textPrimary,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 13,
+                        ),
                       ),
                       subtitle: Text(
                         '$categoryIcon ${item.brand} • ${item.category.toUpperCase()}',
-                        style: const TextStyle(color: AppTheme.textSecondary, fontSize: 11),
+                        style: TextStyle(
+                          color: isDark ? const Color(0xFF868685) : AppTheme.textSecondary,
+                          fontSize: 11,
+                        ),
                       ),
-                      trailing: const Icon(Icons.arrow_forward_ios_rounded, color: AppTheme.textSecondary, size: 14),
+                      trailing: Icon(
+                        Icons.arrow_forward_ios_rounded,
+                        color: isDark ? const Color(0xFF868685) : AppTheme.textSecondary,
+                        size: 14,
+                      ),
                       onTap: () {
                         ref.read(unifiedVisionProvider.notifier).resetCurrentReport();
                         ref.read(unifiedVisionProvider.notifier).scanBarcodeAndAnalyze(barcode: item.barcode);
@@ -773,39 +797,25 @@ class _VisionLensHomeScreenState extends ConsumerState<VisionLensHomeScreen> wit
   }) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(18),
+      borderRadius: BorderRadius.circular(24),
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              AppTheme.glassBackground,
-              color.withOpacity(0.08),
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: color.withOpacity(0.25), width: 1.2),
-          boxShadow: [
-            BoxShadow(
-              color: color.withOpacity(0.04),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
+          color: AppTheme.accentCyan,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: AppTheme.accentCyan, width: 1.0),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: color, size: 20),
+            Icon(icon, color: AppTheme.textPrimary, size: 20),
             const SizedBox(width: 10),
             Text(
               label,
               style: const TextStyle(
-                color: Colors.white,
+                color: AppTheme.textPrimary,
                 fontSize: 12,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w600,
                 letterSpacing: -0.2,
               ),
             ),
@@ -815,14 +825,18 @@ class _VisionLensHomeScreenState extends ConsumerState<VisionLensHomeScreen> wit
     );
   }
 
-  Color _getGradeColor(String grade) {
+  Color _getGradeColor(String grade, bool isDark) {
     switch (grade.toUpperCase()) {
       case 'A':
-      case 'B': return AppTheme.accentEmerald;
+      case 'B':
+        return isDark ? AppTheme.accentEmerald : const Color(0xFF054D28);
       case 'C':
-      case 'D': return AppTheme.accentOrange;
-      case 'E': return AppTheme.accentCoral;
-      default: return AppTheme.textSecondary;
+      case 'D':
+        return isDark ? const Color(0xFFFFC091) : const Color(0xFFB86700);
+      case 'E':
+        return AppTheme.accentCoral;
+      default:
+        return AppTheme.textSecondary;
     }
   }
 }

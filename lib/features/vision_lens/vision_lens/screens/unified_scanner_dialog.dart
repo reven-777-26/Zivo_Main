@@ -2,10 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:camera/camera.dart';
-import 'package:image/image.dart' as img;
 import 'package:flutter/foundation.dart';
 import '../../../../core/theme.dart';
 import '../../../../services/scanner/camera_barcode_scanner.dart';
@@ -31,7 +29,6 @@ class _UnifiedVisionScannerDialogState extends ConsumerState<UnifiedVisionScanne
   Timer? _webFrameTimer;
   String? _errorMessage;
 
-  String _preferredCategory = 'Food';
   final TextEditingController _barcodeCtrl = TextEditingController();
 
   @override
@@ -276,29 +273,26 @@ class _UnifiedVisionScannerDialogState extends ConsumerState<UnifiedVisionScanne
       backgroundColor: Colors.transparent,
       insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(28),
-        child: BackdropFilter(
-          filter: ui.ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-          child: Container(
-            constraints: BoxConstraints(
-              maxWidth: 480,
-              maxHeight: MediaQuery.of(context).size.height * 0.8,
-            ),
-            decoration: BoxDecoration(
-              color: isDark
-                  ? AppTheme.obsidianBackground.withOpacity(0.95)
-                  : Colors.white.withOpacity(0.95),
-              borderRadius: BorderRadius.circular(28),
-              border: Border.all(
-                color: isDark ? AppTheme.glassBorder : Colors.black.withOpacity(0.08),
-                width: 1.5,
-              ),
-            ),
-            padding: const EdgeInsets.all(24),
-            child: visionState.isScanning
-                ? _buildLoadingState(isDark, visionState.progressMessage)
-                : _buildScannerView(isDark),
+        borderRadius: BorderRadius.circular(24), // rounded.xl (24px)
+        child: Container(
+          constraints: BoxConstraints(
+            maxWidth: 480,
+            maxHeight: MediaQuery.of(context).size.height * 0.8,
           ),
+          decoration: BoxDecoration(
+            color: isDark
+                ? const Color(0xFF1C1E1B)
+                : AppTheme.glassBackground,
+            borderRadius: BorderRadius.circular(24), // rounded.xl (24px)
+            border: Border.all(
+              color: isDark ? const Color(0xFF323530) : AppTheme.glassBorder,
+              width: 1.0, // Hairline
+            ),
+          ),
+          padding: const EdgeInsets.all(24),
+          child: visionState.isScanning
+              ? _buildLoadingState(isDark, visionState.progressMessage)
+              : _buildScannerView(isDark),
         ),
       ),
     );
@@ -349,17 +343,17 @@ class _UnifiedVisionScannerDialogState extends ConsumerState<UnifiedVisionScanne
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Row(
+            Row(
               children: [
-                Icon(Icons.center_focus_strong_rounded, color: AppTheme.accentCyan, size: 20),
-                SizedBox(width: 8),
+                Icon(Icons.center_focus_strong_rounded, color: isDark ? AppTheme.accentCyan : const Color(0xFF054D28), size: 20),
+                const SizedBox(width: 8),
                 Text(
                   'Auto-Scan Barcode',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w900,
                     letterSpacing: -0.5,
-                    color: Colors.white,
+                    color: isDark ? Colors.white : AppTheme.textPrimary,
                   ),
                 ),
               ],
@@ -376,18 +370,18 @@ class _UnifiedVisionScannerDialogState extends ConsumerState<UnifiedVisionScanne
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
-            color: AppTheme.accentCyan.withOpacity(0.08),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: AppTheme.accentCyan.withOpacity(0.2)),
+            color: isDark ? AppTheme.accentCyan.withOpacity(0.12) : const Color(0xFFE2F6D5),
+            borderRadius: BorderRadius.circular(9999),
+            border: Border.all(color: isDark ? AppTheme.accentCyan.withOpacity(0.3) : const Color(0xFFC5EDAB), width: 1.0),
           ),
-          child: const Row(
+          child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.auto_awesome_rounded, color: AppTheme.accentCyan, size: 14),
-              SizedBox(width: 6),
+              Icon(Icons.auto_awesome_rounded, color: isDark ? AppTheme.accentCyan : const Color(0xFF054D28), size: 14),
+              const SizedBox(width: 6),
               Text(
                 'AI auto-detects product type',
-                style: TextStyle(color: AppTheme.textSecondary, fontSize: 10, fontWeight: FontWeight.bold),
+                style: TextStyle(color: isDark ? AppTheme.textSecondary : const Color(0xFF054D28), fontSize: 10, fontWeight: FontWeight.bold),
               ),
             ],
           ),
@@ -400,9 +394,10 @@ class _UnifiedVisionScannerDialogState extends ConsumerState<UnifiedVisionScanne
           width: double.infinity,
           decoration: BoxDecoration(
             color: Colors.black.withOpacity(0.3),
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(18), // rounded.lg (18px)
             border: Border.all(
               color: _isCameraInitialized ? AppTheme.accentCyan : AppTheme.glassBorder,
+              width: 1.0, // Hairline
             ),
           ),
           clipBehavior: Clip.antiAlias,
@@ -434,8 +429,8 @@ class _UnifiedVisionScannerDialogState extends ConsumerState<UnifiedVisionScanne
                   width: 200,
                   height: 90,
                   decoration: BoxDecoration(
-                    border: Border.all(color: AppTheme.accentCyan, width: 2.0),
-                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppTheme.accentCyan, width: 1.5), // Soft outline
+                    borderRadius: BorderRadius.circular(8), // rounded.sm (8px)
                   ),
                 ),
 
@@ -450,12 +445,9 @@ class _UnifiedVisionScannerDialogState extends ConsumerState<UnifiedVisionScanne
                       left: 40,
                       right: 40,
                       child: Container(
-                        height: 3,
-                        decoration: BoxDecoration(
-                          color: AppTheme.accentCyan,
-                          boxShadow: [
-                            BoxShadow(color: AppTheme.accentCyan.withOpacity(0.8), blurRadius: 6),
-                          ],
+                        height: 2,
+                        decoration: const BoxDecoration(
+                          color: AppTheme.accentCyan, // Flat solid laser light (no shadow)
                         ),
                       ),
                     );
@@ -501,18 +493,18 @@ class _UnifiedVisionScannerDialogState extends ConsumerState<UnifiedVisionScanne
                     hintText: "Or type barcode number manually...",
                     hintStyle: const TextStyle(color: AppTheme.textSecondary, fontSize: 11),
                     filled: true,
-                    fillColor: Colors.white.withOpacity(0.02),
+                    fillColor: isDark ? Colors.white.withOpacity(0.02) : Colors.black.withOpacity(0.02),
                     contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide(color: AppTheme.glassBorder),
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: isDark ? const Color(0xFF323530) : AppTheme.textPrimary),
                     ),
                     enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide(color: AppTheme.glassBorder),
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: isDark ? const Color(0xFF323530) : AppTheme.textPrimary),
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(12),
                       borderSide: const BorderSide(color: AppTheme.accentCyan),
                     ),
                   ),
@@ -532,11 +524,11 @@ class _UnifiedVisionScannerDialogState extends ConsumerState<UnifiedVisionScanne
                 height: 38,
                 padding: const EdgeInsets.symmetric(horizontal: 14),
                 decoration: BoxDecoration(
-                  gradient: AppTheme.primaryGradient,
-                  borderRadius: BorderRadius.circular(10),
+                  color: AppTheme.accentCyan, // Action Blue flat
+                  borderRadius: BorderRadius.circular(24), // button radius is canonical 24
                 ),
                 child: const Center(
-                  child: Icon(Icons.arrow_forward_rounded, color: Colors.black, size: 18),
+                  child: Icon(Icons.arrow_forward_rounded, color: AppTheme.textPrimary, size: 18),
                 ),
               ),
             ),
@@ -546,64 +538,29 @@ class _UnifiedVisionScannerDialogState extends ConsumerState<UnifiedVisionScanne
     );
   }
 
-  Widget _buildCategoryChip(String key, String label) {
-    final isSelected = _preferredCategory == key;
-    return GestureDetector(
-      onTap: () => setState(() => _preferredCategory = key),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: isSelected ? AppTheme.accentPurple.withOpacity(0.12) : AppTheme.glassBackground,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: isSelected ? AppTheme.accentCyan : AppTheme.glassBorder,
-            width: 1.0,
-          ),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: isSelected ? Colors.white : AppTheme.textSecondary,
-            fontSize: 11,
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-          ),
-        ),
-      ),
-    );
-  }
 
   Widget _buildSubActionBtn(IconData icon, String label, Color color) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final themeColor = isDark ? color : (color == AppTheme.accentCyan ? const Color(0xFF054D28) : color);
+
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            AppTheme.glassBackground,
-            color.withOpacity(0.08),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: color.withOpacity(0.25), width: 1.2),
-        boxShadow: [
-          BoxShadow(
-            color: color.withOpacity(0.04),
-            blurRadius: 8,
-          ),
-        ],
+        color: isDark ? const Color(0xFF1C1E1B) : AppTheme.glassBackground, // flat background
+        borderRadius: BorderRadius.circular(24), // button radius is canonical 24px
+        border: Border.all(color: themeColor.withOpacity(isDark ? 0.3 : 0.5), width: 1.0), // hairline
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, color: color, size: 16),
+          Icon(icon, color: themeColor, size: 16),
           const SizedBox(width: 8),
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
-              color: Colors.white,
-              fontWeight: FontWeight.w800,
+              color: isDark ? Colors.white : AppTheme.textPrimary,
+              fontWeight: FontWeight.w600, // semibold weight 600
               letterSpacing: -0.2,
             ),
           ),

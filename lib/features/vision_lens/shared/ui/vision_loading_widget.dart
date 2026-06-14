@@ -71,19 +71,12 @@ class _VisionLoadingWidgetState extends State<VisionLoadingWidget>
                 width: 100,
                 height: 100,
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(24),
+                  borderRadius: BorderRadius.circular(18),
                   color: AppTheme.glassBackground,
                   border: Border.all(
                     color: AppTheme.accentCyan.withOpacity(0.4),
-                    width: 1.5,
+                    width: 1.0,
                   ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppTheme.accentCyan.withOpacity(0.1),
-                      blurRadius: 16,
-                      spreadRadius: 2,
-                    ),
-                  ],
                 ),
                 child: const Center(
                   child: Icon(
@@ -101,16 +94,9 @@ class _VisionLoadingWidgetState extends State<VisionLoadingWidget>
                     left: 20,
                     right: 20,
                     child: Container(
-                      height: 3,
-                      decoration: BoxDecoration(
+                      height: 2,
+                      decoration: const BoxDecoration(
                         color: AppTheme.accentCyan,
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppTheme.accentCyan,
-                            blurRadius: 8,
-                            spreadRadius: 1,
-                          ),
-                        ],
                       ),
                     ),
                   );
@@ -124,7 +110,7 @@ class _VisionLoadingWidgetState extends State<VisionLoadingWidget>
             style: TextStyle(
               color: primaryTextColor,
               fontSize: 18,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w600,
               letterSpacing: -0.3,
             ),
           ).animate().fadeIn(duration: 300.ms),

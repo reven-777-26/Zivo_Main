@@ -109,15 +109,8 @@ class _MainShellState extends ConsumerState<MainShell> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
               color: AppTheme.glassBackground.withOpacity(0.98),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: AppTheme.accentCyan.withOpacity(0.4), width: 1.5),
-              boxShadow: [
-                BoxShadow(
-                  color: AppTheme.accentCyan.withOpacity(0.25),
-                  blurRadius: 20,
-                  spreadRadius: 2,
-                ),
-              ],
+              borderRadius: BorderRadius.circular(18), // rounded.lg
+              border: Border.all(color: AppTheme.accentCyan.withOpacity(0.4), width: 1.0),
             ),
             child: Row(
               children: [
@@ -185,10 +178,10 @@ class _MainShellState extends ConsumerState<MainShell> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final currentIndex = ref.watch(activeTabProvider);
-    final bgColor = isDark ? AppTheme.obsidianBackground : const Color(0xFFF1F5F9);
+    final bgColor = isDark ? const Color(0xFF000000) : AppTheme.obsidianBackground;
 
     return Scaffold(
-      extendBody: true, // Show floating glassmorphism behind the navbar
+      extendBody: false,
       backgroundColor: bgColor,
       body: Container(
         color: bgColor,
@@ -199,18 +192,33 @@ class _MainShellState extends ConsumerState<MainShell> {
   }
 
   Widget _buildGlassNavigationBar(int currentIndex) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 12, right: 12, bottom: 20),
-      child: GlassCard(
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final navBarBgColor = isDark ? const Color(0xFF131313) : AppTheme.glassBackground;
+    final borderColor = isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder;
+
+    return SafeArea(
+      child: Container(
+        margin: const EdgeInsets.only(left: 16, right: 16, bottom: 16, top: 4),
         padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
-        borderRadius: BorderRadius.circular(28),
+        decoration: BoxDecoration(
+          color: navBarBgColor,
+          borderRadius: BorderRadius.circular(9999),
+          border: Border.all(color: borderColor, width: 1.0),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.4),
+              blurRadius: 16,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
             _buildNavItem(Icons.home_rounded, 'Home', 0, currentIndex),
-            _buildNavItem(Icons.fitness_center_rounded, 'Workout', 1, currentIndex),
+            _buildNavItem(Icons.fitness_center_rounded, 'Workouts', 1, currentIndex),
             _buildNavItem(Icons.qr_code_scanner_rounded, 'Scan', 2, currentIndex),
-            _buildNavItem(Icons.analytics_rounded, 'Progress', 3, currentIndex),
+            _buildNavItem(Icons.bar_chart_rounded, 'Stats', 3, currentIndex),
             _buildNavItem(Icons.person_rounded, 'Profile', 4, currentIndex),
           ],
         ),
@@ -219,40 +227,45 @@ class _MainShellState extends ConsumerState<MainShell> {
   }
 
   Widget _buildNavItem(IconData icon, String label, int index, int currentIndex) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final isSelected = currentIndex == index;
     final activeColor = isSelected
-        ? AppTheme.accentCyan
-        : AppTheme.textSecondary;
+        ? const Color(0xFF0E0F0C) // Ink Black text on Neon Lime background
+        : (isDark ? const Color(0xFF868685) : AppTheme.textSecondary);
 
     return GestureDetector(
       onTap: () {
         ref.read(activeTabProvider.notifier).state = index;
       },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeInOut,
+        padding: EdgeInsets.symmetric(
+          horizontal: isSelected ? 20.0 : 12.0,
+          vertical: 8.0,
+        ),
         decoration: BoxDecoration(
           color: isSelected
-              ? AppTheme.accentPurple.withOpacity(0.08)
+              ? AppTheme.accentCyan // Neon Lime background
               : Colors.transparent,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(9999), // capsule shape
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: activeColor, size: 22)
-                .animate(target: isSelected ? 1 : 0)
-                .scale(
-                  begin: const Offset(1, 1),
-                  end: const Offset(1.15, 1.15),
-                  duration: 200.ms,
-                ),
-            const SizedBox(height: 2),
+            Icon(
+              icon,
+              color: activeColor,
+              size: 24,
+            ),
+            const SizedBox(height: 4),
             Text(
               label,
               style: TextStyle(
                 color: activeColor,
-                fontSize: 9,
-                fontWeight: isSelected ? FontWeight.w900 : FontWeight.bold,
+                fontSize: 11,
+                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
               ),
             ),
           ],
@@ -424,14 +437,7 @@ class _ProfilePlaceholderScreenState
                     height: 96,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      border: Border.all(color: AppTheme.accentCyan.withOpacity(0.3), width: 3),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppTheme.accentCyan.withOpacity(0.15),
-                          blurRadius: 24,
-                          offset: const Offset(0, 8),
-                        ),
-                      ],
+                      border: Border.all(color: AppTheme.accentCyan.withOpacity(0.3), width: 2.0),
                     ),
                     child: ClipOval(
                       child: Image.network(
@@ -738,14 +744,7 @@ class _ProfilePlaceholderScreenState
                       height: 44,
                       decoration: BoxDecoration(
                         gradient: AppTheme.primaryGradient,
-                        borderRadius: BorderRadius.circular(14),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppTheme.accentCyan.withOpacity(0.15),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
+                        borderRadius: BorderRadius.circular(9999), // pill shape
                       ),
                       child: const Center(
                         child: Text(
@@ -1376,8 +1375,8 @@ class _ProfilePlaceholderScreenState
 
   void _showResetDialog(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final dialogBg = isDark ? AppTheme.glassBackground : Colors.white;
-    final dialogBorder = isDark ? AppTheme.glassBorder : const Color(0xFFEADBFF);
+    final dialogBg = isDark ? const Color(0xFF1C1E1B) : Colors.white;
+    final dialogBorder = isDark ? const Color(0xFF323530) : const Color(0xFFEADBFF);
     final textColor = isDark ? Colors.white : AppTheme.textPrimary;
 
     showDialog(

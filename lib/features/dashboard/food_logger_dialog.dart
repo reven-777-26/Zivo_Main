@@ -550,6 +550,7 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
       context: context,
       builder: (ctx) {
         final isDark = Theme.of(ctx).brightness == Brightness.dark;
+        final textColor = isDark ? Colors.white : AppTheme.textPrimary;
         return Dialog(
           backgroundColor: Colors.transparent,
           child: ClipRRect(
@@ -561,12 +562,12 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
                   color: isDark
-                      ? AppTheme.obsidianBackground.withOpacity(0.95)
+                      ? const Color(0xFF1C1E1B).withOpacity(0.95)
                       : Colors.white.withOpacity(0.95),
                   borderRadius: BorderRadius.circular(24),
                   border: Border.all(
                     color: isDark
-                        ? AppTheme.glassBorder
+                        ? const Color(0xFF323530)
                         : Colors.black.withOpacity(0.08),
                     width: 1.5,
                   ),
@@ -579,13 +580,13 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text(
+                          Text(
                             'Barcode Scanner Debug',
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.w900,
                               letterSpacing: -0.5,
-                              color: Colors.white,
+                              color: textColor,
                             ),
                           ),
                           GestureDetector(
@@ -692,6 +693,10 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
   }
 
   Widget _buildDebugRow(String label, String value) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : AppTheme.textPrimary;
+    final borderColor = isDark ? const Color(0xFF323530) : AppTheme.glassBorder;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -709,15 +714,15 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.02),
+            color: isDark ? Colors.white.withOpacity(0.02) : Colors.black.withOpacity(0.015),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppTheme.glassBorder),
+            border: Border.all(color: borderColor),
           ),
           child: Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
-              color: Colors.white,
+              color: textColor,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -734,40 +739,30 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
       backgroundColor: Colors.transparent,
       insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(28),
-        child: BackdropFilter(
-          filter: ui.ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-          child: Container(
-            constraints: BoxConstraints(
-              maxWidth: 500,
-              maxHeight: MediaQuery.of(context).size.height * 0.85,
-            ),
-            decoration: BoxDecoration(
-              color: isDark
-                  ? AppTheme.obsidianBackground.withOpacity(0.95)
-                  : Colors.white.withOpacity(0.95),
-              borderRadius: BorderRadius.circular(28),
-              border: Border.all(
-                color: isDark
-                    ? AppTheme.glassBorder
-                    : Colors.black.withOpacity(0.08),
-                width: 1.5,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: AppTheme.accentCyan.withOpacity(0.12),
-                  blurRadius: 30,
-                  spreadRadius: 2,
-                ),
-              ],
-            ),
-            padding: const EdgeInsets.all(24),
-            child: _isLoading
-                ? _buildLoadingState(isDark)
-                : _showReview
-                    ? _buildReviewScreen(isDark)
-                    : _buildMethodChooser(isDark),
+        borderRadius: BorderRadius.circular(24),
+        child: Container(
+          constraints: BoxConstraints(
+            maxWidth: 500,
+            maxHeight: MediaQuery.of(context).size.height * 0.85,
           ),
+          decoration: BoxDecoration(
+            color: isDark
+                ? const Color(0xFF1C1E1B)
+                : AppTheme.glassBackground,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: isDark
+                  ? const Color(0xFF323530)
+                  : AppTheme.glassBorder,
+              width: 1.0,
+            ),
+          ),
+          padding: const EdgeInsets.all(24),
+          child: _isLoading
+              ? _buildLoadingState(isDark)
+              : _showReview
+                  ? _buildReviewScreen(isDark)
+                  : _buildMethodChooser(isDark),
         ),
       ),
     );
@@ -916,7 +911,7 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
             color: isDark
                 ? Colors.white.withOpacity(0.03)
                 : Colors.black.withOpacity(0.03),
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(9999),
             border: Border.all(
               color: isDark
                   ? AppTheme.glassBorder
@@ -926,17 +921,10 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
           child: TabBar(
             controller: _tabController,
             indicator: BoxDecoration(
-              gradient: AppTheme.primaryGradient,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: AppTheme.accentCyan.withOpacity(0.2),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
+              color: AppTheme.accentCyan,
+              borderRadius: BorderRadius.circular(9999),
             ),
-            labelColor: Colors.black,
+            labelColor: AppTheme.textPrimary,
             unselectedLabelColor: AppTheme.textSecondary,
             indicatorSize: TabBarIndicatorSize.tab,
             dividerColor: Colors.transparent,
@@ -1174,22 +1162,22 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
                   padding: const EdgeInsets.symmetric(vertical: 10),
                   decoration: BoxDecoration(
                     color: isDark ? Colors.white.withOpacity(0.03) : Colors.black.withOpacity(0.03),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(24),
                     border: Border.all(
                       color: isDark ? AppTheme.glassBorder : Colors.black.withOpacity(0.1),
                       width: 1.0,
                     ),
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.photo_library_rounded, color: AppTheme.accentCyan, size: 16),
-                      SizedBox(width: 6),
+                      const Icon(Icons.photo_library_rounded, color: AppTheme.accentCyan, size: 16),
+                      const SizedBox(width: 6),
                       Text(
                         "Upload Image",
                         style: TextStyle(
                           fontSize: 12,
-                          color: Colors.white,
+                          color: isDark ? Colors.white : AppTheme.textPrimary,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -1206,22 +1194,22 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
                   padding: const EdgeInsets.symmetric(vertical: 10),
                   decoration: BoxDecoration(
                     color: AppTheme.accentCyan.withOpacity(0.08),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(24),
                     border: Border.all(
                       color: AppTheme.accentCyan.withOpacity(0.2),
                       width: 1.0,
                     ),
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.bug_report_rounded, color: AppTheme.accentCyan, size: 16),
-                      SizedBox(width: 6),
+                      const Icon(Icons.bug_report_rounded, color: AppTheme.accentCyan, size: 16),
+                      const SizedBox(width: 6),
                       Text(
                         "Test Asset",
                         style: TextStyle(
                           fontSize: 12,
-                          color: Colors.white,
+                          color: isDark ? Colors.white : AppTheme.textPrimary,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -1251,15 +1239,15 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
                     fillColor: isDark ? Colors.white.withOpacity(0.02) : Colors.black.withOpacity(0.02),
                     contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide(color: AppTheme.glassBorder),
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: isDark ? const Color(0xFF323530) : AppTheme.textPrimary),
                     ),
                     enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide(color: AppTheme.glassBorder),
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: isDark ? const Color(0xFF323530) : AppTheme.textPrimary),
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(12),
                       borderSide: const BorderSide(color: AppTheme.accentCyan),
                     ),
                   ),
@@ -1274,7 +1262,7 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
                 padding: const EdgeInsets.symmetric(horizontal: 14),
                 decoration: BoxDecoration(
                   gradient: AppTheme.primaryGradient,
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(24),
                 ),
                 child: const Center(
                   child: Icon(Icons.arrow_forward_rounded, color: Colors.black, size: 18),
@@ -1467,7 +1455,7 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
                   ? Colors.white.withOpacity(0.04)
                   : Colors.black.withOpacity(0.03),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(24),
                 side: BorderSide(
                   color: isDark
                       ? AppTheme.glassBorder
@@ -1502,7 +1490,7 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
               color: _voiceTranscript.isEmpty
                   ? Colors.white.withOpacity(0.04)
                   : null,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(24),
             ),
             child: Center(
               child: Text(
@@ -1510,7 +1498,7 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
                 style: TextStyle(
                   color: _voiceTranscript.isEmpty
                       ? AppTheme.textSecondary
-                      : Colors.black,
+                      : AppTheme.textPrimary,
                   fontSize: 15,
                   fontWeight: FontWeight.bold,
                 ),
@@ -1550,23 +1538,23 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
             contentPadding:
                 const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
                 color: isDark
                     ? AppTheme.glassBorder
-                    : Colors.black.withOpacity(0.1),
+                    : AppTheme.textPrimary,
               ),
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
                 color: isDark
                     ? AppTheme.glassBorder
-                    : Colors.black.withOpacity(0.1),
+                    : AppTheme.textPrimary,
               ),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(12),
               borderSide: const BorderSide(color: AppTheme.accentCyan),
             ),
           ),
@@ -1586,7 +1574,7 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
                   ? Colors.white.withOpacity(0.04)
                   : Colors.black.withOpacity(0.03),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(24),
                 side: BorderSide(
                   color: isDark
                       ? AppTheme.glassBorder
@@ -1614,23 +1602,16 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
           child: Container(
             height: 52,
             decoration: BoxDecoration(
-              gradient: AppTheme.primaryGradient,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: AppTheme.accentCyan.withOpacity(0.15),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
+              color: AppTheme.accentCyan,
+              borderRadius: BorderRadius.circular(24),
             ),
             child: const Center(
               child: Text(
                 "Analyze Meal Description",
                 style: TextStyle(
-                  color: Colors.black,
+                  color: AppTheme.textPrimary,
                   fontSize: 15,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),
@@ -1701,7 +1682,7 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
                       ? Colors.white.withOpacity(0.03)
                       : Colors.black.withOpacity(0.03),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(24),
                     side: BorderSide(
                       color: isSelected
                           ? AppTheme.accentCyan
@@ -1779,37 +1760,25 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
             margin: const EdgeInsets.only(bottom: 20),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  AppTheme.accentCyan.withOpacity(0.08),
-                  AppTheme.accentPurple.withOpacity(0.03),
-                ],
-              ),
-              borderRadius: BorderRadius.circular(16),
+              color: const Color(0xFFE2F6D5),
+              borderRadius: BorderRadius.circular(24),
               border: Border.all(
-                color: AppTheme.accentCyan.withOpacity(0.25),
-                width: 1.2,
+                color: const Color(0xFFC5EDAB),
+                width: 1.0,
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: AppTheme.accentCyan.withOpacity(0.02),
-                  blurRadius: 10,
-                  spreadRadius: 1,
-                ),
-              ],
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
                   padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: AppTheme.accentCyan.withOpacity(0.12),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFC5EDAB),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
                     Icons.auto_awesome_rounded,
-                    color: AppTheme.accentCyan,
+                    color: Color(0xFF054D28),
                     size: 14,
                   ),
                 ),
@@ -1821,7 +1790,7 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
                       Text(
                         "AI ESTIMATE NOTICE",
                         style: TextStyle(
-                          color: AppTheme.accentCyan,
+                          color: Color(0xFF054D28),
                           fontSize: 9,
                           fontWeight: FontWeight.w900,
                           letterSpacing: 1.0,
@@ -1831,7 +1800,7 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
                       Text(
                         "Nutritional values are estimates generated by AI. Please review and adjust the details below.",
                         style: TextStyle(
-                          color: Colors.white,
+                          color: Color(0xFF0E0F0C),
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
                           height: 1.3,
@@ -1869,23 +1838,23 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
               contentPadding:
                   const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide(
                   color: isDark
                       ? AppTheme.glassBorder
-                      : Colors.black.withOpacity(0.1),
+                      : AppTheme.textPrimary,
                 ),
               ),
               enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide(
                   color: isDark
                       ? AppTheme.glassBorder
-                      : Colors.black.withOpacity(0.1),
+                      : AppTheme.textPrimary,
                 ),
               ),
               focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(12),
                 borderSide: const BorderSide(color: AppTheme.accentCyan),
               ),
             ),
@@ -1932,10 +1901,10 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
           Container(
             padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 18),
             decoration: BoxDecoration(
-              color: AppTheme.accentCyan.withOpacity(0.06),
-              borderRadius: BorderRadius.circular(20),
+              color: const Color(0xFFE2F6D5),
+              borderRadius: BorderRadius.circular(24),
               border: Border.all(
-                color: AppTheme.accentCyan.withOpacity(0.2),
+                color: const Color(0xFFC5EDAB),
                 width: 1.2,
               ),
             ),
@@ -1947,12 +1916,12 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: AppTheme.accentCyan.withOpacity(0.12),
+                        color: const Color(0xFFC5EDAB),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: const Icon(
                         Icons.local_fire_department_rounded,
-                        color: AppTheme.accentCyan,
+                        color: Color(0xFF054D28),
                         size: 20,
                       ),
                     ),
@@ -1963,7 +1932,7 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
                         Text(
                           'CALORIES',
                           style: TextStyle(
-                            color: AppTheme.textSecondary,
+                            color: Color(0xFF054D28),
                             fontSize: 9,
                             fontWeight: FontWeight.w900,
                             letterSpacing: 0.8,
@@ -1972,7 +1941,7 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
                         Text(
                           'Energy Intake',
                           style: TextStyle(
-                            color: AppTheme.textSecondary,
+                            color: Color(0xFF054D28),
                             fontSize: 10,
                             fontWeight: FontWeight.w500,
                           ),
@@ -1987,8 +1956,8 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
                     controller: _reviewCalController,
                     keyboardType: TextInputType.number,
                     textAlign: TextAlign.end,
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: isDark ? Colors.white : AppTheme.textPrimary,
                       fontSize: 18,
                       fontWeight: FontWeight.w900,
                     ),
@@ -2016,7 +1985,7 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
                   padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
                   decoration: BoxDecoration(
                     color: AppTheme.accentOrange.withOpacity(0.06),
-                    borderRadius: BorderRadius.circular(18),
+                    borderRadius: BorderRadius.circular(24),
                     border: Border.all(
                       color: AppTheme.accentOrange.withOpacity(0.2),
                       width: 1.2,
@@ -2047,8 +2016,8 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
                               controller: _reviewProteinController,
                               keyboardType: TextInputType.number,
                               textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                color: Colors.white,
+                              style: TextStyle(
+                                color: isDark ? Colors.white : AppTheme.textPrimary,
                                 fontSize: 14,
                                 fontWeight: FontWeight.w900,
                               ),
@@ -2081,7 +2050,7 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
                   padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
                   decoration: BoxDecoration(
                     color: AppTheme.accentCyan.withOpacity(0.06),
-                    borderRadius: BorderRadius.circular(18),
+                    borderRadius: BorderRadius.circular(24),
                     border: Border.all(
                       color: AppTheme.accentCyan.withOpacity(0.2),
                       width: 1.2,
@@ -2112,8 +2081,8 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
                               controller: _reviewCarbsController,
                               keyboardType: TextInputType.number,
                               textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                color: Colors.white,
+                              style: TextStyle(
+                                color: isDark ? Colors.white : AppTheme.textPrimary,
                                 fontSize: 14,
                                 fontWeight: FontWeight.w900,
                               ),
@@ -2146,7 +2115,7 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
                   padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
                   decoration: BoxDecoration(
                     color: AppTheme.accentCoral.withOpacity(0.06),
-                    borderRadius: BorderRadius.circular(18),
+                    borderRadius: BorderRadius.circular(24),
                     border: Border.all(
                       color: AppTheme.accentCoral.withOpacity(0.2),
                       width: 1.2,
@@ -2177,8 +2146,8 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
                               controller: _reviewFatController,
                               keyboardType: TextInputType.number,
                               textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                color: Colors.white,
+                              style: TextStyle(
+                                color: isDark ? Colors.white : AppTheme.textPrimary,
                                 fontSize: 14,
                                 fontWeight: FontWeight.w900,
                               ),
@@ -2263,25 +2232,16 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
             child: Container(
               height: 52,
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [AppTheme.accentEmerald, AppTheme.accentEmerald],
-                ),
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppTheme.accentEmerald.withOpacity(0.15),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
+                color: AppTheme.accentCyan,
+                borderRadius: BorderRadius.circular(24),
               ),
               child: const Center(
                 child: Text(
                   "Done",
                   style: TextStyle(
-                    color: Colors.black,
+                    color: AppTheme.textPrimary,
                     fontSize: 16,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),

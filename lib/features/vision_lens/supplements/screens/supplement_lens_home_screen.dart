@@ -72,28 +72,29 @@ class _SupplementLensHomeScreenState extends ConsumerState<SupplementLensHomeScr
       context: context,
       builder: (ctx) {
         final isDark = Theme.of(ctx).brightness == Brightness.dark;
+        final textColor = isDark ? Colors.white : AppTheme.textPrimary;
         return AlertDialog(
-          backgroundColor: isDark ? AppTheme.glassBackground : Colors.white,
+          backgroundColor: isDark ? const Color(0xFF1C1E1B) : Colors.white,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(24),
-            side: BorderSide(color: isDark ? AppTheme.glassBorder : Colors.grey.withOpacity(0.2)),
+            side: BorderSide(color: isDark ? const Color(0xFF323530) : Colors.grey.withOpacity(0.2)),
           ),
-          title: const Text(
+          title: Text(
             'Enter Barcode Manually',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
+            style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 18),
           ),
           content: TextField(
             controller: barcodeCtrl,
             keyboardType: TextInputType.number,
-            style: const TextStyle(color: Colors.white),
+            style: TextStyle(color: textColor),
             decoration: InputDecoration(
               hintText: 'e.g. 4901058851335',
               hintStyle: const TextStyle(color: AppTheme.textSecondary),
               filled: true,
-              fillColor: Colors.black.withOpacity(0.2),
+              fillColor: isDark ? Colors.black.withOpacity(0.2) : Colors.black.withOpacity(0.04),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: AppTheme.glassBorder),
+                borderSide: BorderSide(color: isDark ? const Color(0xFF323530) : Colors.grey.withOpacity(0.2)),
               ),
             ),
           ),
@@ -142,6 +143,7 @@ class _SupplementLensHomeScreenState extends ConsumerState<SupplementLensHomeScr
       barrierDismissible: false,
       builder: (ctx) {
         final isDark = Theme.of(ctx).brightness == Brightness.dark;
+        final textColor = isDark ? Colors.white : AppTheme.textPrimary;
         return WillPopScope(
           onWillPop: () async => false,
           child: Center(
@@ -149,24 +151,24 @@ class _SupplementLensHomeScreenState extends ConsumerState<SupplementLensHomeScr
               padding: const EdgeInsets.all(32),
               margin: const EdgeInsets.symmetric(horizontal: 40),
               decoration: BoxDecoration(
-                color: isDark ? AppTheme.glassBackground : Colors.white,
+                color: isDark ? const Color(0xFF1C1E1B) : Colors.white,
                 borderRadius: BorderRadius.circular(28),
-                border: Border.all(color: AppTheme.accentCyan.withOpacity(0.3), width: 1.5),
+                border: Border.all(color: isDark ? const Color(0xFF323530) : AppTheme.accentCyan.withOpacity(0.3), width: 1.5),
               ),
-              child: const Column(
+              child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  CircularProgressIndicator(
+                  const CircularProgressIndicator(
                     valueColor: AlwaysStoppedAnimation<Color>(AppTheme.accentCyan),
                     strokeWidth: 3,
                   ),
-                  SizedBox(height: 24),
+                  const SizedBox(height: 24),
                   Text(
                     'Supplement Lens AI',
-                    style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold, decoration: TextDecoration.none),
+                    style: TextStyle(color: textColor, fontSize: 18, fontWeight: FontWeight.bold, decoration: TextDecoration.none),
                   ),
-                  SizedBox(height: 8),
-                  Text(
+                  const SizedBox(height: 8),
+                  const Text(
                     'Extracting dosage & scoring ingredients...',
                     textAlign: TextAlign.center,
                     style: TextStyle(color: AppTheme.textSecondary, fontSize: 13, fontWeight: FontWeight.normal, decoration: TextDecoration.none),
@@ -199,21 +201,21 @@ class _SupplementLensHomeScreenState extends ConsumerState<SupplementLensHomeScr
     final supplementState = ref.watch(supplementVisionProvider);
 
     return Scaffold(
-      backgroundColor: isDark ? AppTheme.obsidianBackground : const Color(0xFFF1F5F9),
+      backgroundColor: isDark ? const Color(0xFF0E0F0C) : AppTheme.obsidianBackground,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
+          icon: Icon(Icons.arrow_back_ios_new_rounded, color: primaryTextColor),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.medication_rounded, color: AppTheme.accentCyan, size: 24),
-            SizedBox(width: 8),
+            const Icon(Icons.medication_rounded, color: AppTheme.accentCyan, size: 24),
+            const SizedBox(width: 8),
             Text(
               '💊 SUPPLEMENT LENS',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 18),
+              style: TextStyle(color: primaryTextColor, fontWeight: FontWeight.w900, fontSize: 18),
             ),
           ],
         ),
@@ -260,9 +262,9 @@ class _SupplementLensHomeScreenState extends ConsumerState<SupplementLensHomeScr
                 Expanded(
                   child: Container(
                     decoration: BoxDecoration(
-                      color: isDark ? AppTheme.glassBackground : Colors.white,
+                      color: isDark ? const Color(0xFF1C1E1B) : Colors.white,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: AppTheme.glassBorder, width: 1),
+                      border: Border.all(color: isDark ? const Color(0xFF323530) : AppTheme.glassBorder, width: 1),
                     ),
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: TextField(
@@ -319,6 +321,7 @@ class _SupplementLensHomeScreenState extends ConsumerState<SupplementLensHomeScr
     required Color color,
     required VoidCallback onTap,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return GestureDetector(
       onTap: onTap,
       child: GlassCard(
@@ -337,7 +340,7 @@ class _SupplementLensHomeScreenState extends ConsumerState<SupplementLensHomeScr
             const SizedBox(height: 8),
             Text(
               label,
-              style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+              style: TextStyle(color: isDark ? Colors.white : AppTheme.textPrimary, fontSize: 12, fontWeight: FontWeight.bold),
             ),
           ],
         ),
@@ -347,6 +350,7 @@ class _SupplementLensHomeScreenState extends ConsumerState<SupplementLensHomeScr
 
   Widget _buildSearchResultsList() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : AppTheme.textPrimary;
     return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       itemCount: _searchResults.length,
@@ -359,13 +363,13 @@ class _SupplementLensHomeScreenState extends ConsumerState<SupplementLensHomeScr
         return Container(
           margin: const EdgeInsets.only(bottom: 10),
           decoration: BoxDecoration(
-            color: isDark ? AppTheme.glassBackground : Colors.white,
+            color: isDark ? const Color(0xFF1C1E1B) : Colors.white,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppTheme.glassBorder),
+            border: Border.all(color: isDark ? const Color(0xFF323530) : AppTheme.glassBorder),
           ),
           child: ListTile(
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            title: Text(name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+            title: Text(name, style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 14)),
             subtitle: Text('$brand • $code', style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
             trailing: const Icon(Icons.arrow_forward_ios_rounded, color: AppTheme.accentCyan, size: 16),
             onTap: () => _startRegistryProductLookup(item),
@@ -376,6 +380,7 @@ class _SupplementLensHomeScreenState extends ConsumerState<SupplementLensHomeScr
   }
 
   Widget _buildHistoryList(List<SupplementProduct> history) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     if (history.isEmpty) {
       return Center(
         child: Column(
@@ -383,7 +388,7 @@ class _SupplementLensHomeScreenState extends ConsumerState<SupplementLensHomeScr
           children: [
             Icon(Icons.history_rounded, size: 48, color: AppTheme.textSecondary.withOpacity(0.3)),
             const SizedBox(height: 16),
-            const Text('No Scan History', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+            Text('No Scan History', style: TextStyle(color: isDark ? Colors.white : AppTheme.textPrimary, fontWeight: FontWeight.bold, fontSize: 16)),
             const SizedBox(height: 6),
             const Text('Scan supplement bottles to view details.', style: TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
           ],
@@ -422,9 +427,9 @@ class _SupplementLensHomeScreenState extends ConsumerState<SupplementLensHomeScr
               return Container(
                 margin: const EdgeInsets.only(bottom: 10),
                 decoration: BoxDecoration(
-                  color: AppTheme.glassBackground,
+                  color: isDark ? const Color(0xFF1C1E1B) : Colors.white,
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: AppTheme.glassBorder),
+                  border: Border.all(color: isDark ? const Color(0xFF323530) : AppTheme.glassBorder),
                 ),
                 child: ListTile(
                   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -442,7 +447,7 @@ class _SupplementLensHomeScreenState extends ConsumerState<SupplementLensHomeScr
                       ),
                     ),
                   ),
-                  title: Text(item.productName, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+                  title: Text(item.productName, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: isDark ? Colors.white : AppTheme.textPrimary, fontWeight: FontWeight.bold, fontSize: 14)),
                   subtitle: Text('${item.brand} • ${item.barcode}', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
                   trailing: const Icon(Icons.arrow_forward_ios_rounded, color: AppTheme.textSecondary, size: 14),
                   onTap: () => _dismissLoadingAndNavigate(item.barcode),
