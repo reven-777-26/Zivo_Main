@@ -1763,7 +1763,7 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
             margin: const EdgeInsets.only(bottom: 20),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF1C1C1E) : const Color(0xFFE2F6D5),
+              color: isDark ? const Color(0xFF121214) : const Color(0xFFE2F6D5),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFC5EDAB),
@@ -1904,7 +1904,7 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
           Container(
             padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 18),
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF1C1C1E) : const Color(0xFFE2F6D5),
+              color: isDark ? const Color(0xFF121214) : const Color(0xFFE2F6D5),
               borderRadius: BorderRadius.circular(24),
               border: Border.all(
                 color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFC5EDAB),
@@ -2255,3 +2255,4 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
     );
   }
 }
+

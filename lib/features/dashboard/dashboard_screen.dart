@@ -205,7 +205,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 width: 42,
                 height: 42,
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF1C1C1E) : const Color(0xFFE8EBE6),
+                  color: isDark ? const Color(0xFF121214) : const Color(0xFFE8EBE6),
                   shape: BoxShape.circle,
                   border: Border.all(
                     color: AppTheme.accentCyan.withOpacity(0.3),
@@ -278,7 +278,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF1C1C1E) : const Color(0xFF859D00).withOpacity(0.15),
+                  color: isDark ? const Color(0xFF121214) : const Color(0xFF859D00).withOpacity(0.15),
                   borderRadius: BorderRadius.circular(9999), // pill shape
                   border: Border.all(
                     color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFF859D00).withOpacity(0.3),
@@ -396,7 +396,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF1C1C1E) : const Color(0xFFF0F2EE),
+                  color: isDark ? const Color(0xFF121214) : const Color(0xFFF0F2EE),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
                     color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFE8EBE6),
@@ -519,7 +519,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
     // Custom status design based on shade level
     String statusBadge = "REST & RECOVER 🧘";
-    Color badgeBg = isDark ? const Color(0xFF1C1C1E) : const Color(0xFFF0F0F0);
+    Color badgeBg = isDark ? const Color(0xFF121214) : const Color(0xFFF0F0F0);
     Color badgeColor = textMutedColor;
     String motivationTitle = "GROWTH HAPPENS NOW";
     String motivationHeader = "RECOVERY PROTOCOL SECURED 🧘";
@@ -660,7 +660,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       width: double.infinity,
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: isDark ? const Color(0xFF1C1C1E) : const Color(0xFFF9F9F9),
+                        color: isDark ? const Color(0xFF121214) : const Color(0xFFF9F9F9),
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
                           color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFE8EBE6),
@@ -730,7 +730,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           child: Container(
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: isDark ? const Color(0xFF1C1C1E) : const Color(0xFFF9F9F9),
+                              color: isDark ? const Color(0xFF121214) : const Color(0xFFF9F9F9),
                               borderRadius: BorderRadius.circular(20),
                               border: Border.all(
                                 color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFE8EBE6),
@@ -789,7 +789,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           child: Container(
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: isDark ? const Color(0xFF1C1C1E) : const Color(0xFFF9F9F9),
+                              color: isDark ? const Color(0xFF121214) : const Color(0xFFF9F9F9),
                               borderRadius: BorderRadius.circular(20),
                               border: Border.all(
                                 color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFE8EBE6),
@@ -852,7 +852,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         width: double.infinity,
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: isDark ? const Color(0xFF1C1C1E) : const Color(0xFFF9F9F9),
+                          color: isDark ? const Color(0xFF121214) : const Color(0xFFF9F9F9),
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
                             color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFE8EBE6),
@@ -943,7 +943,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         width: double.infinity,
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                         decoration: BoxDecoration(
-                          color: isDark ? const Color(0xFF1C1C1E) : const Color(0xFFF5F5F5),
+                          color: isDark ? const Color(0xFF121214) : const Color(0xFFF5F5F5),
                           borderRadius: BorderRadius.circular(16),
                         ),
                         child: Row(
@@ -1064,7 +1064,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         width: double.infinity,
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                         decoration: BoxDecoration(
-                          color: isDark ? const Color(0xFF1C1C1E) : const Color(0xFFF5F5F5),
+                          color: isDark ? const Color(0xFF121214) : const Color(0xFFF5F5F5),
                           borderRadius: BorderRadius.circular(16),
                         ),
                         child: Row(
@@ -1087,7 +1087,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           margin: const EdgeInsets.only(bottom: 8),
                           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                           decoration: BoxDecoration(
-                            color: isDark ? const Color(0xFF1C1C1E) : const Color(0xFFF5F5F5),
+                            color: isDark ? const Color(0xFF121214) : const Color(0xFFF5F5F5),
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
                               color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFE8EBE6),
@@ -1223,7 +1223,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1C1C1E) : const Color(0xFFF5F5F5),
+        color: isDark ? const Color(0xFF121214) : const Color(0xFFF5F5F5),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -1285,7 +1285,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               decoration: BoxDecoration(
                 color: isSelected
                     ? AppTheme.accentCyan
-                    : (isDark ? const Color(0xFF1C1C1E) : AppTheme.glassBackground),
+                    : (isDark ? const Color(0xFF121214) : AppTheme.glassBackground),
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
                   color: isSelected
@@ -1421,7 +1421,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   Widget _buildDailyStreakCard(List<WorkoutSession> workouts, bool isDark) {
     final streak = _calculateStreak(workouts);
-    final cardBgColor = isDark ? const Color(0xFF1C1C1E) : AppTheme.glassBackground;
+    final cardBgColor = isDark ? const Color(0xFF121214) : AppTheme.glassBackground;
     final borderColor = isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder;
     final textColor = isDark ? Colors.white : AppTheme.textPrimary;
     final textMutedColor = isDark ? const Color(0xFF868685) : AppTheme.textSecondary;
@@ -1770,7 +1770,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final double waterPercent = (waterConsumed / waterGoal).clamp(0.0, 1.0);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final cardBgColor = isDark ? const Color(0xFF1C1C1E) : AppTheme.glassBackground;
+    final cardBgColor = isDark ? const Color(0xFF121214) : AppTheme.glassBackground;
     final interactiveBgColor = isDark ? const Color(0xFF2C2C2E) : const Color(0xFFE8EBE6);
     final borderColor = isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder;
     final textColor = isDark ? Colors.white : AppTheme.textPrimary;
@@ -2254,7 +2254,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     required VoidCallback onTap,
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardBgColor = isDark ? const Color(0xFF1C1C1E) : AppTheme.glassBackground;
+    final cardBgColor = isDark ? const Color(0xFF121214) : AppTheme.glassBackground;
     final innerBgColor = isDark ? const Color(0xFF2C2C2E) : const Color(0xFFE8EBE6);
     final borderColor = isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder;
     final textColor = isDark ? Colors.white : AppTheme.textPrimary;
@@ -2331,7 +2331,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     }
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardBgColor = isDark ? const Color(0xFF1C1C1E) : AppTheme.glassBackground;
+    final cardBgColor = isDark ? const Color(0xFF121214) : AppTheme.glassBackground;
     final borderColor = isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder;
     final textColor = isDark ? Colors.white : AppTheme.textPrimary;
     final textMutedColor = isDark ? const Color(0xFFC5C9AC) : AppTheme.textSecondary;
@@ -5235,3 +5235,4 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 }
+

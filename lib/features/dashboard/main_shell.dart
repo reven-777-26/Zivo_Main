@@ -138,7 +138,7 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF1C1C1E) : Colors.white,
+              color: isDark ? const Color(0xFF121214) : Colors.white,
               borderRadius: BorderRadius.circular(18),
               border: Border.all(
                 color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFE8EBE6),
@@ -465,7 +465,7 @@ class _ProfilePlaceholderScreenState
     final profilePic = ref.read(profilePictureProvider);
     showModalBottomSheet(
       context: context,
-      backgroundColor: isDark ? const Color(0xFF1C1C1E) : Colors.white,
+      backgroundColor: isDark ? const Color(0xFF121214) : Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -620,7 +620,7 @@ class _ProfilePlaceholderScreenState
                       width: 96,
                       height: 96,
                       decoration: BoxDecoration(
-                        color: isDark ? const Color(0xFF1C1C1E) : const Color(0xFFE8EBE6),
+                        color: isDark ? const Color(0xFF121214) : const Color(0xFFE8EBE6),
                         shape: BoxShape.circle,
                         border: Border.all(color: AppTheme.accentCyan.withOpacity(0.3), width: 2.0),
                       ),
@@ -1705,3 +1705,4 @@ class _ProfilePlaceholderScreenState
     }
   }
 }
+

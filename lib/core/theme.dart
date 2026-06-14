@@ -88,12 +88,12 @@ class AppTheme {
   static ThemeData get darkTheme {
     return ThemeData.dark().copyWith(
       scaffoldBackgroundColor: const Color(0xFF000000), // AMOLED Pure Black
-      cardColor: const Color(0xFF1C1C1E), // ZivoFit Level 1 card surface
+      cardColor: const Color(0xFF121214), // ZivoFit Level 1 card surface
       dividerColor: const Color(0xFF2C2C2E), // ZivoFit Level 2 interactive boundary
       colorScheme: const ColorScheme.dark().copyWith(
         primary: accentCyan,
         secondary: accentPurple,
-        surface: const Color(0xFF1C1C1E),
+        surface: const Color(0xFF121214),
       ),
       textTheme: const TextTheme(
         headlineLarge: TextStyle(
@@ -162,7 +162,7 @@ class GlassCard extends StatelessWidget {
 
     final cardBgColor =
         customBgColor ??
-        (isDark ? const Color(0xFF1C1C1E) : AppTheme.glassBackground);
+        (isDark ? const Color(0xFF121214) : AppTheme.glassBackground);
     final cardBorderColor = isDark
         ? const Color(0xFF2C2C2E)
         : AppTheme.glassBorder;
@@ -195,3 +195,4 @@ class GlassCard extends StatelessWidget {
     return Container(margin: margin, child: cardContent);
   }
 }
+
