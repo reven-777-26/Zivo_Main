@@ -280,42 +280,49 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
   Widget _buildNavItem(IconData icon, String label, int index, int currentIndex) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final isSelected = currentIndex == index;
-    final activeColor = isSelected
-        ? const Color(0xFF0E0F0C) // Ink Black text on Neon Lime background
+    
+    final iconColor = isSelected
+        ? const Color(0xFF0E0F0C) // Black icon inside the neon lime capsule
+        : (isDark ? const Color(0xFF868685) : AppTheme.textSecondary);
+        
+    final textColor = isSelected
+        ? AppTheme.accentCyan // Accent color for active text
         : (isDark ? const Color(0xFF868685) : AppTheme.textSecondary);
 
-    return GestureDetector(
-      onTap: () {
-        ref.read(activeTabProvider.notifier).state = index;
-      },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
-        curve: Curves.easeInOut,
-        padding: EdgeInsets.symmetric(
-          horizontal: isSelected ? 20.0 : 12.0,
-          vertical: 8.0,
-        ),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? AppTheme.accentCyan // Neon Lime background
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(9999), // capsule shape
-        ),
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          ref.read(activeTabProvider.notifier).state = index;
+        },
         child: Column(
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              icon,
-              color: activeColor,
-              size: 24,
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeInOut,
+              padding: const EdgeInsets.symmetric(
+                horizontal: 20.0,
+                vertical: 4.0,
+              ),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? AppTheme.accentCyan // Neon Lime background capsule
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(16), // standard pill corner radius
+              ),
+              child: Icon(
+                icon,
+                color: iconColor,
+                size: 22,
+              ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 5),
             Text(
               label,
               style: TextStyle(
-                color: activeColor,
-                fontSize: 11,
+                color: textColor,
+                fontSize: 10,
                 fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
               ),
             ),
