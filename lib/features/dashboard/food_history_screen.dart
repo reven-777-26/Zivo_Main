@@ -576,46 +576,48 @@ Future<dynamic> _showFoodDetailsDialog(
                           runSpacing: 6,
                           children: categories.map((cat) {
                             final isSelected = selectedMealKey == cat['key'];
-                            return ChoiceChip(
-                              label: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    cat['icon'] as IconData,
-                                    size: 11,
-                                    color: isSelected ? Colors.black : (isDark ? Colors.white70 : AppTheme.textSecondary),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    cat['name'] as String,
-                                    style: TextStyle(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
-                                      color: isSelected ? Colors.black : (isDark ? Colors.white70 : AppTheme.textPrimary),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              selected: isSelected,
-                              selectedColor: AppTheme.accentCyan,
-                              backgroundColor: isDark ? Colors.white.withOpacity(0.03) : Colors.black.withOpacity(0.03),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(24),
-                                side: BorderSide(
-                                  color: isSelected
-                                      ? AppTheme.accentCyan
-                                      : (isDark ? AppTheme.glassBorder : Colors.black.withOpacity(0.08)),
-                                ),
-                              ),
-                              showCheckmark: false,
-                              onSelected: (selected) {
-                                if (selected) {
-                                  setState(() {
-                                    selectedMealKey = cat['key'] as String;
-                                  });
-                                }
-                              },
-                            );
+                            return GestureDetector(
+                               onTap: () {
+                                 setState(() {
+                                   selectedMealKey = cat['key'] as String;
+                                 });
+                               },
+                               child: AnimatedContainer(
+                                 duration: const Duration(milliseconds: 200),
+                                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                 decoration: BoxDecoration(
+                                   color: isSelected
+                                       ? AppTheme.accentCyan
+                                       : (isDark ? Colors.white.withOpacity(0.03) : Colors.black.withOpacity(0.03)),
+                                   borderRadius: BorderRadius.circular(24),
+                                   border: Border.all(
+                                     color: isSelected
+                                         ? AppTheme.accentCyan
+                                         : (isDark ? AppTheme.glassBorder : Colors.black.withOpacity(0.08)),
+                                     width: 1.0,
+                                   ),
+                                 ),
+                                 child: Row(
+                                   mainAxisSize: MainAxisSize.min,
+                                   children: [
+                                     Icon(
+                                       cat['icon'] as IconData,
+                                       size: 11,
+                                       color: isSelected ? Colors.black : (isDark ? Colors.white70 : AppTheme.textSecondary),
+                                     ),
+                                     const SizedBox(width: 4),
+                                     Text(
+                                       cat['name'] as String,
+                                       style: TextStyle(
+                                         fontSize: 10,
+                                         fontWeight: FontWeight.bold,
+                                         color: isSelected ? Colors.black : (isDark ? Colors.white70 : AppTheme.textPrimary),
+                                       ),
+                                     ),
+                                   ],
+                                 ),
+                               ),
+                             );
                           }).toList(),
                         ),
                         const SizedBox(height: 16),

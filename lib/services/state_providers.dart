@@ -9,6 +9,7 @@ import '../models/workout_log.dart';
 import '../models/reminder_setting.dart';
 import 'storage_service.dart';
 import 'firebase_service.dart';
+import 'widget_sync_service.dart';
 
 class NotificationManager {
   static final StreamController<Map<String, String>> controller =
@@ -226,6 +227,11 @@ final activeTabProvider = StateProvider<int>((ref) {
   return 0;
 });
 
+// Profile Picture Provider: Manages the base64 encoded profile picture string
+final profilePictureProvider = StateProvider<String?>((ref) {
+  return StorageService.getProfilePicture();
+});
+
 // Profile Provider: Manages the UserProfile state, loaded from Hive.
 final profileProvider = StateNotifierProvider<ProfileNotifier, UserProfile?>((
   ref,
@@ -240,6 +246,7 @@ class ProfileNotifier extends StateNotifier<UserProfile?> {
     await StorageService.saveUserProfile(profile);
     await FirebaseService.saveProfileCloud(profile);
     state = profile;
+    await WidgetSyncService.syncToWidget();
   }
 
   Future<void> clearProfile() async {
@@ -310,6 +317,7 @@ class DailyMetricsNotifier extends StateNotifier<Map<String, dynamic>> {
 
     // Refresh state
     state = metrics;
+    await WidgetSyncService.syncToWidget();
   }
 
   /// Saves a completely updated metrics map to local and cloud storage.
@@ -317,6 +325,7 @@ class DailyMetricsNotifier extends StateNotifier<Map<String, dynamic>> {
     await StorageService.saveDailyMetrics(dateStr, updatedMetrics);
     await FirebaseService.saveDailyMetricsCloud(dateStr, updatedMetrics);
     state = updatedMetrics;
+    await WidgetSyncService.syncToWidget();
   }
 
   /// Increments water intake in ml.
@@ -333,6 +342,7 @@ class DailyMetricsNotifier extends StateNotifier<Map<String, dynamic>> {
 
     // Refresh state
     state = metrics;
+    await WidgetSyncService.syncToWidget();
   }
 
   /// Removes last logged water entry.
@@ -349,6 +359,7 @@ class DailyMetricsNotifier extends StateNotifier<Map<String, dynamic>> {
 
       // Refresh state
       state = metrics;
+      await WidgetSyncService.syncToWidget();
     }
   }
 
@@ -363,6 +374,7 @@ class DailyMetricsNotifier extends StateNotifier<Map<String, dynamic>> {
 
     // Refresh state
     state = metrics;
+    await WidgetSyncService.syncToWidget();
   }
 
   /// Resets daily metrics for testing.
@@ -381,6 +393,7 @@ class DailyMetricsNotifier extends StateNotifier<Map<String, dynamic>> {
     };
     await StorageService.saveDailyMetrics(dateStr, metrics);
     state = metrics;
+    await WidgetSyncService.syncToWidget();
   }
 }
 

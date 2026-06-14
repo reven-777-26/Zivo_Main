@@ -1,7 +1,9 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import '../../utils/image_picker_helper.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/theme.dart';
@@ -9,6 +11,8 @@ import '../../models/user_profile.dart';
 import '../../models/reminder_setting.dart';
 import '../../services/state_providers.dart';
 import '../../services/storage_service.dart';
+import '../../services/widget_sync_service.dart';
+import 'package:intl/intl.dart';
 import 'dashboard_screen.dart';
 import 'workout_screen.dart';
 import '../vision_lens/vision_lens/screens/vision_lens_home_screen.dart';
@@ -22,7 +26,7 @@ class MainShell extends ConsumerStatefulWidget {
   ConsumerState<MainShell> createState() => _MainShellState();
 }
 
-class _MainShellState extends ConsumerState<MainShell> {
+class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserver {
   final List<Widget> _screens = [
     const DashboardScreen(),
     const WorkoutScreen(),
@@ -38,6 +42,7 @@ class _MainShellState extends ConsumerState<MainShell> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
 
     // Listen for global notification triggers and display a premium custom overlay alert card
     _notificationSubscription = NotificationManager.controller.stream.listen((notif) {
@@ -56,6 +61,7 @@ class _MainShellState extends ConsumerState<MainShell> {
         '💪 Zivo Active & Ready!',
         'Push reminders and notification systems are fully integrated. Stay on track!',
       );
+      _checkWidgetSync();
     });
   }
 
@@ -90,7 +96,29 @@ class _MainShellState extends ConsumerState<MainShell> {
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _checkWidgetSync();
+    }
+  }
+
+  void _checkWidgetSync() {
+    WidgetSyncService.checkAndSyncWidgetLogs((amountSynced) {
+      if (mounted) {
+        showWebNotification(
+          '💧 Water Synced!',
+          'Successfully logged ${amountSynced}ml of water from your Home Screen Widget!',
+        );
+        final todayStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
+        ref.invalidate(dailyMetricsProvider(todayStr));
+      }
+    });
+    WidgetSyncService.syncToWidget();
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _notificationSubscription?.cancel();
     _reminderTimer?.cancel();
     super.dispose();
@@ -98,6 +126,8 @@ class _MainShellState extends ConsumerState<MainShell> {
 
   void _showInAppNotification(String title, String body) {
     late OverlayEntry overlayEntry;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     overlayEntry = OverlayEntry(
       builder: (overlayContext) => Positioned(
         top: MediaQuery.of(context).padding.top + 16,
@@ -108,21 +138,31 @@ class _MainShellState extends ConsumerState<MainShell> {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
-              color: AppTheme.glassBackground.withOpacity(0.98),
-              borderRadius: BorderRadius.circular(18), // rounded.lg
-              border: Border.all(color: AppTheme.accentCyan.withOpacity(0.4), width: 1.0),
+              color: isDark ? const Color(0xFF1C1C1E) : Colors.white,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(
+                color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFE8EBE6),
+                width: 1.0,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.35),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
+                ),
+              ],
             ),
             child: Row(
               children: [
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: AppTheme.accentCyan.withOpacity(0.15),
+                    color: const Color(0xFFCDF200).withOpacity(0.12),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
                     Icons.notifications_active_rounded,
-                    color: AppTheme.accentCyan,
+                    color: Color(0xFFCDF200),
                     size: 22,
                   ),
                 ),
@@ -134,8 +174,8 @@ class _MainShellState extends ConsumerState<MainShell> {
                     children: [
                       Text(
                         title,
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: isDark ? Colors.white : const Color(0xFF0E0F0C),
                           fontWeight: FontWeight.bold,
                           fontSize: 14,
                         ),
@@ -143,19 +183,30 @@ class _MainShellState extends ConsumerState<MainShell> {
                       const SizedBox(height: 2),
                       Text(
                         body,
-                        style: const TextStyle(
-                          color: AppTheme.textSecondary,
+                        style: TextStyle(
+                          color: isDark ? const Color(0xFF868685) : AppTheme.textSecondary,
                           fontSize: 12,
                         ),
                       ),
                     ],
                   ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.close_rounded, color: Colors.white, size: 18),
-                  onPressed: () {
+                GestureDetector(
+                  onTap: () {
                     overlayEntry.remove();
                   },
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFE8EBE6),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.close_rounded,
+                      color: isDark ? Colors.white70 : const Color(0xFF0E0F0C),
+                      size: 14,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -402,7 +453,131 @@ class _ProfilePlaceholderScreenState
     }
   }
 
+  void _showProfilePicturePicker(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final profilePic = ref.read(profilePictureProvider);
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: isDark ? const Color(0xFF1C1C1E) : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.photo_library_rounded, color: AppTheme.accentCyan),
+                title: Text(
+                  'Change Photo',
+                  style: TextStyle(
+                    color: isDark ? Colors.white : AppTheme.textPrimary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  ImagePickerHelper.pickImage((base64, name, filePath) {
+                    ref.read(profilePictureProvider.notifier).state = base64;
+                    StorageService.saveProfilePicture(base64);
+                  });
+                },
+              ),
+              if (profilePic != null && profilePic.isNotEmpty)
+                ListTile(
+                  leading: const Icon(Icons.delete_rounded, color: AppTheme.accentCoral),
+                  title: const Text(
+                    'Remove Photo',
+                    style: TextStyle(
+                      color: AppTheme.accentCoral,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  onTap: () {
+                    Navigator.pop(context);
+                    ref.read(profilePictureProvider.notifier).state = null;
+                    StorageService.saveProfilePicture(null);
+                  },
+                ),
+              ListTile(
+                leading: const Icon(Icons.close_rounded, color: AppTheme.textSecondary),
+                title: Text(
+                  'Cancel',
+                  style: TextStyle(
+                    color: isDark ? Colors.white70 : AppTheme.textSecondary,
+                  ),
+                ),
+                onTap: () => Navigator.pop(context),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 
+  Widget _buildSettingsActionTile({
+    required String label,
+    required String value,
+    required IconData icon,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final fieldBg = isDark
+        ? AppTheme.obsidianBackground
+        : Colors.black.withOpacity(0.015);
+    final fieldBorder = isDark ? AppTheme.glassBorder : const Color(0xFFEADBFF);
+    final textColor = isDark ? Colors.white : AppTheme.textPrimary;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          color: fieldBg,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: fieldBorder, width: 1.0),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        child: Row(
+          children: [
+            Icon(icon, color: color, size: 18),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: const TextStyle(
+                      color: AppTheme.textSecondary,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    value,
+                    style: TextStyle(
+                      color: textColor,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.chevron_right_rounded,
+              color: color,
+              size: 20,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -432,18 +607,55 @@ class _ProfilePlaceholderScreenState
             Center(
               child: Column(
                 children: [
-                  Container(
-                    width: 96,
-                    height: 96,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: AppTheme.accentCyan.withOpacity(0.3), width: 2.0),
-                    ),
-                    child: ClipOval(
-                      child: Image.network(
-                        'https://lh3.googleusercontent.com/aida-public/AB6AXuCoqjP7BFZ5G58JZ9dWkY7i2nuxlXG22yw4_kp_tZDq9_LFlGpDXZN7CW3mbIisWHeikqi3HAtRW3GIE3Yv25gBdC20K-f5kYqQWbCYwr59BI8F9VS5Px2JuUIN1vtuKG2z93p-pIAb6Ea3-53UcUQzDXCzvR9Ar7P2inSnzRzOu5DHjU442uippjL0VveOFZ3BBk_TEVeMPIfcupH3xh7AswuFV2aHm9hmqFljLzwDutvFMQRHy3SZzrRekzi82S15S4nTDmbypbM',
-                        fit: BoxFit.cover,
+                  GestureDetector(
+                    onTap: () => _showProfilePicturePicker(context),
+                    child: Container(
+                      width: 96,
+                      height: 96,
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF1C1C1E) : const Color(0xFFE8EBE6),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: AppTheme.accentCyan.withOpacity(0.3), width: 2.0),
                       ),
+                      child: () {
+                        final profilePic = ref.watch(profilePictureProvider);
+                        if (profilePic != null && profilePic.isNotEmpty) {
+                          try {
+                            String cleaned = profilePic;
+                            final commaIndex = cleaned.indexOf(',');
+                            if (commaIndex != -1) {
+                              cleaned = cleaned.substring(commaIndex + 1);
+                            }
+                            cleaned = cleaned.replaceAll(RegExp(r'\s+'), '');
+                            return ClipOval(
+                              child: Image.memory(
+                                base64Decode(cleaned),
+                                fit: BoxFit.cover,
+                              ),
+                            );
+                          } catch (e) {
+                            debugPrint("Error loading profile pic memory: $e");
+                          }
+                        }
+                        return Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.camera_alt_rounded,
+                              color: isDark ? const Color(0xFF868685) : AppTheme.textSecondary,
+                              size: 28,
+                            ),
+                            const SizedBox(height: 4),
+                            const Text(
+                              'Add Photo',
+                              style: TextStyle(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppTheme.textSecondary),
+                            ),
+                          ],
+                        );
+                      }(),
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -628,6 +840,18 @@ class _ProfilePlaceholderScreenState
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  () {
+                    final profilePic = ref.watch(profilePictureProvider);
+                    final isPhotoActive = profilePic != null && profilePic.isNotEmpty;
+                    return _buildSettingsActionTile(
+                      label: 'Profile Photo',
+                      value: isPhotoActive ? 'Custom photo active' : 'Default icon active',
+                      icon: Icons.photo_camera_rounded,
+                      color: AppTheme.accentCyan,
+                      onTap: () => _showProfilePicturePicker(context),
+                    );
+                  }(),
+                  const SizedBox(height: 12),
                   _buildEditorField(
                     _ageController,
                     'Age',

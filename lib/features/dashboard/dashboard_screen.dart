@@ -14,6 +14,7 @@ import '../../services/scanner/ai_analysis_service.dart';
 import 'food_history_screen.dart';
 import 'food_logger_dialog.dart';
 import '../vision_lens/vision_lens/screens/unified_scanner_dialog.dart';
+import '../../models/workout_log.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -100,19 +101,19 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               padding: const EdgeInsets.only(
                 left: 20,
                 right: 20,
-                top: 16,
-                bottom: 140,
+                top: 12,
+                bottom: 110,
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Top App Bar Greeting
-                  _buildTopAppBar(context),
-                  const SizedBox(height: 16),
+                  _buildTopAppBar(context, workouts),
+                  const SizedBox(height: 12),
 
                   // Weekly Calendar picker
                   _buildWeeklyCalendarBar(selectedDate, isDark),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
 
                   // Daily Goal Ring Section
                   _buildDailyGoalSummaryCard(
@@ -129,17 +130,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     fatConsumed: fConsumed,
                     fatGoal: fatGoal,
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
+                  // Quick Actions Row (Bento Style circles)
+                  _buildQuickActionsRow(selectedDate),
+                  const SizedBox(height: 12),
 
                   // Daily Streaks Section
                   _buildDailyStreakCard(workouts, isDark),
                   const SizedBox(height: 16),
-
-
-
-                  // Quick Actions Row (Bento Style circles)
-                  _buildQuickActionsRow(selectedDate),
-                  const SizedBox(height: 28),
 
                   // Daily Food Journal Section
                   Row(
@@ -190,7 +188,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   // VIEW RENDER PARTS (STITCH COMPLIANT)
   // ==========================================
 
-  Widget _buildTopAppBar(BuildContext context) {
+  Widget _buildTopAppBar(BuildContext context, List<WorkoutSession> workouts) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Row(
@@ -207,18 +205,39 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 width: 42,
                 height: 42,
                 decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF1C1C1E) : const Color(0xFFE8EBE6),
                   shape: BoxShape.circle,
                   border: Border.all(
                     color: AppTheme.accentCyan.withOpacity(0.3),
                     width: 2.0,
                   ),
-                  image: const DecorationImage(
-                    image: NetworkImage(
-                      'https://lh3.googleusercontent.com/aida-public/AB6AXuDvTQLDMkUyYmJWBvwIdewLV0ZwujBodCYq_Ci2FVZMVhplZqTibf2hqWNADC4Po_Gy_kG9RWZHnLARwq9jymz6zRoriNAL_LQd90bTW6R7LgJKqxd16k9TMxgSBGpyF6bcnqq3ybcYAe7D12mq5urhogo8Z32HQwsnhwkzjT53CCd32X9PnTrQrFuZHLtZbXXknU_ahDBId16_uBbaggn--en1q3py_UFjUqK85z5AQawA8o7ZMA5qQ7OnQUJsYSlEuPd05l77DQY',
-                    ),
-                    fit: BoxFit.cover,
-                  ),
                 ),
+                child: () {
+                  final profilePic = ref.watch(profilePictureProvider);
+                  if (profilePic != null && profilePic.isNotEmpty) {
+                    try {
+                      String cleaned = profilePic;
+                      final commaIndex = cleaned.indexOf(',');
+                      if (commaIndex != -1) {
+                        cleaned = cleaned.substring(commaIndex + 1);
+                      }
+                      cleaned = cleaned.replaceAll(RegExp(r'\s+'), '');
+                      return ClipOval(
+                        child: Image.memory(
+                          base64Decode(cleaned),
+                          fit: BoxFit.cover,
+                        ),
+                      );
+                    } catch (e) {
+                      debugPrint("Error loading profile picture memory: $e");
+                    }
+                  }
+                  return Icon(
+                    Icons.person_rounded,
+                    color: isDark ? const Color(0xFF868685) : AppTheme.textSecondary,
+                    size: 22,
+                  );
+                }(),
               ),
             ),
             const SizedBox(width: 12),
@@ -274,7 +293,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      '${_calculateStreak(ref.read(workoutHistoryProvider))} Day Streak',
+                      '${_calculateStreak(workouts)} Day Streak',
                       style: TextStyle(
                         color: isDark ? Colors.white : const Color(0xFF5A6B00),
                         fontWeight: FontWeight.w900,
@@ -296,7 +315,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  void _showStreakDetailsBottomSheet(BuildContext context, List<dynamic> workouts) {
+  void _showStreakDetailsBottomSheet(BuildContext context, List<WorkoutSession> workouts) {
     final streak = _calculateStreak(workouts);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textColor = isDark ? Colors.white : AppTheme.textPrimary;
@@ -457,11 +476,793 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
+  void _showDayStreakDetailBottomSheet(BuildContext context, DateTime date, List<WorkoutSession> workouts) {
+    final dateStr = DateFormat('yyyy-MM-dd').format(date);
+    final metrics = StorageService.getDailyMetrics(dateStr);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    final textColor = isDark ? Colors.white : AppTheme.textPrimary;
+    final textMutedColor = isDark ? const Color(0xFF868685) : AppTheme.textSecondary;
+    final accentColor = const Color(0xFFCDF200); // Neon Lime
+
+    // Calorie Metrics
+    final int consumedCal =
+        ((metrics['breakfast_cal'] ?? 0) as num).toInt() +
+        ((metrics['lunch_cal'] ?? 0) as num).toInt() +
+        ((metrics['dinner_cal'] ?? 0) as num).toInt() +
+        ((metrics['snacks_cal'] ?? 0) as num).toInt() +
+        ((metrics['outside_food_cal'] ?? 0) as num).toInt();
+
+    final profile = ref.read(profileProvider);
+    final int calorieGoal = profile?.calorieGoal ?? 2200;
+    final double waterGoal = (profile?.waterGoal ?? 3000).toDouble();
+    final double proteinGoal = (profile?.proteinGoal ?? 150).toDouble();
+    final double carbGoal = 260.0;
+    final double fatGoal = 70.0;
+
+    // Macro Metrics
+    final double proteinConsumed = (metrics['protein'] ?? 0).toDouble();
+    final double carbConsumed = (metrics['carbs'] ?? 0).toDouble();
+    final double fatConsumed = (metrics['fat'] ?? 0).toDouble();
+
+    // Water Logged
+    final int waterConsumed = ((metrics['water'] ?? 0) as num).toInt();
+
+    // Logged Food list
+    final List loggedItems = metrics['logged_items'] ?? [];
+
+    // Workouts on this day
+    final List<WorkoutSession> dayWorkouts = workouts.where((w) => w.date == dateStr).toList();
+
+    // Determine shade level
+    final int actLevel = _getDayActivityLevel(date, workouts);
+
+    // Custom status design based on shade level
+    String statusBadge = "REST & RECOVER 🧘";
+    Color badgeBg = isDark ? const Color(0xFF1C1C1E) : const Color(0xFFF0F0F0);
+    Color badgeColor = textMutedColor;
+    String motivationTitle = "GROWTH HAPPENS NOW";
+    String motivationHeader = "RECOVERY PROTOCOL SECURED 🧘";
+    String motivationQuote = "Quality rest is where the magic happens! Your muscles are rebuilding, fibers are repairing, and your glycogen is replenishing. Drink your water and rest up! 🔋💎";
+
+    if (actLevel == 4) {
+      statusBadge = "BEAST MODE ACTIVATED ⚡";
+      badgeBg = const Color(0xFFCDF200).withOpacity(0.12);
+      badgeColor = const Color(0xFFCDF200);
+      motivationTitle = "CONQUEROR OF THE DAY";
+      motivationHeader = "FULL GOALS DEMOLISHED! 🏆⚡";
+      motivationQuote = "YOU SHATTERED THE BARRIERS TODAY! Lion mentality. You logged your foods, crushed your training, and hit hydration targets. This is how consistency breeds champions. Do not break the chain! 🦁🔥";
+    } else if (actLevel == 3) {
+      statusBadge = "CRUSHING IT 💪";
+      badgeBg = const Color(0xFF4ADE80).withOpacity(0.12);
+      badgeColor = const Color(0xFF4ADE80);
+      motivationTitle = "CONSISTENCY SECURED";
+      motivationHeader = "HIGH PERFORMANCE DAY! 🏋️✨";
+      motivationQuote = "ABSOLUTE POWER! You dialed in your nutrition and put in the work. You are making real, tangible progress towards your ultimate self. Sleep well, recover, and let's go again! 🦾💎";
+    } else if (actLevel == 2) {
+      statusBadge = "SOLID EFFORT ✅";
+      badgeBg = const Color(0xFF22D3EE).withOpacity(0.12);
+      badgeColor = const Color(0xFF22D3EE);
+      motivationTitle = "PROGRESS SECURED";
+      motivationHeader = "HABITS COMPOUNDING! 🚀⚡";
+      motivationQuote = "GREAT ENERGY! You locked in your daily habits and kept the momentum alive. Remember: small daily wins compound into massive transformations. Keep stacking your score! 📈✨";
+    } else if (actLevel == 1) {
+      statusBadge = "HABIT BUILDER 🌱";
+      badgeBg = const Color(0xFFF87171).withOpacity(0.12);
+      badgeColor = const Color(0xFFF87171);
+      motivationTitle = "KEEP MOVING FORWARD";
+      motivationHeader = "STREAK PRESERVED! ✅🌱";
+      motivationQuote = "EVERY SINGLE LOG COUNTS! You showed up for yourself today. Even on busy days, keeping the habit alive is what separates you from the rest. Tomorrow, let's step it up to a new level! 🦁🚀";
+    }
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      barrierColor: Colors.black.withOpacity(0.7),
+      builder: (context) {
+        return ClipRRect(
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(28),
+            topRight: Radius.circular(28),
+          ),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 25, sigmaY: 25),
+            child: Container(
+              constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.85),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xEC121214) : Colors.white.withOpacity(0.95),
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(28),
+                  topRight: Radius.circular(28),
+                ),
+                border: Border.all(
+                  color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFE8EBE6),
+                  width: 1.5,
+                ),
+              ),
+              padding: const EdgeInsets.only(left: 20, right: 20, top: 16, bottom: 32),
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Slide indicator handle
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFE8EBE6),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Date & Status Row
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Flexible(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                DateFormat('EEEE, MMM d, yyyy').format(date).toUpperCase(),
+                                style: TextStyle(
+                                  fontSize: 9.5,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 1.2,
+                                  color: textMutedColor,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                motivationHeader,
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w900,
+                                  color: textColor,
+                                  letterSpacing: -0.5,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: badgeBg,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: badgeColor.withOpacity(0.3), width: 1.0),
+                          ),
+                          child: Text(
+                            statusBadge,
+                            style: TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w900,
+                              color: badgeColor,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+
+                    // --- DETAILED HABITS BENTO GRID ---
+                    
+                    // 1. Calories Bento Card
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF1C1C1E) : const Color(0xFFF9F9F9),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFE8EBE6),
+                          width: 1.0,
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                "CALORIE ENERGY TRACKER",
+                                style: TextStyle(
+                                  fontSize: 9.5,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 1.0,
+                                  color: textMutedColor,
+                                ),
+                              ),
+                              Text(
+                                "$consumedCal / $calorieGoal kcal",
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w900,
+                                  color: textColor,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(4),
+                            child: LinearProgressIndicator(
+                              value: (consumedCal / calorieGoal).clamp(0.0, 1.2),
+                              minHeight: 8,
+                              backgroundColor: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFE8EBE6),
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                consumedCal > calorieGoal 
+                                    ? const Color(0xFFEF4444) 
+                                    : const Color(0xFFCDF200)
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            consumedCal >= calorieGoal 
+                                ? "Fueled up! Calories fully stocked for muscular hypertrophy."
+                                : "Remaining deficit room: ${(calorieGoal - consumedCal)} kcal left to hit target goal.",
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: textMutedColor,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // 2. Row of Water & Food Log Counters
+                    Row(
+                      children: [
+                        // Hydration Bento
+                        Expanded(
+                          child: Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: isDark ? const Color(0xFF1C1C1E) : const Color(0xFFF9F9F9),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFE8EBE6),
+                                width: 1.0,
+                              ),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  "HYDRATION",
+                                  style: TextStyle(
+                                    fontSize: 9.5,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 1.0,
+                                    color: textMutedColor,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Row(
+                                  children: [
+                                    const Text('💧', style: TextStyle(fontSize: 20)),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            "$waterConsumed ml",
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w900,
+                                              color: textColor,
+                                            ),
+                                          ),
+                                          Text(
+                                            "Goal: ${waterGoal.toInt()}ml",
+                                            style: TextStyle(
+                                              fontSize: 10,
+                                              color: textMutedColor,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    )
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        // Food Logs Bento
+                        Expanded(
+                          child: Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: isDark ? const Color(0xFF1C1C1E) : const Color(0xFFF9F9F9),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFE8EBE6),
+                                width: 1.0,
+                              ),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  "JOURNAL LOGS",
+                                  style: TextStyle(
+                                    fontSize: 9.5,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 1.0,
+                                    color: textMutedColor,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Row(
+                                  children: [
+                                    const Text('📝', style: TextStyle(fontSize: 20)),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            "${loggedItems.length} food logs",
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w900,
+                                              color: textColor,
+                                            ),
+                                          ),
+                                          Text(
+                                            "Items tracked",
+                                            style: TextStyle(
+                                              fontSize: 10,
+                                              color: textMutedColor,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    )
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+
+                    // 3. Macronutrient detailed breakdown bento
+                    if (loggedItems.isNotEmpty)
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0xFF1C1C1E) : const Color(0xFFF9F9F9),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFE8EBE6),
+                            width: 1.0,
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "MACRONUTRIENT RATIOS",
+                              style: TextStyle(
+                                fontSize: 9.5,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1.0,
+                                color: textMutedColor,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                // Protein
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        const Text('🍗', style: TextStyle(fontSize: 12)),
+                                        const SizedBox(width: 4),
+                                        Text('Protein', style: TextStyle(fontSize: 11, color: textColor, fontWeight: FontWeight.bold)),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text('${proteinConsumed.round()}g / ${proteinGoal.round()}g', style: TextStyle(fontSize: 12, color: textMutedColor, fontWeight: FontWeight.w600)),
+                                  ],
+                                ),
+                                // Carbs
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        const Text('🍚', style: TextStyle(fontSize: 12)),
+                                        const SizedBox(width: 4),
+                                        Text('Carbs', style: TextStyle(fontSize: 11, color: textColor, fontWeight: FontWeight.bold)),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text('${carbConsumed.round()}g / ${carbGoal.round()}g', style: TextStyle(fontSize: 12, color: textMutedColor, fontWeight: FontWeight.w600)),
+                                  ],
+                                ),
+                                // Fat
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        const Text('💧', style: TextStyle(fontSize: 12)),
+                                        const SizedBox(width: 4),
+                                        Text('Fats', style: TextStyle(fontSize: 11, color: textColor, fontWeight: FontWeight.bold)),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text('${fatConsumed.round()}g / ${fatGoal.round()}g', style: TextStyle(fontSize: 12, color: textMutedColor, fontWeight: FontWeight.w600)),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    if (loggedItems.isNotEmpty) const SizedBox(height: 20),
+
+                    // 4. Detailed Workouts Breakdown Box
+                    Text(
+                      'WORKOUTS COMPLETED',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.0,
+                        color: textMutedColor,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    if (dayWorkouts.isEmpty)
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0xFF1C1C1E) : const Color(0xFFF5F5F5),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Row(
+                          children: [
+                            const Text('🧘 ', style: TextStyle(fontSize: 16)),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Active Rest & Recovery Day',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.bold,
+                                      color: textColor,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'Growth happens during recovery. Let muscles rebuild!',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      color: textMutedColor,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    else
+                      ...dayWorkouts.map((workout) {
+                        return Container(
+                          width: double.infinity,
+                          margin: const EdgeInsets.only(bottom: 10),
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: isDark ? const Color(0xFF151811) : const Color(0xFFF9FBE7),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: accentColor.withOpacity(0.2),
+                              width: 1.0,
+                            ),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  const Text('🏋️ ', style: TextStyle(fontSize: 14)),
+                                  Expanded(
+                                    child: Text(
+                                      workout.notes.isNotEmpty ? workout.notes : 'Strength Training Session',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.bold,
+                                        color: textColor,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                '${workout.exercises.length} exercises completed • ${(workout.durationSeconds ~/ 60)} min session duration',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: textMutedColor,
+                                ),
+                              ),
+                              const Divider(height: 16, color: Color(0x1AFFFFFF)),
+                              // Exercise level detail logs
+                              ...workout.exercises.map<Widget>((ExerciseLog ex) {
+                                final completedSets = ex.sets.where((ExerciseSet s) => s.isCompleted).length;
+                                return Padding(
+                                  padding: const EdgeInsets.only(top: 4.0, left: 4.0),
+                                  child: Row(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const Icon(Icons.check_circle_rounded, color: Color(0xFFCDF200), size: 13),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          '${ex.name}: $completedSets set${completedSets == 1 ? '' : 's'} (${ex.sets.map((s) => '${s.weight.round()}kg x ${s.reps}').join(', ')})',
+                                          style: TextStyle(
+                                            fontSize: 11.5,
+                                            color: textColor.withOpacity(0.9),
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }).toList(),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                    const SizedBox(height: 20),
+
+                    // 5. Detailed Foods Eaten Box
+                    Text(
+                      'FOODS LOGGED',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.0,
+                        color: textMutedColor,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    if (loggedItems.isEmpty)
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0xFF1C1C1E) : const Color(0xFFF5F5F5),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Row(
+                          children: [
+                            const Text('🍽️ ', style: TextStyle(fontSize: 16)),
+                            Text(
+                              'No food logged on this day',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: textColor,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    else
+                      ...loggedItems.map((item) {
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: isDark ? const Color(0xFF1C1C1E) : const Color(0xFFF5F5F5),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFE8EBE6),
+                              width: 1.0,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Text(
+                                item['meal'] == 'BREAKFAST'
+                                    ? '🍳 '
+                                    : item['meal'] == 'LUNCH'
+                                        ? '🥗 '
+                                        : item['meal'] == 'DINNER'
+                                            ? '🥩 '
+                                            : '🍎 ',
+                                style: const TextStyle(fontSize: 14),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      item['name'],
+                                      style: TextStyle(
+                                        fontSize: 12.5,
+                                        fontWeight: FontWeight.bold,
+                                        color: textColor,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      'P: ${item['protein'] ?? 0}g • C: ${item['carbs'] ?? 0}g • F: ${item['fat'] ?? 0}g',
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w600,
+                                        color: textMutedColor,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                '${item['calories']} kcal',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w900,
+                                  color: isDark ? const Color(0xFFCDF200) : const Color(0xFF5A6B00),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                    const SizedBox(height: 24),
+
+                    // 6. Motivation Central Premium Banner
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(18),
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF151811) : const Color(0xFFF9FBE7),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: accentColor.withOpacity(0.3),
+                          width: 1.5,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: accentColor.withOpacity(0.05),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          )
+                        ],
+                      ),
+                      child: Column(
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text('🔥 ', style: const TextStyle(fontSize: 14)),
+                              Flexible(
+                                child: Text(
+                                  motivationTitle,
+                                  style: const TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: 1.5,
+                                    color: Color(0xFFCDF200),
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              Text(' 🔥', style: const TextStyle(fontSize: 14)),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            motivationQuote,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.bold,
+                              height: 1.4,
+                              color: isDark ? Colors.white : AppTheme.textPrimary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildStreakDetailStatTile({
+    required String icon,
+    required String label,
+    required String value,
+    required bool isDark,
+  }) {
+    final textColor = isDark ? Colors.white : AppTheme.textPrimary;
+    final textMutedColor = isDark ? const Color(0xFF868685) : AppTheme.textSecondary;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1C1C1E) : const Color(0xFFF5F5F5),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Text(icon, style: const TextStyle(fontSize: 18)),
+          const SizedBox(width: 8),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 8,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.5,
+                  color: textMutedColor,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w900,
+                  color: textColor,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildWeeklyCalendarBar(String selectedDate, bool isDark) {
     final now = DateTime.now();
 
     return SizedBox(
-      height: 80,
+      height: 64,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         itemCount: 1000, // Virtually infinite past days
@@ -479,13 +1280,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             },
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
-              width: 54,
-              margin: const EdgeInsets.only(right: 8),
+              width: 48,
+              margin: const EdgeInsets.only(right: 6),
               decoration: BoxDecoration(
                 color: isSelected
                     ? AppTheme.accentCyan
                     : (isDark ? const Color(0xFF1C1C1E) : AppTheme.glassBackground),
-                borderRadius: BorderRadius.circular(12), // rounded-lg
+                borderRadius: BorderRadius.circular(10),
                 border: Border.all(
                   color: isSelected
                       ? AppTheme.accentCyan
@@ -505,16 +1306,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       color: isSelected ? const Color(0xFF5A6B00) : const Color(0xFFC5C9AC),
                     ),
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: 1),
                   Text(
                     dayNumStr,
                     style: TextStyle(
-                      fontSize: 20,
+                      fontSize: 16,
                       fontWeight: FontWeight.w900,
                       color: isSelected ? const Color(0xFF5A6B00) : (isDark ? Colors.white : AppTheme.textPrimary),
                     ),
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: 1),
                   Text(
                     monthStr,
                     style: TextStyle(
@@ -533,7 +1334,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  bool _isDayActive(DateTime date, List<dynamic> workouts) {
+  bool _isDayActive(DateTime date, List<WorkoutSession> workouts) {
     final dateStr = DateFormat('yyyy-MM-dd').format(date);
     final metrics = StorageService.getDailyMetrics(dateStr);
 
@@ -556,7 +1357,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       return true;
     }
 
-    final hasWorkout = workouts.any((w) => w.date == dateStr);
+    final hasWorkout = workouts.any((WorkoutSession w) => w.date == dateStr);
     if (hasWorkout) {
       return true;
     }
@@ -577,7 +1378,32 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     return false;
   }
 
-  int _calculateStreak(List<dynamic> workouts) {
+  int _getDayActivityLevel(DateTime date, List<WorkoutSession> workouts) {
+    final dateStr = DateFormat('yyyy-MM-dd').format(date);
+    final metrics = StorageService.getDailyMetrics(dateStr);
+    
+    final int water = ((metrics['water'] ?? 0) as num).toInt();
+    final List loggedItems = metrics['logged_items'] ?? [];
+    final hasWorkout = workouts.any((WorkoutSession w) => w.date == dateStr);
+
+    // Active rest day / minimal log counts as level 0
+    if (water <= 250 && loggedItems.isEmpty && !hasWorkout) {
+      return 0;
+    }
+
+    // Level calculation based on healthy habits progress
+    if (hasWorkout && loggedItems.length >= 3 && water >= 2000) {
+      return 4; // Max activity
+    } else if ((loggedItems.length >= 3 && water >= 1500) || (hasWorkout && water >= 1500)) {
+      return 3; // High activity
+    } else if (hasWorkout || loggedItems.length >= 2 || water >= 1000) {
+      return 2; // Medium activity
+    } else {
+      return 1; // Light activity
+    }
+  }
+
+  int _calculateStreak(List<WorkoutSession> workouts) {
     final today = DateTime.now();
     int streak = 0;
 
@@ -593,284 +1419,334 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     return streak > 0 ? streak : 7;
   }
 
-  Widget _buildDailyStreakCard(List<dynamic> workouts, bool isDark) {
+  Widget _buildDailyStreakCard(List<WorkoutSession> workouts, bool isDark) {
     final streak = _calculateStreak(workouts);
     final cardBgColor = isDark ? const Color(0xFF1C1C1E) : AppTheme.glassBackground;
     final borderColor = isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder;
     final textColor = isDark ? Colors.white : AppTheme.textPrimary;
     final textMutedColor = isDark ? const Color(0xFF868685) : AppTheme.textSecondary;
+    final interactiveBgColor = isDark ? const Color(0xFF2C2C2E) : const Color(0xFFE8EBE6);
 
     final today = DateTime.now();
-    final List<DateTime> last7Days = List.generate(7, (i) => today.subtract(Duration(days: 6 - i)));
     final bool isTodayActive = _isDayActive(today, workouts);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        GestureDetector(
-          onTap: () => _showStreakDetailsBottomSheet(context, workouts),
-          child: GlassCard(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            borderRadius: BorderRadius.circular(24),
-            customBgColor: cardBgColor,
-            customBorder: Border.all(color: borderColor, width: 1.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+    // Start date is exactly 364 days ago adjusted to a Sunday.
+    final DateTime gridStart = today.subtract(Duration(days: 364 + today.weekday % 7));
+
+    // Zoomed sizes: cell size 12x12, margins: 2.0 horizontal/vertical.
+    // So column spacing is 12 + 4.0 = 16.0. Row height is 12 + 4.0 = 16.0.
+    const double colSpacing = 16.0;
+    const double cellHeight = 16.0;
+
+    // Construct years headers
+    final List<Widget> yearLabels = [];
+    int? lastYear;
+
+    for (int col = 0; col < 53; col++) {
+      final sundayOfThisWeek = gridStart.add(Duration(days: col * 7));
+      final yearVal = sundayOfThisWeek.year;
+      
+      if (col == 0 || yearVal != lastYear) {
+        yearLabels.add(
+          Container(
+            width: colSpacing * 8, // Scale with colSpacing
+            alignment: Alignment.centerLeft,
+            child: Text(
+              '$yearVal',
+              style: TextStyle(
+                fontSize: 9,
+                fontWeight: FontWeight.w900,
+                color: textMutedColor,
+              ),
+            ),
+          ),
+        );
+        lastYear = yearVal;
+        col += 7;
+      } else {
+        yearLabels.add(
+          const SizedBox(width: colSpacing),
+        );
+      }
+    }
+
+    // Construct months headers
+    final List<Widget> monthLabels = [];
+    String? lastMonth;
+
+    for (int col = 0; col < 53; col++) {
+      final sundayOfThisWeek = gridStart.add(Duration(days: col * 7));
+      final monthStr = DateFormat('MMM').format(sundayOfThisWeek);
+      
+      if (col == 0 || monthStr != lastMonth) {
+        monthLabels.add(
+          Container(
+            width: colSpacing * 4, // Scale with colSpacing
+            alignment: Alignment.centerLeft,
+            child: Text(
+              monthStr,
+              style: TextStyle(
+                fontSize: 9,
+                fontWeight: FontWeight.bold,
+                color: textMutedColor,
+              ),
+            ),
+          ),
+        );
+        lastMonth = monthStr;
+        col += 3;
+      } else {
+        monthLabels.add(
+          const SizedBox(width: colSpacing),
+        );
+      }
+    }
+
+    return GestureDetector(
+      onTap: () => _showStreakDetailsBottomSheet(context, workouts),
+      child: GlassCard(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        borderRadius: BorderRadius.circular(24),
+        customBgColor: cardBgColor,
+        customBorder: Border.all(color: borderColor, width: 1.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header Row
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                // Title
+                Text(
+                  'Daily Streaks',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.5,
+                    color: textMutedColor,
+                  ),
+                ),
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
+                    const Text(
+                      '🔥 ',
+                      style: TextStyle(fontSize: 12),
+                    ),
                     Text(
-                      'Consistency Score',
+                      '$streak Days',
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: 12,
                         fontWeight: FontWeight.bold,
-                        letterSpacing: 0.5,
-                        color: textMutedColor,
-                      ),
-                    ),
-                    Row(
-                      children: [
-                        const Text(
-                          '🔥 ',
-                          style: TextStyle(fontSize: 12),
-                        ),
-                        Text(
-                          '$streak Days',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFFE6F80F),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-
-                // Metrics Row
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildStreakMetric(
-                        label: 'CURRENT STREAK',
-                        value: '$streak Days',
-                        icon: '🔥',
-                        isDark: isDark,
-                      ),
-                    ),
-                    Expanded(
-                      child: _buildStreakMetric(
-                        label: 'BEST STREAK',
-                        value: '21 Days',
-                        icon: '🏆',
-                        isDark: isDark,
+                        color: isDark ? const Color(0xFFCDF200) : const Color(0xFF5A6B00),
                       ),
                     ),
                   ],
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildStreakMetric(
-                        label: 'MONTHLY RATE',
-                        value: '82%',
-                        icon: '🎯',
-                        isDark: isDark,
-                      ),
-                    ),
-                    Expanded(
-                      child: _buildStreakMetric(
-                        label: 'WEEKLY GOAL',
-                        value: '18 Meals • 24 Scans',
-                        icon: '🥗',
-                        isDark: isDark,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-
-                // Horizontal Divider
-                Container(
-                  height: 1.0,
-                  color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFE8EBE6),
-                ),
-                const SizedBox(height: 16),
-
-                // Last 7 Days Timeline
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: last7Days.map((date) {
-                    final dayLabel = DateFormat('E').format(date); // Mon, Tue, etc.
-                    final isCellToday = date.year == today.year && date.month == today.month && date.day == today.day;
-                    final active = _isDayActive(date, workouts);
-
-                    Widget circle;
-                    if (isCellToday) {
-                      circle = Container(
-                        width: 24,
-                        height: 24,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: const Color(0xFFE6F80F),
-                            width: 2.0,
-                          ),
-                        ),
-                        child: Center(
-                          child: Container(
-                            width: 8,
-                            height: 8,
-                            decoration: const BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Color(0xFFE6F80F),
-                            ),
-                          ),
-                        ),
-                      );
-                    } else if (active) {
-                      circle = Container(
-                        width: 24,
-                        height: 24,
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Color(0xFFE6F80F),
-                        ),
-                        child: const Center(
-                          child: Icon(
-                            Icons.check_rounded,
-                            size: 14,
-                            color: Colors.black,
-                          ),
-                        ),
-                      );
-                    } else {
-                      circle = Container(
-                        width: 24,
-                        height: 24,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFE8EBE6),
-                        ),
-                      );
-                    }
-
-                    return Column(
-                      children: [
-                        Text(
-                          dayLabel,
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                            color: isCellToday ? const Color(0xFFE6F80F) : textMutedColor,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        circle,
-                      ],
-                    );
-                  }).toList(),
                 ),
               ],
             ),
-          ),
-        ),
-        const SizedBox(height: 10),
+            const SizedBox(height: 12),
 
-        // Motivation Banner Section
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF151811) : const Color(0xFFF9FBE7), // Subtle neon tint background
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: isDark ? const Color(0xFF272C15) : const Color(0xFFE6F80F).withOpacity(0.3),
-              width: 1.0,
-            ),
-          ),
-          child: Row(
-            children: [
-              const Text(
-                '💡 ',
-                style: TextStyle(fontSize: 16),
-              ),
-              Expanded(
-                child: Text(
-                  isTodayActive
-                      ? "You're in the top 18% of users this month. 🔥 Keep it up!"
-                      : "Keep your streak alive today by logging one meal.",
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: isDark ? Colors.white : AppTheme.textPrimary,
+            // Horizontal grid scroll container
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Weekday labels Mon, Wed, Fri aligned exactly to cell centers
+                Padding(
+                  padding: const EdgeInsets.only(right: 6.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Matching spacer matching year + month headers
+                      const Text('', style: TextStyle(fontSize: 9)),
+                      const SizedBox(height: 2),
+                      const Text('', style: TextStyle(fontSize: 9)),
+                      const SizedBox(height: 4),
+
+                      // Aligned cells scaled dynamically with cellHeight
+                      SizedBox(height: cellHeight), // Row 0 (Sun)
+                      Container(
+                        height: cellHeight,
+                        alignment: Alignment.centerLeft,
+                        child: Text('Mon', style: TextStyle(fontSize: 8, color: textMutedColor, fontWeight: FontWeight.bold)),
+                      ),
+                      SizedBox(height: cellHeight), // Row 2 (Tue)
+                      Container(
+                        height: cellHeight,
+                        alignment: Alignment.centerLeft,
+                        child: Text('Wed', style: TextStyle(fontSize: 8, color: textMutedColor, fontWeight: FontWeight.bold)),
+                      ),
+                      SizedBox(height: cellHeight), // Row 4 (Thu)
+                      Container(
+                        height: cellHeight,
+                        alignment: Alignment.centerLeft,
+                        child: Text('Fri', style: TextStyle(fontSize: 8, color: textMutedColor, fontWeight: FontWeight.bold)),
+                      ),
+                    ],
                   ),
                 ),
+
+                // The scrolling grid itself
+                Expanded(
+                  child: SingleChildScrollView(
+                    controller: _streakScrollController,
+                    scrollDirection: Axis.horizontal,
+                    physics: const BouncingScrollPhysics(),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Year Names Row
+                        Row(
+                          children: yearLabels,
+                        ),
+                        const SizedBox(height: 2),
+                        // Month Names Row
+                        Row(
+                          children: monthLabels,
+                        ),
+                        const SizedBox(height: 4),
+
+                        // Weeks grid columns
+                        Row(
+                          children: List.generate(53, (colIndex) {
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 2.0),
+                              child: Column(
+                                children: List.generate(7, (rowIndex) {
+                                  final DateTime date = gridStart.add(Duration(days: colIndex * 7 + rowIndex));
+                                  final isFuture = date.isAfter(today);
+                                  final int actLevel = isFuture ? 0 : _getDayActivityLevel(date, workouts);
+                                  
+                                  Color cellColor = interactiveBgColor;
+                                  if (!isFuture && actLevel > 0) {
+                                    double opacity = 0.2;
+                                    if (actLevel == 2) opacity = 0.45;
+                                    if (actLevel == 3) opacity = 0.7;
+                                    if (actLevel == 4) opacity = 1.0;
+                                    cellColor = const Color(0xFFCDF200).withOpacity(opacity);
+                                  } else if (isFuture) {
+                                    cellColor = Colors.transparent;
+                                  }
+
+                                  return GestureDetector(
+                                    onTap: () {
+                                      if (!isFuture) {
+                                        _showDayStreakDetailBottomSheet(context, date, workouts);
+                                      }
+                                    },
+                                    child: Container(
+                                      width: 12,
+                                      height: 12,
+                                      margin: const EdgeInsets.symmetric(vertical: 2.0),
+                                      decoration: BoxDecoration(
+                                        color: cellColor,
+                                        borderRadius: BorderRadius.circular(2.5),
+                                        border: isFuture
+                                            ? null
+                                            : Border.all(
+                                                color: isDark ? Colors.black.withOpacity(0.3) : Colors.white.withOpacity(0.5),
+                                                width: 0.5,
+                                              ),
+                                      ),
+                                    ),
+                                  );
+                                }),
+                              ),
+                            );
+                          }),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 10),
+            // Footer / Legend Row
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Flexible(
+                  child: Text(
+                    'Log food, water or workouts daily to stack your score',
+                    style: TextStyle(
+                      fontSize: 9,
+                      color: textMutedColor,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('Less ', style: TextStyle(fontSize: 9, color: textMutedColor)),
+                    _buildLegendCell(interactiveBgColor, isDark),
+                    _buildLegendCell(const Color(0xFFCDF200).withOpacity(0.2), isDark),
+                    _buildLegendCell(const Color(0xFFCDF200).withOpacity(0.45), isDark),
+                    _buildLegendCell(const Color(0xFFCDF200).withOpacity(0.7), isDark),
+                    _buildLegendCell(const Color(0xFFCDF200), isDark),
+                    Text(' More', style: TextStyle(fontSize: 9, color: textMutedColor)),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+
+            // Motivation Banner Section
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF151811) : const Color(0xFFF9FBE7), // Subtle neon tint background
+                borderRadius: BorderRadius.circular(12), // clean look inside circular(24) card
+                border: Border.all(
+                  color: isDark ? const Color(0xFF272C15) : const Color(0xFFE6F80F).withOpacity(0.3),
+                  width: 1.0,
+                ),
               ),
-            ],
-          ),
+              child: Row(
+                children: [
+                  const Text(
+                    '💡 ',
+                    style: TextStyle(fontSize: 16),
+                  ),
+                  Expanded(
+                    child: Text(
+                      isTodayActive
+                          ? "You're in the top 18% of users this month. 🔥 Keep it up!"
+                          : "Keep your streak alive today by logging one meal.",
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: isDark ? Colors.white : AppTheme.textPrimary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 
-  Widget _buildStreakMetric({
-    required String label,
-    required String value,
-    required String icon,
-    required bool isDark,
-  }) {
-    final textColor = isDark ? Colors.white : AppTheme.textPrimary;
-    final textMutedColor = isDark ? const Color(0xFF868685) : AppTheme.textSecondary;
-
-    return Row(
-      children: [
-        Container(
-          width: 32,
-          height: 32,
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFF0F2EE),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Center(
-            child: Text(
-              icon,
-              style: const TextStyle(fontSize: 16),
-            ),
-          ),
+  Widget _buildLegendCell(Color color, bool isDark) {
+    return Container(
+      width: 11,
+      height: 11,
+      margin: const EdgeInsets.symmetric(horizontal: 1.5),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(2.0),
+        border: Border.all(
+          color: isDark ? Colors.black.withOpacity(0.3) : Colors.white.withOpacity(0.5),
+          width: 0.5,
         ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 9,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 0.5,
-                  color: textMutedColor,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                value,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w900,
-                  color: textColor,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
+      ),
     );
   }
 
@@ -1328,11 +2204,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   Widget _buildQuickActionsRow(String selectedDate) {
-    return Row(
-      children: [
-        Expanded(
-          child: AspectRatio(
-            aspectRatio: 1.0,
+    return SizedBox(
+      height: 82,
+      child: Row(
+        children: [
+          Expanded(
             child: _buildQuickActionButton(
               label: 'Add Meal',
               icon: Icons.restaurant_rounded,
@@ -1344,11 +2220,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               },
             ),
           ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: AspectRatio(
-            aspectRatio: 1.0,
+          const SizedBox(width: 8),
+          Expanded(
             child: _buildQuickActionButton(
               label: 'Product Analyser',
               icon: Icons.qr_code_scanner_rounded,
@@ -1360,11 +2233,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               },
             ),
           ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: AspectRatio(
-            aspectRatio: 1.0,
+          const SizedBox(width: 8),
+          Expanded(
             child: _buildQuickActionButton(
               label: 'Workout Log',
               icon: Icons.fitness_center_rounded,
@@ -1373,8 +2243,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               },
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -1394,15 +2264,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       child: Container(
         decoration: BoxDecoration(
           color: cardBgColor,
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(color: borderColor, width: 1.0),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              width: 48,
-              height: 48,
+              width: 36,
+              height: 36,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: innerBgColor,
@@ -1410,17 +2280,17 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               child: Icon(
                 icon,
                 color: AppTheme.accentCyan,
-                size: 22,
+                size: 18,
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 6),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 4),
               child: Text(
                 label,
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: 11,
                   fontWeight: FontWeight.bold,
                   color: textColor,
                 ),
@@ -1742,45 +2612,47 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                             runSpacing: 6,
                             children: categories.map((cat) {
                               final isSelected = selectedMealKey == cat['key'];
-                              return ChoiceChip(
-                                label: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      cat['icon'] as IconData,
-                                      size: 11,
-                                      color: isSelected ? Colors.black : Colors.white70,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      cat['name'] as String,
-                                      style: TextStyle(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.bold,
-                                        color: isSelected ? Colors.black : Colors.white70,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                selected: isSelected,
-                                selectedColor: AppTheme.accentCyan,
-                                backgroundColor: Colors.white.withOpacity(0.03),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                  side: BorderSide(
+                              return GestureDetector(
+                                onTap: () {
+                                  setState(() {
+                                    selectedMealKey = cat['key'] as String;
+                                  });
+                                },
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 200),
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                  decoration: BoxDecoration(
                                     color: isSelected
                                         ? AppTheme.accentCyan
-                                        : Colors.white.withOpacity(0.08),
+                                        : Colors.white.withOpacity(0.03),
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(
+                                      color: isSelected
+                                          ? AppTheme.accentCyan
+                                          : Colors.white.withOpacity(0.08),
+                                      width: 1.0,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        cat['icon'] as IconData,
+                                        size: 11,
+                                        color: isSelected ? Colors.black : Colors.white70,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        cat['name'] as String,
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold,
+                                          color: isSelected ? Colors.black : Colors.white70,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                                showCheckmark: false,
-                                onSelected: (selected) {
-                                  if (selected) {
-                                    setState(() {
-                                      selectedMealKey = cat['key'] as String;
-                                    });
-                                  }
-                                },
                               );
                             }).toList(),
                           ),

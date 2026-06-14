@@ -1653,52 +1653,55 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
               final isSelected = _selectedMealKey == cat['key'];
               return Padding(
                 padding: const EdgeInsets.only(right: 8.0),
-                child: ChoiceChip(
-                  label: Row(
-                    children: [
-                      Icon(
-                        cat['icon'] as IconData,
-                        size: 14,
-                        color: isSelected
-                            ? Colors.black
-                            : AppTheme.textSecondary,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        cat['name'] as String,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: isSelected
-                              ? Colors.black
-                              : (isDark ? Colors.white70 : AppTheme.textPrimary),
-                        ),
-                      ),
-                    ],
-                  ),
-                  selected: isSelected,
-                  selectedColor: AppTheme.accentCyan,
-                  backgroundColor: isDark
-                      ? Colors.white.withOpacity(0.03)
-                      : Colors.black.withOpacity(0.03),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(24),
-                    side: BorderSide(
+                child: GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _selectedMealKey = cat['key'] as String;
+                    });
+                  },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    decoration: BoxDecoration(
                       color: isSelected
                           ? AppTheme.accentCyan
                           : (isDark
-                              ? AppTheme.glassBorder
-                              : Colors.black.withOpacity(0.08)),
+                              ? Colors.white.withOpacity(0.03)
+                              : Colors.black.withOpacity(0.03)),
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(
+                        color: isSelected
+                            ? AppTheme.accentCyan
+                            : (isDark
+                                ? AppTheme.glassBorder
+                                : Colors.black.withOpacity(0.08)),
+                        width: 1.0,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          cat['icon'] as IconData,
+                          size: 14,
+                          color: isSelected
+                              ? Colors.black
+                              : AppTheme.textSecondary,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          cat['name'] as String,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: isSelected
+                                ? Colors.black
+                                : (isDark ? Colors.white70 : AppTheme.textPrimary),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  showCheckmark: false,
-                  onSelected: (selected) {
-                    if (selected) {
-                      setState(() {
-                        _selectedMealKey = cat['key'] as String;
-                      });
-                    }
-                  },
                 ),
               );
             },
@@ -1720,13 +1723,13 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Review Screen',
                     style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.w900,
                       letterSpacing: -0.5,
-                      color: AppTheme.accentEmerald,
+                      color: isDark ? Colors.white : AppTheme.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -1760,10 +1763,10 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
             margin: const EdgeInsets.only(bottom: 20),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: const Color(0xFFE2F6D5),
-              borderRadius: BorderRadius.circular(24),
+              color: isDark ? const Color(0xFF1C1C1E) : const Color(0xFFE2F6D5),
+              borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: const Color(0xFFC5EDAB),
+                color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFC5EDAB),
                 width: 1.0,
               ),
             ),
@@ -1772,35 +1775,35 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
               children: [
                 Container(
                   padding: const EdgeInsets.all(4),
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFC5EDAB),
+                  decoration: BoxDecoration(
+                    color: isDark ? AppTheme.accentCyan.withOpacity(0.12) : const Color(0xFFC5EDAB),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.auto_awesome_rounded,
-                    color: Color(0xFF054D28),
+                    color: isDark ? AppTheme.accentCyan : const Color(0xFF054D28),
                     size: 14,
                   ),
                 ),
                 const SizedBox(width: 12),
-                const Expanded(
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         "AI ESTIMATE NOTICE",
                         style: TextStyle(
-                          color: Color(0xFF054D28),
+                          color: isDark ? AppTheme.accentCyan : const Color(0xFF054D28),
                           fontSize: 9,
                           fontWeight: FontWeight.w900,
                           letterSpacing: 1.0,
                         ),
                       ),
-                      SizedBox(height: 3),
+                      const SizedBox(height: 3),
                       Text(
                         "Nutritional values are estimates generated by AI. Please review and adjust the details below.",
                         style: TextStyle(
-                          color: Color(0xFF0E0F0C),
+                          color: isDark ? const Color(0xFF868685) : const Color(0xFF0E0F0C),
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
                           height: 1.3,
@@ -1901,10 +1904,10 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
           Container(
             padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 18),
             decoration: BoxDecoration(
-              color: const Color(0xFFE2F6D5),
+              color: isDark ? const Color(0xFF1C1C1E) : const Color(0xFFE2F6D5),
               borderRadius: BorderRadius.circular(24),
               border: Border.all(
-                color: const Color(0xFFC5EDAB),
+                color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFC5EDAB),
                 width: 1.2,
               ),
             ),
@@ -1916,23 +1919,23 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFC5EDAB),
+                        color: isDark ? AppTheme.accentCyan.withOpacity(0.12) : const Color(0xFFC5EDAB),
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.local_fire_department_rounded,
-                        color: Color(0xFF054D28),
+                        color: isDark ? AppTheme.accentCyan : const Color(0xFF054D28),
                         size: 20,
                       ),
                     ),
                     const SizedBox(width: 12),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
+                      children: [
                         Text(
                           'CALORIES',
                           style: TextStyle(
-                            color: Color(0xFF054D28),
+                            color: isDark ? AppTheme.accentCyan : const Color(0xFF054D28),
                             fontSize: 9,
                             fontWeight: FontWeight.w900,
                             letterSpacing: 0.8,
@@ -1941,7 +1944,7 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
                         Text(
                           'Energy Intake',
                           style: TextStyle(
-                            color: Color(0xFF054D28),
+                            color: isDark ? const Color(0xFF868685) : const Color(0xFF054D28),
                             fontSize: 10,
                             fontWeight: FontWeight.w500,
                           ),

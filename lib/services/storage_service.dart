@@ -41,7 +41,7 @@ class StorageService {
     _recentScansBox = await Hive.openBox<Map>(_recentScansBoxName);
 
     // Seed realistic dummy data for interactive metrics visual experience
-    seedDummyData();
+    await seedDummyData();
   }
 
   /// Retrieves the saved user profile from Hive.
@@ -52,6 +52,22 @@ class StorageService {
   /// Saves the user profile in Hive.
   static Future<void> saveUserProfile(UserProfile profile) async {
     await _profileBox.put('current_profile', profile);
+  }
+
+  /// Retrieves the profile picture base64 from Hive.
+  static String? getProfilePicture() {
+    final raw = _reminderBox.get('profile_picture');
+    if (raw == null) return null;
+    return raw['base64'] as String?;
+  }
+
+  /// Saves the profile picture base64 to Hive.
+  static Future<void> saveProfilePicture(String? base64Str) async {
+    if (base64Str == null) {
+      await _reminderBox.delete('profile_picture');
+    } else {
+      await _reminderBox.put('profile_picture', {'base64': base64Str});
+    }
   }
 
   /// Clears the user profile and daily stats (resets the database).
@@ -720,7 +736,16 @@ class StorageService {
   }
 
   /// Seeds premium mock data for calories, macros, hydration, and workout history.
-  static void seedDummyData() {
+  static Future<void> seedDummyData() async {
+    // Check db version to force re-seeding if we upgraded the schema
+    final Map? currentDbVersionMap = _workoutBox.get('db_version');
+    final String? currentDbVersion = currentDbVersionMap?['version'] as String?;
+    if (currentDbVersion != 'v6') {
+      await _dailyBox.clear();
+      await _workoutBox.clear();
+      await _workoutBox.put('db_version', {'version': 'v6'});
+    }
+
     // 1. Seed User Profile if not existing
     if (_profileBox.get('current_profile') == null) {
       _profileBox.put(
@@ -741,108 +766,149 @@ class StorageService {
 
     // 2. Seed Pinned Widgets if not existing
     if (_workoutBox.get('pinned_widgets_list') == null) {
-      _workoutBox.put('pinned_widgets_list', {
+      await _workoutBox.put('pinned_widgets_list', {
         'list': ['calorie', 'workout', 'scanner', 'progress']
       });
     }
 
-    // 3. Seed Workouts Log History dynamically for the past 180 days
-    final existingWorkouts = _workoutBox.get('workout_list');
-    if (existingWorkouts == null || (existingWorkouts['list'] as List?) == null || (existingWorkouts['list'] as List).length < 80) {
-      final now = DateTime.now();
-      String formatDate(DateTime dt) => DateFormat('yyyy-MM-dd').format(dt);
-
-      final List<Map<String, dynamic>> mockWorkouts = [];
-      
-      for (int i = 0; i < 180; i++) {
-        // Log a workout session every 2 days for realistic metrics history
-        if (i % 2 == 0) {
-          final workoutDate = now.subtract(Duration(days: i));
-          final int type = (i ~/ 2) % 3;
-          
-          if (type == 0) {
-            mockWorkouts.add({
-              'id': 'mock_push_$i',
-              'date': formatDate(workoutDate),
-              'exercises': [
-                {
-                  'name': 'Bench Press',
-                  'category': 'Chest',
-                  'sets': [
-                    {'weight': 60.0 + (i % 5) * 5, 'reps': 10, 'durationSeconds': 0, 'isCompleted': true},
-                    {'weight': 70.0 + (i % 5) * 5, 'reps': 8, 'durationSeconds': 0, 'isCompleted': true},
-                  ],
-                },
-                {
-                  'name': 'Tricep Pushdown',
-                  'category': 'Arms',
-                  'sets': [
-                    {'weight': 20.0 + (i % 3) * 2.5, 'reps': 12, 'durationSeconds': 0, 'isCompleted': true},
-                  ],
-                },
-              ],
-              'durationSeconds': 2400,
-              'notes': 'Great chest pump today, felt strong.',
-            });
-          } else if (type == 1) {
-            mockWorkouts.add({
-              'id': 'mock_pull_$i',
-              'date': formatDate(workoutDate),
-              'exercises': [
-                {
-                  'name': 'Pullups',
-                  'category': 'Back',
-                  'sets': [
-                    {'weight': 0.0, 'reps': 10, 'durationSeconds': 0, 'isCompleted': true},
-                    {'weight': 0.0, 'reps': 8, 'durationSeconds': 0, 'isCompleted': true},
-                  ],
-                },
-                {
-                  'name': 'Bicep Barbell Curl',
-                  'category': 'Arms',
-                  'sets': [
-                    {'weight': 30.0 + (i % 4) * 2.5, 'reps': 12, 'durationSeconds': 0, 'isCompleted': true},
-                  ],
-                },
-              ],
-              'durationSeconds': 1800,
-              'notes': 'Back feeling wider, curls felt solid.',
-            });
-          } else {
-            mockWorkouts.add({
-              'id': 'mock_legs_$i',
-              'date': formatDate(workoutDate),
-              'exercises': [
-                {
-                  'name': 'Barbell Squat',
-                  'category': 'Legs',
-                  'sets': [
-                    {'weight': 80.0 + (i % 5) * 10, 'reps': 10, 'durationSeconds': 0, 'isCompleted': true},
-                    {'weight': 100.0 + (i % 5) * 10, 'reps': 8, 'durationSeconds': 0, 'isCompleted': true},
-                  ],
-                },
-              ],
-              'durationSeconds': 2700,
-              'notes': 'Crushed squats, quad pump is real!',
-            });
-          }
-        }
-      }
-
-      _workoutBox.put('workout_list', {'list': mockWorkouts});
-    }
-
-    // 4. Seed Daily Nutrition Metrics for the past 180 days (providing a rich multi-week interactive history)
+    // 3. Seed Workouts and Nutrition history dynamically for the past 180 days
     final now = DateTime.now();
     String formatDate(DateTime dt) => DateFormat('yyyy-MM-dd').format(dt);
 
-    for (int i = 0; i < 180; i++) {
-      final dateKey = formatDate(now.subtract(Duration(days: i)));
-      if (_dailyBox.get(dateKey) == null) {
-        // Vary the meal entries across 3 realistic diet templates for premium visual depth
-        final int type = i % 3;
-        final List<Map<String, dynamic>> items;
-        if (type == 0) {
+    final existingWorkouts = _workoutBox.get('workout_list');
+    final existingDaily = _dailyBox.get(formatDate(now));
+
+    if (existingWorkouts == null || existingDaily == null) {
+      final List<Map<String, dynamic>> mockWorkouts = [];
+      
+      for (int i = 0; i < 180; i++) {
+        final date = now.subtract(Duration(days: i));
+        final dateKey = formatDate(date);
+        
+        // ── Only the last 18 days are active, everything else is empty ──
+        int level = 0;
+        if (i < 18) {
+          // 18-day streak with organic shade variation (level 1-4, never 0)
+          const recentLevels = [
+            3, 4, 2, 4, 3, 2, 3, 4, 1, // days 0-8  (today → 8 days ago)
+            3, 2, 4, 3, 1, 2, 4, 3, 2, // days 9-17 (9 → 17 days ago)
+          ];
+          level = recentLevels[i];
+        }
+
+        // 1. Generate workouts based on level
+        if (level == 4) {
+          // Intense workout
+          mockWorkouts.add({
+            'id': 'mock_legs_$i',
+            'date': dateKey,
+            'exercises': [
+              {
+                'name': 'Barbell Squat',
+                'category': 'Legs',
+                'sets': [
+                  {'weight': 80.0 + (i % 3) * 10, 'reps': 10, 'durationSeconds': 0, 'isCompleted': true},
+                  {'weight': 100.0 + (i % 3) * 10, 'reps': 8, 'durationSeconds': 0, 'isCompleted': true},
+                  {'weight': 110.0 + (i % 3) * 10, 'reps': 6, 'durationSeconds': 0, 'isCompleted': true},
+                ],
+              },
+              {
+                'name': 'Leg Extension',
+                'category': 'Legs',
+                'sets': [
+                  {'weight': 40.0, 'reps': 12, 'durationSeconds': 0, 'isCompleted': true},
+                  {'weight': 50.0, 'reps': 10, 'durationSeconds': 0, 'isCompleted': true},
+                ],
+              },
+            ],
+            'durationSeconds': 3300,
+            'notes': 'Absolutely demolished leg day. New squat PR! 🦵🔥',
+          });
+        } else if (level == 3) {
+          // Normal workout
+          mockWorkouts.add({
+            'id': 'mock_push_$i',
+            'date': dateKey,
+            'exercises': [
+              {
+                'name': 'Bench Press',
+                'category': 'Chest',
+                'sets': [
+                  {'weight': 60.0 + (i % 3) * 5, 'reps': 10, 'durationSeconds': 0, 'isCompleted': true},
+                  {'weight': 70.0 + (i % 3) * 5, 'reps': 8, 'durationSeconds': 0, 'isCompleted': true},
+                ],
+              },
+              {
+                'name': 'Tricep Pushdown',
+                'category': 'Arms',
+                'sets': [
+                  {'weight': 20.0, 'reps': 12, 'durationSeconds': 0, 'isCompleted': true},
+                ],
+              },
+            ],
+            'durationSeconds': 2400,
+            'notes': 'Great upper body session, bench press feels solid.',
+          });
+        } else if (level == 2 && (i % 3 == 0)) {
+          // Light workout / Active Recovery walk
+          mockWorkouts.add({
+            'id': 'mock_walk_$i',
+            'date': dateKey,
+            'exercises': [
+              {
+                'name': 'Outdoor Walking',
+                'category': 'Cardio',
+                'sets': [
+                  {'weight': 0.0, 'reps': 20, 'durationSeconds': 1200, 'isCompleted': true},
+                ],
+              },
+            ],
+            'durationSeconds': 1200,
+            'notes': 'Active recovery walk around the neighborhood. 🚶‍♂️✨',
+          });
+        }
+
+        // 2. Generate daily metrics based on level
+        int water = 0;
+        List<Map<String, dynamic>> items = [];
+        
+        if (level == 1) {
+          water = 1000;
+          items = [
+            {
+              'name': 'Oatmeal & Banana',
+              'calories': 320,
+              'protein': 10,
+              'carbs': 60,
+              'fat': 4,
+              'meal': 'BREAKFAST',
+              'time': '8:15 AM',
+            }
+          ];
+        } else if (level == 2) {
+          water = 1800;
+          items = [
+            {
+              'name': 'Protein Shake & Banana',
+              'calories': 340,
+              'protein': 30,
+              'carbs': 40,
+              'fat': 5,
+              'meal': 'BREAKFAST',
+              'time': '9:00 AM',
+            },
+            {
+              'name': 'Tuna Salad Wrap',
+              'calories': 450,
+              'protein': 35,
+              'carbs': 15,
+              'fat': 18,
+              'meal': 'LUNCH',
+              'time': '1:15 PM',
+            }
+          ];
+        } else if (level == 3) {
+          water = 2500;
           items = [
             {
               'name': 'Avocado Toast & Eggs',
@@ -863,15 +929,6 @@ class StorageService {
               'time': '1:15 PM',
             },
             {
-              'name': 'Protein Shake & Almonds',
-              'calories': 320,
-              'protein': 32,
-              'carbs': 12,
-              'fat': 14,
-              'meal': 'SNACKS',
-              'time': '4:45 PM',
-            },
-            {
               'name': 'Baked Salmon & Broccoli',
               'calories': 550,
               'protein': 46,
@@ -881,84 +938,50 @@ class StorageService {
               'time': '8:00 PM',
             }
           ];
-        } else if (type == 1) {
+        } else if (level == 4) {
+          water = 3200;
           items = [
             {
-              'name': 'Oatmeal & Blueberries',
-              'calories': 350,
-              'protein': 14,
-              'carbs': 55,
-              'fat': 6,
+              'name': 'Avocado Toast & Eggs',
+              'calories': 480,
+              'protein': 24,
+              'carbs': 38,
+              'fat': 22,
               'meal': 'BREAKFAST',
-              'time': '8:00 AM',
+              'time': '8:30 AM',
             },
             {
-              'name': 'Tuna Salad Wrap',
-              'calories': 450,
-              'protein': 38,
-              'carbs': 32,
-              'fat': 14,
+              'name': 'Grilled Chicken & Rice',
+              'calories': 620,
+              'protein': 54,
+              'carbs': 48,
+              'fat': 12,
               'meal': 'LUNCH',
-              'time': '12:45 PM',
+              'time': '1:15 PM',
             },
             {
-              'name': 'Greek Yogurt & Honey',
-              'calories': 220,
-              'protein': 18,
-              'carbs': 24,
-              'fat': 3,
+              'name': 'Whey Protein Shake & Almonds',
+              'calories': 320,
+              'protein': 32,
+              'carbs': 12,
+              'fat': 14,
               'meal': 'SNACKS',
-              'time': '3:30 PM',
+              'time': '4:45 PM',
             },
             {
-              'name': 'Sirloin Steak & Sweet Potato',
-              'calories': 700,
-              'protein': 52,
-              'carbs': 45,
-              'fat': 24,
+              'name': 'Baked Salmon & Asparagus',
+              'calories': 550,
+              'protein': 46,
+              'carbs': 15,
+              'fat': 28,
               'meal': 'DINNER',
-              'time': '7:30 PM',
+              'time': '8:00 PM',
             }
           ];
         } else {
-          items = [
-            {
-              'name': 'Protein Waffles',
-              'calories': 400,
-              'protein': 30,
-              'carbs': 45,
-              'fat': 8,
-              'meal': 'BREAKFAST',
-              'time': '9:00 AM',
-            },
-            {
-              'name': 'Turkey & Swiss Sandwich',
-              'calories': 500,
-              'protein': 35,
-              'carbs': 40,
-              'fat': 16,
-              'meal': 'LUNCH',
-              'time': '1:30 PM',
-            },
-            {
-              'name': 'Apple & Peanut Butter',
-              'calories': 280,
-              'protein': 8,
-              'carbs': 28,
-              'fat': 16,
-              'meal': 'SNACKS',
-              'time': '4:00 PM',
-            },
-            {
-              'name': 'Shrimp Pasta Primavera',
-              'calories': 600,
-              'protein': 42,
-              'carbs': 65,
-              'fat': 14,
-              'meal': 'DINNER',
-              'time': '8:15 PM',
-            }
-          ];
+          // level == 0
+          water = 250;
+          items = [];
         }
 
         int breakfast = 0;
@@ -986,10 +1009,7 @@ class StorageService {
           if (meal == 'DINNER') dinner = cal;
         }
 
-        // Cycle hydration levels between 1.5L and 3.5L to remain positive
-        final int water = 1500 + ((i * 350) % 2100);
-
-        _dailyBox.put(dateKey, {
+        await _dailyBox.put(dateKey, {
           'water': water,
           'breakfast_cal': breakfast,
           'lunch_cal': lunch,
@@ -1001,6 +1021,8 @@ class StorageService {
           'logged_items': items,
         });
       }
+
+      await _workoutBox.put('workout_list', {'list': mockWorkouts});
     }
   }
 
