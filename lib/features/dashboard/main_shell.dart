@@ -157,12 +157,12 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFCDF200).withOpacity(0.12),
+                    color: const Color(0xFFB2D300).withOpacity(0.12),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
                     Icons.notifications_active_rounded,
-                    color: Color(0xFFCDF200),
+                    color: Color(0xFFB2D300),
                     size: 22,
                   ),
                 ),
