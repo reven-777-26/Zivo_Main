@@ -232,7 +232,7 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
     final bgColor = isDark ? const Color(0xFF000000) : AppTheme.obsidianBackground;
 
     return Scaffold(
-      extendBody: false,
+      extendBody: true,
       backgroundColor: bgColor,
       body: Container(
         color: bgColor,
