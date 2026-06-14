@@ -74,7 +74,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                       ),
                       TextSpan(
                         text: 'Fit',
-                        style: const TextStyle(color: Color(0xFFB2D300)),
+                        style: const TextStyle(color: Color(0xFF859D00)),
                       ),
                     ],
                   ),

@@ -8,10 +8,10 @@ class AppTheme {
   static const Color glassBorder = Color(0xFFE8EBE6); // Muted sage border
 
   static const Color accentEmerald = Color(0xFF2EAD4B); // Positive Green
-  static const Color accentCyan = Color(0xFFB2D300); // ZivoFit Neon Accent (Primary Accent)
+  static const Color accentCyan = Color(0xFF859D00); // ZivoFit Neon Accent (Primary Accent)
   static const Color accentCoral = Color(0xFFD03238); // Negative Red
   static const Color accentOrange = Color(0xFFFFC091); // Accent Peach Orange
-  static const Color accentPurple = Color(0xFFB2D300); // ZivoFit Neon Accent
+  static const Color accentPurple = Color(0xFF859D00); // ZivoFit Neon Accent
 
   static const Color textPrimary = Color(0xFF0E0F0C); // Ink Black
   static const Color textSecondary = Color(0xFF868685); // Body Text / Mute Text

@@ -18,7 +18,7 @@
             android:layout_alignParentStart="true"
             android:layout_centerVertical="true"
             android:text="ZIVOFIT"
-            android:textColor="#B2D300"
+            android:textColor="#859D00"
             android:textSize="14sp"
             android:textStyle="bold" />
 
