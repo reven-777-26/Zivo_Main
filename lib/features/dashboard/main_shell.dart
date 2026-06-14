@@ -249,8 +249,8 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
 
     return SafeArea(
       child: Container(
-        margin: const EdgeInsets.only(left: 16, right: 16, bottom: 16, top: 4),
-        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+        margin: const EdgeInsets.only(left: 16, right: 16, bottom: 24, top: 4),
+        padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 8),
         decoration: BoxDecoration(
           color: navBarBgColor,
           borderRadius: BorderRadius.circular(9999),
