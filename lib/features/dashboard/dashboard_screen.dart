@@ -1818,7 +1818,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               // Left side - Circular percent indicator
               CircularPercentIndicator(
                 radius: 50.0,
-                lineWidth: 6.0,
+                lineWidth: 9.0,
                 percent: percent,
                 animation: true,
                 animationDuration: 800,
@@ -1871,7 +1871,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                 children: [
                                   const Icon(
                                     Icons.water_drop_rounded,
-                                    color: AppTheme.accentCyan,
+                                    color: Colors.blueAccent,
                                     size: 13,
                                   ),
                                   const SizedBox(width: 4),
@@ -2063,7 +2063,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   percent: (fatConsumed / fatGoal).clamp(0.0, 1.0),
                   color: const Color(0xFFF87171),
                   centerWidget: const Text(
-                    '💧',
+                    '🥑',
                     style: TextStyle(fontSize: 13),
                   ),
                   isDark: isDark,
@@ -2088,7 +2088,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       children: [
         CircularPercentIndicator(
           radius: 22.0,
-          lineWidth: 3.0,
+          lineWidth: 5.0,
           percent: percent,
           animation: true,
           animationDuration: 800,
