@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZivoFit — Your Health, Perfected. Coming Soon.</title>
+    <meta name="description" content="Track workouts, scan nutrition, and keep your streaks alive. ZivoFit is the ultimate AMOLED-themed health companion. Join the early beta now.">
+    <!-- Google Fonts: Outfit for body/headings -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Background Glows -->
+    <div class="ambient-glow glow-1"></div>
+    <div class="ambient-glow glow-2"></div>
+
+    <!-- Navigation Bar -->
+    <header class="navbar">
+        <div class="nav-container">
+            <a href="#" class="logo-block" id="nav-logo">
+                <div class="logo-icon">
+                    <svg width="42" height="42" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M 23.5 8 A 11 11 0 1 0 23.5 24" stroke="#CDF200" stroke-width="3.2" stroke-linecap="round" fill="none"/>
+                        <path d="M 12.5 12 H 19.5 L 12.5 20 H 19.5" stroke="#CDF200" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                    </svg>
+                </div>
+                <div class="logo-text-row">
+                    <span class="logo-text">Zivo<span class="highlight">Fit</span></span>
+                    <span class="early-beta-pill">EARLY BETA</span>
+                </div>
+            </a>
+            <div class="nav-actions">
+                <a href="#signup" class="btn btn-secondary">Get Access</a>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <!-- Hero Section -->
+        <section class="hero-section">
+            <div class="hero-container">
+                <!-- Hero Content (Left Side) -->
+                <div class="hero-content">
+                    <div class="tagline-row">
+                        <span class="micro-badge">REVOLUTIONIZING FITNESS</span>
+                    </div>
+                    <h1 class="hero-title">Your Health,<br><span class="gradient-text">Perfected.</span></h1>
+                    <p class="hero-subtitle">Track workouts, scan nutrition instantly, and keep your consistency streaks alive in a stunning obsidian interface.</p>
+                    
+                    <!-- Signup Form -->
+                    <form id="signup-form" class="signup-form">
+                        <div class="input-group">
+                            <input type="email" id="email-input" placeholder="Enter your email address" required autocomplete="email">
+                            <button type="submit" class="btn btn-primary">
+                                <span>Join the List</span>
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                                    <polyline points="12 5 19 12 12 19"></polyline>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="form-feedback" id="form-feedback"></div>
+                    </form>
+
+                    <!-- Trust indicators -->
+                    <div class="hero-footer-info">
+                        <span class="info-item">✦ AMOLED Dark Mode</span>
+                        <span class="info-item">✦ Scan & Log Instantly</span>
+                        <span class="info-item">✦ Widget Support</span>
+                    </div>
+                </div>
+
+                <!-- Phone Mockup (Right Side) -->
+                <div class="hero-visual">
+                    <div class="phone-frame-container">
+                        <div class="phone-frame">
+                            <div class="phone-screen">
+                                <!-- Slideshow of screenshots -->
+                                <div class="screenshot-slideshow">
+                                    <img src="images/dashboard.png" class="screenshot active" alt="ZivoFit Dashboard Screen">
+                                    <img src="images/workout.png" class="screenshot" alt="ZivoFit Workouts Tracker">
+                                    <img src="images/scan.png" class="screenshot" alt="ZivoFit Nutrition Scanner">
+                                    <img src="images/progress.png" class="screenshot" alt="ZivoFit Progress Insights">
+                                    <img src="images/landing.png" class="screenshot" alt="ZivoFit App Launch Screen">
+                                    <img src="images/profile.png" class="screenshot" alt="ZivoFit User Profile">
+                                </div>
+                            </div>
+                            <div class="phone-notch"></div>
+                            <div class="phone-speaker"></div>
+                            <div class="phone-volume-up"></div>
+                            <div class="phone-volume-down"></div>
+                            <div class="phone-power"></div>
+                        </div>
+                        <div class="phone-reflection"></div>
+                        <div class="phone-shadow"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Countdown / Launcher Strip -->
+        <section class="countdown-section">
+            <div class="section-container">
+                <div class="countdown-box glass-card">
+                    <h3 class="countdown-label">Beta Launching In</h3>
+                    <div class="countdown-timer" id="countdown">
+                        <div class="time-block">
+                            <span class="number" id="days">00</span>
+                            <span class="label">Days</span>
+                        </div>
+                        <div class="time-separator">:</div>
+                        <div class="time-block">
+                            <span class="number" id="hours">00</span>
+                            <span class="label">Hours</span>
+                        </div>
+                        <div class="time-separator">:</div>
+                        <div class="time-block">
+                            <span class="number" id="minutes">00</span>
+                            <span class="label">Mins</span>
+                        </div>
+                        <div class="time-separator">:</div>
+                        <div class="time-block">
+                            <span class="number" id="seconds">00</span>
+                            <span class="label">Secs</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Bento Features Showcase -->
+        <section class="features-section">
+            <div class="section-container">
+                <h2 class="section-heading">Designed for <span class="highlight">Performance</span></h2>
+                <p class="section-subheading">A sleek, lightning-fast app built to keep you moving towards your goals daily.</p>
+
+                <div class="bento-grid">
+                    <!-- Card 1: Streak Heatmap -->
+                    <div class="bento-card col-span-2 row-span-1 glass-card highlight-glow">
+                        <div class="card-content">
+                            <span class="card-category">Streaks</span>
+                            <h3>Never Break the Chain</h3>
+                            <p>Visualize your progress with custom heatmaps. Gamify your consistency and build habits that stick with rewarding milestones.</p>
+                        </div>
+                        <div class="card-visual streak-visual">
+                            <div class="heatmap-grid">
+                                <!-- Mini mocked heatmap grid squares -->
+                                <div class="cell level-0"></div>
+                                <div class="cell level-1"></div>
+                                <div class="cell level-2"></div>
+                                <div class="cell level-3"></div>
+                                <div class="cell level-0"></div>
+                                <div class="cell level-3"></div>
+                                <div class="cell level-2"></div>
+                                <div class="cell level-1"></div>
+                                <div class="cell level-3"></div>
+                                <div class="cell level-3"></div>
+                                <div class="cell level-2"></div>
+                                <div class="cell level-3"></div>
+                                <div class="cell level-1"></div>
+                                <div class="cell level-0"></div>
+                                <div class="cell level-3"></div>
+                                <div class="cell level-3"></div>
+                                <div class="cell level-3"></div>
+                                <div class="cell level-2"></div>
+                                <div class="cell level-3"></div>
+                                <div class="cell level-3"></div>
+                                <div class="cell level-3"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card 2: Food Scanner -->
+                    <div class="bento-card col-span-1 row-span-1 glass-card">
+                        <div class="card-content">
+                            <span class="card-category">Smart Tech</span>
+                            <h3>Nutrition Scanning</h3>
+                            <p>Point your camera, scan ingredients, and view detailed macro breakdowns instantly. Logging is now friction-free.</p>
+                        </div>
+                        <div class="card-visual scan-visual">
+                            <div class="scanner-line"></div>
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#CDF200" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                                <circle cx="12" cy="13" r="4"></circle>
+                            </svg>
+                        </div>
+                    </div>
+
+                    <!-- Card 3: Custom Workout builder -->
+                    <div class="bento-card col-span-1 row-span-1 glass-card">
+                        <div class="card-content">
+                            <span class="card-category">Workouts</span>
+                            <h3>Custom Workouts</h3>
+                            <p>Build and track personalized routines. Monitor reps, sets, rest timers, and weight progressions effortlessly.</p>
+                        </div>
+                        <div class="card-visual workout-visual">
+                            <div class="barbell-graphic">
+                                <div class="bar"></div>
+                                <div class="weight w1"></div>
+                                <div class="weight w2"></div>
+                                <div class="weight w1 right"></div>
+                                <div class="weight w2 right"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card 4: Widgets & Fast Access -->
+                    <div class="bento-card col-span-2 row-span-1 glass-card dark-gradient">
+                        <div class="card-content">
+                            <span class="card-category">Integration</span>
+                            <h3>Native Home Screen Widgets</h3>
+                            <p>Access your health data in real time directly from your device home screen. Quick-glance metrics keep ZivoFit near-of-mind all day long.</p>
+                        </div>
+                        <div class="card-visual widget-visual">
+                            <div class="mock-widget">
+                                <div class="widget-header">
+                                    <span>ZivoFit Focus</span>
+                                    <div class="widget-dot"></div>
+                                </div>
+                                <div class="widget-body">
+                                    <div class="progress-arc">
+                                        <svg width="60" height="60" viewBox="0 0 36 36">
+                                            <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#2C2C2E" stroke-width="3.5" />
+                                            <path class="circle-fill" stroke-dasharray="78, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#CDF200" stroke-width="3.5" stroke-linecap="round" />
+                                            <text x="18" y="20.5" class="circle-text" fill="#FFFFFF">78%</text>
+                                        </svg>
+                                    </div>
+                                    <div class="widget-stats">
+                                        <div class="stat-row"><span>Kcal</span><strong>620</strong></div>
+                                        <div class="stat-row"><span>Streak</span><strong>12 Days</strong></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer Call-to-action / Signup anchors -->
+        <section id="signup" class="footer-signup-section">
+            <div class="section-container">
+                <div class="signup-cta-box glass-card">
+                    <h2 class="cta-title">Be Part of the <span class="highlight">Select Few</span></h2>
+                    <p class="cta-subtitle">Our early beta spaces are strictly limited. Secure your priority spot and receive launch announcements and exclusive rewards.</p>
+                    <button class="btn btn-primary scroll-top-trigger">Secure Beta Access</button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-container">
+            <div class="footer-logo">
+                <div class="logo-block">
+                    <div class="logo-icon">
+                        <svg width="36" height="36" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M 23.5 8 A 11 11 0 1 0 23.5 24" stroke="#CDF200" stroke-width="3.2" stroke-linecap="round" fill="none"/>
+                            <path d="M 12.5 12 H 19.5 L 12.5 20 H 19.5" stroke="#CDF200" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                        </svg>
+                    </div>
+                    <div class="logo-text-row">
+                        <span class="logo-text">Zivo<span class="highlight">Fit</span></span>
+                        <span class="early-beta-pill">EARLY BETA</span>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-links">
+                <a href="#">Privacy Policy</a>
+                <a href="#">Terms of Service</a>
+                <a href="mailto:beta@zivofit.com">Contact Us</a>
+            </div>
+            <div class="footer-copyright">
+                <p>&copy; 2026 ZivoFit. All rights reserved. Your health data is processed entirely locally.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Glass Success Overlay Modal -->
+    <div class="modal-overlay" id="success-modal">
+        <div class="modal-content glass-card">
+            <div class="modal-success-icon">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#CDF200" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+            </div>
+            <h2>You're on the list!</h2>
+            <p>Thanks for registering for the ZivoFit early beta. We'll reach out to <strong id="registered-email">your email</strong> as soon as the first beta slots open.</p>
+            <button class="btn btn-primary" id="close-modal-btn">Awesome</button>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
