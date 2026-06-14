@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme.dart';
+import '../../core/logo_widget.dart';
 import '../../services/firebase_service.dart';
 
 class AuthScreen extends ConsumerStatefulWidget {
@@ -130,26 +131,29 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   // App Branding
-                  Container(
-                    width: 80,
-                    height: 80,
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: AppTheme.accentCyan,
-                    ),
-                    child: const Icon(
-                      Icons.fitness_center_rounded,
-                      size: 40,
-                      color: Color(0xFF0E0F0C), // Ink Black icon on Wise Green background
-                    ),
-                  ).animate().scale(duration: 600.ms, curve: Curves.easeOutBack),
+                  const ZivoLogoWidget(size: 80)
+                      .animate()
+                      .scale(duration: 600.ms, curve: Curves.easeOutBack),
                   const SizedBox(height: 16),
-                  Text(
-                    'FITNOTES 2',
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                          letterSpacing: 2,
-                          fontWeight: FontWeight.w600,
+                  RichText(
+                    text: TextSpan(
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.w800,
+                        fontFamily: 'Outfit',
+                        letterSpacing: -0.5,
+                      ),
+                      children: [
+                        TextSpan(
+                          text: 'Zivo',
+                          style: TextStyle(color: textColor),
                         ),
+                        TextSpan(
+                          text: 'Fit',
+                          style: const TextStyle(color: Color(0xFFCDF200)),
+                        ),
+                      ],
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Text(

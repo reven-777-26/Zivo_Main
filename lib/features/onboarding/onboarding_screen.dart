@@ -4,6 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme.dart';
 import '../../core/health_math.dart';
+import '../../core/logo_widget.dart';
 import '../../models/user_profile.dart';
 import '../../services/state_providers.dart';
 
@@ -240,41 +241,50 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           const Spacer(),
-          // Glowing gym logo graphic
-          Container(
-            width: 96,
-            height: 96,
-            decoration: const BoxDecoration(
-              shape: BoxShape.circle,
-              color: AppTheme.accentCyan, // Wise Green
+          // Zivo circular-Z logo
+          const ZivoLogoWidget(size: 96)
+              .animate()
+              .scale(duration: 800.ms, curve: Curves.elasticOut),
+          const SizedBox(height: 28),
+          
+          // App Title (ZivoFit) in Heavy Display Weight
+          RichText(
+            text: TextSpan(
+              style: const TextStyle(
+                fontSize: 36,
+                fontWeight: FontWeight.w900,
+                fontFamily: 'Outfit',
+                letterSpacing: -0.8,
+              ),
+              children: [
+                TextSpan(
+                  text: 'Zivo',
+                  style: TextStyle(color: isDark ? const Color(0xFFE8EBE6) : AppTheme.textPrimary),
+                ),
+                TextSpan(
+                  text: 'Fit',
+                  style: const TextStyle(color: Color(0xFFCDF200)),
+                ),
+              ],
             ),
-            child: const Icon(
-              Icons.fitness_center_rounded,
-              size: 48,
-              color: Color(0xFF0E0F0C), // Ink Black
-            ),
-          ).animate().scale(duration: 800.ms, curve: Curves.elasticOut),
-          const SizedBox(height: 36),
-          const Text(
-            'Calibrate Live Workouts',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 32,
-              fontWeight: FontWeight.w900,
-              color: AppTheme.textPrimary,
-              letterSpacing: -0.8,
-            ),
-          ),
+          )
+          .animate()
+          .fadeIn(delay: 200.ms, duration: 600.ms)
+          .slideY(begin: 0.15, end: 0, curve: Curves.easeOutCubic),
           const SizedBox(height: 16),
+          
           const Text(
-            'Welcome to FitNotes 2. Log exercises with rapid gym presets, configure calorie splits, and track nutrient balances in an immersive dark theme.',
+            'Welcome to ZivoFit. Log exercises with rapid gym presets, configure calorie splits, and track nutrient balances in an immersive dark theme.',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 15,
               color: AppTheme.textSecondary,
               height: 1.5,
             ),
-          ),
+          )
+          .animate()
+          .fadeIn(delay: 400.ms, duration: 600.ms)
+          .slideY(begin: 0.15, end: 0, curve: Curves.easeOutCubic),
           const Spacer(),
           // Begin button
           GestureDetector(

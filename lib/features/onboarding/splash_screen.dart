@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme.dart';
+import '../../core/logo_widget.dart';
 import '../../services/state_providers.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
@@ -46,20 +47,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Clean Wise logo container
-                Container(
-                  width: 80,
-                  height: 80,
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: AppTheme.accentCyan, // Wise Green
-                  ),
-                  child: const Icon(
-                    Icons.fitness_center_rounded,
-                    size: 40,
-                    color: Color(0xFF0E0F0C), // Ink Black
-                  ),
-                )
+                // Zivo circular-Z logo
+                const ZivoLogoWidget(size: 80)
                 .animate()
                 .fadeIn(duration: 800.ms)
                 .scale(
@@ -69,14 +58,25 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                 ),
                 const SizedBox(height: 32),
                 
-                // App Title (ZIVO) in Heavy Display Weight
-                Text(
-                  'ZIVO',
-                  style: TextStyle(
-                    fontSize: 38,
-                    fontWeight: FontWeight.w900, // Wise Sans heavy display weight
-                    color: textColor,
-                    letterSpacing: -0.8,
+                // App Title (ZivoFit) in Heavy Display Weight
+                RichText(
+                  text: TextSpan(
+                    style: TextStyle(
+                      fontSize: 38,
+                      fontWeight: FontWeight.w900,
+                      fontFamily: 'Outfit',
+                      letterSpacing: -0.8,
+                    ),
+                    children: [
+                      TextSpan(
+                        text: 'Zivo',
+                        style: TextStyle(color: textColor),
+                      ),
+                      TextSpan(
+                        text: 'Fit',
+                        style: const TextStyle(color: Color(0xFFCDF200)),
+                      ),
+                    ],
                   ),
                 )
                 .animate()

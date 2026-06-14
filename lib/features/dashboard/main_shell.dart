@@ -1345,6 +1345,18 @@ class _ProfilePlaceholderScreenState
                 ),
               ),
             ),
+            const SizedBox(height: 24),
+            Center(
+              child: Text(
+                'Beta version 1.0',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: isDark ? const Color(0xFF868685) : AppTheme.textSecondary,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ),
           ],
         ),
       ),
