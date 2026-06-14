@@ -5,8 +5,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const slideInterval = 3000; // 3 seconds
 
     function nextSlide() {
-        // Remove active class from current slide
-        screenshots[currentSlide].classList.remove('active');
+        // Identify outgoing slide
+        const activeSlide = screenshots[currentSlide];
+        
+        // Reset previous classes
+        screenshots.forEach(s => s.classList.remove('previous'));
+        
+        // Flag outgoing slide as previous
+        activeSlide.classList.add('previous');
+        activeSlide.classList.remove('active');
         
         // Calculate index of next slide
         currentSlide = (currentSlide + 1) % screenshots.length;
