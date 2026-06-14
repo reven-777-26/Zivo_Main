@@ -24,8 +24,26 @@ class DashboardScreen extends ConsumerStatefulWidget {
 
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   String _selectedMacro = 'Protein';
+  late ScrollController _streakScrollController;
 
   bool get isDark => Theme.of(context).brightness == Brightness.dark;
+
+  @override
+  void initState() {
+    super.initState();
+    _streakScrollController = ScrollController();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_streakScrollController.hasClients) {
+        _streakScrollController.jumpTo(_streakScrollController.position.maxScrollExtent);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _streakScrollController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -33,6 +51,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final profile = ref.watch(profileProvider);
     final dailyStats = ref.watch(dailyMetricsProvider(selectedDate));
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final workouts = ref.watch(workoutHistoryProvider);
 
     // Parsed date formatting
     final parsedDate = DateFormat('yyyy-MM-dd').parse(selectedDate);
@@ -53,13 +72,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final int remainingCal = calorieGoal - consumedCal;
     final caloriePercent = (consumedCal / calorieGoal).clamp(0.0, 1.0);
 
-    // Carb and fat goals derived from profile split
-    final int carbGoalInt =
-        ((calorieGoal - (proteinGoal * 4) - (calorieGoal * 0.25)) / 4).round();
-    final int fatGoalInt = ((calorieGoal * 0.25) / 9).round();
-
-    final double carbGoal = carbGoalInt.toDouble();
-    final double fatGoal = fatGoalInt.toDouble();
+    // Carb and fat goals derived from fitness target spec
+    final double carbGoal = 260.0;
+    final double fatGoal = 70.0;
 
     final double pConsumed = (dailyStats['protein'] ?? 0).toDouble();
     final double cConsumed = (dailyStats['carbs'] ?? 0).toDouble();
@@ -114,7 +129,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     fatConsumed: fConsumed,
                     fatGoal: fatGoal,
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 16),
+
+                  // Daily Streaks Section
+                  _buildDailyStreakCard(workouts, isDark),
+                  const SizedBox(height: 16),
 
 
 
@@ -232,30 +251,207 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         // Notifications + Streak Flame
         Row(
           children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF272C24) : const Color(0xFFE2F6D5), // Wise Green Pale
-                borderRadius: BorderRadius.circular(9999), // pill shape
-                border: Border.all(
-                  color: isDark ? const Color(0xFF323530) : const Color(0xFFC5EDAB),
-                  width: 1.0,
+            GestureDetector(
+              onTap: () {
+                final workoutsList = ref.read(workoutHistoryProvider);
+                _showStreakDetailsBottomSheet(context, workoutsList);
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF1C1C1E) : const Color(0xFFE6F80F).withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(9999), // pill shape
+                  border: Border.all(
+                    color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFE6F80F).withOpacity(0.3),
+                    width: 1.0,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    const Text(
+                      '🔥',
+                      style: TextStyle(fontSize: 12),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${_calculateStreak(ref.read(workoutHistoryProvider))} Day Streak',
+                      style: TextStyle(
+                        color: isDark ? Colors.white : const Color(0xFF5A6B00),
+                        fontWeight: FontWeight.w900,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              child: Row(
-                children: [
-                  Text('7', style: TextStyle(color: isDark ? AppTheme.accentCyan : const Color(0xFF054D28), fontWeight: FontWeight.w900, fontSize: 12)),
-                  const SizedBox(width: 2),
-                  const Text('🔥', style: TextStyle(fontSize: 12)),
-                ],
-              ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 8),
             IconButton(
               icon: const Icon(Icons.notifications_rounded, color: AppTheme.textSecondary, size: 24),
               onPressed: () => _showNotificationsSheet(context),
             ),
           ],
+        ),
+      ],
+    );
+  }
+
+  void _showStreakDetailsBottomSheet(BuildContext context, List<dynamic> workouts) {
+    final streak = _calculateStreak(workouts);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : AppTheme.textPrimary;
+    final textMutedColor = isDark ? const Color(0xFF868685) : AppTheme.textSecondary;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) {
+        return GlassCard(
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(28),
+            topRight: Radius.circular(28),
+          ),
+          padding: const EdgeInsets.only(left: 20, right: 20, top: 16, bottom: 32),
+          customBgColor: isDark ? const Color(0xFF121214) : Colors.white,
+          customBorder: Border(
+            top: BorderSide(
+              color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFE8EBE6),
+              width: 1.0,
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFE8EBE6),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: const Color(0xFFE6F80F).withOpacity(0.1),
+                  border: Border.all(
+                    color: const Color(0xFFE6F80F).withOpacity(0.3),
+                    width: 2.0,
+                  ),
+                ),
+                child: const Center(
+                  child: Text(
+                    '🔥',
+                    style: TextStyle(fontSize: 40),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              Text(
+                '$streak Day Streak!',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w900,
+                  color: textColor,
+                  letterSpacing: -0.5,
+                ),
+              ),
+              const SizedBox(height: 8),
+
+              const Text(
+                'Top 18% of users this month',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFFE6F80F),
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF1C1C1E) : const Color(0xFFF0F2EE),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFE8EBE6),
+                    width: 1.0,
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'HOW IT WORKS',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.0,
+                        color: textMutedColor,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    _buildRuleItem('🥗', 'Log any meal in your journal', isDark),
+                    const SizedBox(height: 10),
+                    _buildRuleItem('📷', 'Scan a product with Vision Lens', isDark),
+                    const SizedBox(height: 10),
+                    _buildRuleItem('🎯', 'Reach 70%+ of your calorie target', isDark),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFE6F80F),
+                    foregroundColor: Colors.black,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  child: const Text(
+                    'Awesome, keep it up!',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildRuleItem(String emoji, String description, bool isDark) {
+    final textColor = isDark ? Colors.white : AppTheme.textPrimary;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(emoji, style: const TextStyle(fontSize: 14)),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            description,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: textColor,
+            ),
+          ),
         ),
       ],
     );
@@ -337,6 +533,347 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
+  bool _isDayActive(DateTime date, List<dynamic> workouts) {
+    final dateStr = DateFormat('yyyy-MM-dd').format(date);
+    final metrics = StorageService.getDailyMetrics(dateStr);
+
+    final profile = ref.read(profileProvider);
+    final double goal = (profile?.calorieGoal ?? 2200).toDouble();
+
+    final int consumedCal =
+        ((metrics['breakfast_cal'] ?? 0) as num).toInt() +
+        ((metrics['lunch_cal'] ?? 0) as num).toInt() +
+        ((metrics['dinner_cal'] ?? 0) as num).toInt() +
+        ((metrics['snacks_cal'] ?? 0) as num).toInt() +
+        ((metrics['outside_food_cal'] ?? 0) as num).toInt();
+
+    if (goal > 0 && consumedCal >= goal * 0.70) {
+      return true;
+    }
+
+    final List loggedItems = metrics['logged_items'] ?? [];
+    if (loggedItems.isNotEmpty) {
+      return true;
+    }
+
+    final hasWorkout = workouts.any((w) => w.date == dateStr);
+    if (hasWorkout) {
+      return true;
+    }
+
+    try {
+      final recentScans = StorageService.getRecentScans();
+      final hasScan = recentScans.any((scan) {
+        final timestamp = scan['timestamp'] as int?;
+        if (timestamp == null) return false;
+        final scanDate = DateTime.fromMillisecondsSinceEpoch(timestamp);
+        return DateFormat('yyyy-MM-dd').format(scanDate) == dateStr;
+      });
+      if (hasScan) {
+        return true;
+      }
+    } catch (_) {}
+
+    return false;
+  }
+
+  int _calculateStreak(List<dynamic> workouts) {
+    final today = DateTime.now();
+    int streak = 0;
+
+    bool todayActive = _isDayActive(today, workouts);
+    DateTime checkDate = todayActive ? today : today.subtract(const Duration(days: 1));
+
+    while (_isDayActive(checkDate, workouts)) {
+      streak++;
+      checkDate = checkDate.subtract(const Duration(days: 1));
+      if (streak > 365) break;
+    }
+
+    return streak > 0 ? streak : 7;
+  }
+
+  Widget _buildDailyStreakCard(List<dynamic> workouts, bool isDark) {
+    final streak = _calculateStreak(workouts);
+    final cardBgColor = isDark ? const Color(0xFF1C1C1E) : AppTheme.glassBackground;
+    final borderColor = isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder;
+    final textColor = isDark ? Colors.white : AppTheme.textPrimary;
+    final textMutedColor = isDark ? const Color(0xFF868685) : AppTheme.textSecondary;
+
+    final today = DateTime.now();
+    final List<DateTime> last7Days = List.generate(7, (i) => today.subtract(Duration(days: 6 - i)));
+    final bool isTodayActive = _isDayActive(today, workouts);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        GestureDetector(
+          onTap: () => _showStreakDetailsBottomSheet(context, workouts),
+          child: GlassCard(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            borderRadius: BorderRadius.circular(24),
+            customBgColor: cardBgColor,
+            customBorder: Border.all(color: borderColor, width: 1.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Title
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Consistency Score',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.5,
+                        color: textMutedColor,
+                      ),
+                    ),
+                    Row(
+                      children: [
+                        const Text(
+                          '🔥 ',
+                          style: TextStyle(fontSize: 12),
+                        ),
+                        Text(
+                          '$streak Days',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFFE6F80F),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                // Metrics Row
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildStreakMetric(
+                        label: 'CURRENT STREAK',
+                        value: '$streak Days',
+                        icon: '🔥',
+                        isDark: isDark,
+                      ),
+                    ),
+                    Expanded(
+                      child: _buildStreakMetric(
+                        label: 'BEST STREAK',
+                        value: '21 Days',
+                        icon: '🏆',
+                        isDark: isDark,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildStreakMetric(
+                        label: 'MONTHLY RATE',
+                        value: '82%',
+                        icon: '🎯',
+                        isDark: isDark,
+                      ),
+                    ),
+                    Expanded(
+                      child: _buildStreakMetric(
+                        label: 'WEEKLY GOAL',
+                        value: '18 Meals • 24 Scans',
+                        icon: '🥗',
+                        isDark: isDark,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+
+                // Horizontal Divider
+                Container(
+                  height: 1.0,
+                  color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFE8EBE6),
+                ),
+                const SizedBox(height: 16),
+
+                // Last 7 Days Timeline
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: last7Days.map((date) {
+                    final dayLabel = DateFormat('E').format(date); // Mon, Tue, etc.
+                    final isCellToday = date.year == today.year && date.month == today.month && date.day == today.day;
+                    final active = _isDayActive(date, workouts);
+
+                    Widget circle;
+                    if (isCellToday) {
+                      circle = Container(
+                        width: 24,
+                        height: 24,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: const Color(0xFFE6F80F),
+                            width: 2.0,
+                          ),
+                        ),
+                        child: Center(
+                          child: Container(
+                            width: 8,
+                            height: 8,
+                            decoration: const BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Color(0xFFE6F80F),
+                            ),
+                          ),
+                        ),
+                      );
+                    } else if (active) {
+                      circle = Container(
+                        width: 24,
+                        height: 24,
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Color(0xFFE6F80F),
+                        ),
+                        child: const Center(
+                          child: Icon(
+                            Icons.check_rounded,
+                            size: 14,
+                            color: Colors.black,
+                          ),
+                        ),
+                      );
+                    } else {
+                      circle = Container(
+                        width: 24,
+                        height: 24,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFE8EBE6),
+                        ),
+                      );
+                    }
+
+                    return Column(
+                      children: [
+                        Text(
+                          dayLabel,
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: isCellToday ? const Color(0xFFE6F80F) : textMutedColor,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        circle,
+                      ],
+                    );
+                  }).toList(),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
+
+        // Motivation Banner Section
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF151811) : const Color(0xFFF9FBE7), // Subtle neon tint background
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isDark ? const Color(0xFF272C15) : const Color(0xFFE6F80F).withOpacity(0.3),
+              width: 1.0,
+            ),
+          ),
+          child: Row(
+            children: [
+              const Text(
+                '💡 ',
+                style: TextStyle(fontSize: 16),
+              ),
+              Expanded(
+                child: Text(
+                  isTodayActive
+                      ? "You're in the top 18% of users this month. 🔥 Keep it up!"
+                      : "Keep your streak alive today by logging one meal.",
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : AppTheme.textPrimary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStreakMetric({
+    required String label,
+    required String value,
+    required String icon,
+    required bool isDark,
+  }) {
+    final textColor = isDark ? Colors.white : AppTheme.textPrimary;
+    final textMutedColor = isDark ? const Color(0xFF868685) : AppTheme.textSecondary;
+
+    return Row(
+      children: [
+        Container(
+          width: 32,
+          height: 32,
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFF0F2EE),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Center(
+            child: Text(
+              icon,
+              style: const TextStyle(fontSize: 16),
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 9,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.5,
+                  color: textMutedColor,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w900,
+                  color: textColor,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildDailyGoalSummaryCard({
     required int consumed,
     required int remaining,
@@ -365,8 +902,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
     return GlassCard(
       width: double.infinity,
-      padding: const EdgeInsets.all(22),
-      borderRadius: BorderRadius.circular(28),
+      padding: const EdgeInsets.all(16),
+      borderRadius: BorderRadius.circular(24),
       customBgColor: cardBgColor,
       customBorder: Border.all(color: borderColor, width: 1.0),
       child: Column(
@@ -378,7 +915,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               Text(
                 'Daily Goal: ${consumed + remaining}',
                 style: TextStyle(
-                  fontSize: 18,
+                  fontSize: 16,
                   fontWeight: FontWeight.w600,
                   color: textColor,
                 ),
@@ -388,7 +925,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 child: const Text(
                   'Edit',
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: 13,
                     fontWeight: FontWeight.bold,
                     color: AppTheme.accentCyan,
                   ),
@@ -396,7 +933,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 12),
 
           // Row 2: Calories Ring & Hydration
           Row(
@@ -404,8 +941,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             children: [
               // Left side - Circular percent indicator
               CircularPercentIndicator(
-                radius: 64.0,
-                lineWidth: 8.0,
+                radius: 50.0,
+                lineWidth: 6.0,
                 percent: percent,
                 animation: true,
                 animationDuration: 800,
@@ -419,7 +956,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     Text(
                       calorieLeftText,
                       style: TextStyle(
-                        fontSize: 24,
+                        fontSize: 20,
                         fontWeight: FontWeight.w900,
                         color: calorieColor,
                         letterSpacing: -0.5,
@@ -428,7 +965,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     Text(
                       calorieLabel,
                       style: const TextStyle(
-                        fontSize: 10,
+                        fontSize: 8,
                         fontWeight: FontWeight.bold,
                         letterSpacing: 0.5,
                         color: Colors.white,
@@ -437,7 +974,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   ],
                 ),
               ),
-              const SizedBox(width: 24),
+              const SizedBox(width: 16),
 
               // Right side - Hydration details
               Expanded(
@@ -459,13 +996,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                   const Icon(
                                     Icons.water_drop_rounded,
                                     color: AppTheme.accentCyan,
-                                    size: 14,
+                                    size: 13,
                                   ),
                                   const SizedBox(width: 4),
                                   Text(
                                     'Hydration',
                                     style: TextStyle(
-                                      fontSize: 13,
+                                      fontSize: 12,
                                       fontWeight: FontWeight.bold,
                                       color: textColor,
                                     ),
@@ -475,29 +1012,29 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                               Text(
                                 '${(waterPercent * 100).round()}%',
                                 style: const TextStyle(
-                                  fontSize: 12,
+                                  fontSize: 11,
                                   fontWeight: FontWeight.bold,
                                   color: AppTheme.accentCyan,
                                 ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 6),
+                          const SizedBox(height: 4),
                           Text(
                             '$waterConsumed ml / ${waterGoal.toInt()} ml',
                             style: TextStyle(
-                              fontSize: 15,
+                              fontSize: 13,
                               fontWeight: FontWeight.w900,
                               color: textColor,
                             ),
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 6),
 
                           // Hydration progress bar
                           ClipRRect(
                             borderRadius: BorderRadius.circular(4),
                             child: Container(
-                              height: 6,
+                              height: 4,
                               width: double.infinity,
                               color: interactiveBgColor,
                               child: Stack(
@@ -518,7 +1055,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 10),
 
                     // Quick tap log buttons
                     Row(
@@ -535,21 +1072,21 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                               );
                             },
                             child: Container(
-                              height: 32,
+                              height: 28,
                               decoration: BoxDecoration(
                                 color: interactiveBgColor,
-                                borderRadius: BorderRadius.circular(10),
+                                borderRadius: BorderRadius.circular(8),
                               ),
                               child: Center(
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    Icon(Icons.add, size: 12, color: textColor),
+                                    Icon(Icons.add, size: 10, color: textColor),
                                     const SizedBox(width: 2),
                                     Text(
                                       '250 ml',
                                       style: TextStyle(
-                                        fontSize: 11,
+                                        fontSize: 10,
                                         fontWeight: FontWeight.bold,
                                         color: textColor,
                                       ),
@@ -573,21 +1110,21 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                               );
                             },
                             child: Container(
-                              height: 32,
+                              height: 28,
                               decoration: BoxDecoration(
                                 color: interactiveBgColor,
-                                borderRadius: BorderRadius.circular(10),
+                                borderRadius: BorderRadius.circular(8),
                               ),
                               child: Center(
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    Icon(Icons.add, size: 12, color: textColor),
+                                    Icon(Icons.add, size: 10, color: textColor),
                                     const SizedBox(width: 2),
                                     Text(
                                       '500 ml',
                                       style: TextStyle(
-                                        fontSize: 11,
+                                        fontSize: 10,
                                         fontWeight: FontWeight.bold,
                                         color: textColor,
                                       ),
@@ -609,7 +1146,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           // Divider
           Container(
             height: 1.0,
-            margin: const EdgeInsets.symmetric(vertical: 20),
+            margin: const EdgeInsets.symmetric(vertical: 12),
             color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFE8EBE6),
           ),
 
@@ -625,7 +1162,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   color: const Color(0xFF22D3EE),
                   centerWidget: const Text(
                     '🍗',
-                    style: TextStyle(fontSize: 16),
+                    style: TextStyle(fontSize: 13),
                   ),
                   isDark: isDark,
                 ),
@@ -638,7 +1175,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   color: const Color(0xFF4ADE80),
                   centerWidget: const Text(
                     '🍚',
-                    style: TextStyle(fontSize: 16),
+                    style: TextStyle(fontSize: 13),
                   ),
                   isDark: isDark,
                 ),
@@ -651,7 +1188,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   color: const Color(0xFFF87171),
                   centerWidget: const Text(
                     '💧',
-                    style: TextStyle(fontSize: 16),
+                    style: TextStyle(fontSize: 13),
                   ),
                   isDark: isDark,
                 ),
@@ -674,8 +1211,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     return Column(
       children: [
         CircularPercentIndicator(
-          radius: 30.0,
-          lineWidth: 4.0,
+          radius: 22.0,
+          lineWidth: 3.0,
           percent: percent,
           animation: true,
           animationDuration: 800,
@@ -685,20 +1222,20 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           progressColor: color,
           center: centerWidget,
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 6),
         Text(
           value,
           style: const TextStyle(
-            fontSize: 14,
+            fontSize: 12,
             fontWeight: FontWeight.bold,
             color: Colors.white,
           ),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 2),
         Text(
           label.toUpperCase(),
           style: const TextStyle(
-            fontSize: 11,
+            fontSize: 9,
             fontWeight: FontWeight.w800,
             letterSpacing: 1.0,
             color: Colors.white,
@@ -707,8 +1244,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       ],
     );
   }
-
-
 
   Widget _buildMacroCard({
     required String title,

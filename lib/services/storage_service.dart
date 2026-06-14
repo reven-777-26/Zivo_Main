@@ -188,42 +188,148 @@ class StorageService {
   }
 
   /// Returns a clean map of daily metrics. If no entry exists for [dateStr], returns default zero values or mock seeds.
+  /// Returns a clean map of daily metrics. If no entry exists for [dateStr], returns default zero values or mock seeds.
   static Map<String, dynamic> getDailyMetrics(String dateStr) {
     final rawMap = _dailyBox.get(dateStr);
-    if (rawMap == null) {
-      // Check if date falls in past 15 days (ending today) for mock data preloading
-      try {
-        final parsedDate = DateFormat('yyyy-MM-dd').parse(dateStr);
-        final now = DateTime.now();
-        final today = DateTime(now.year, now.month, now.day);
-        final diffDays = today.difference(parsedDate).inDays;
-        if (diffDays >= 0 && diffDays < 15) {
-          return _generateMockDailyMetrics(dateStr, diffDays);
-        }
-      } catch (_) {}
+    if (rawMap != null) {
+      final metrics = Map<String, dynamic>.from(rawMap);
+      if (!metrics.containsKey('logged_items')) {
+        metrics['logged_items'] = [];
+      }
+      if (!metrics.containsKey('outside_food_cal')) {
+        metrics['outside_food_cal'] = 0;
+      }
+      return metrics;
+    }
 
-      return {
-        'water': 0,
-        'breakfast_cal': 0,
-        'lunch_cal': 0,
-        'dinner_cal': 0,
-        'snacks_cal': 0,
-        'outside_food_cal': 0,
-        'protein': 0,
-        'carbs': 0,
-        'fat': 0,
-        'logged_items': [],
-      };
+    // Check if date falls in the current week (Monday to Sunday) relative to today
+    try {
+      final parsedDate = DateFormat('yyyy-MM-dd').parse(dateStr);
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      final diffDays = today.difference(parsedDate).inDays;
+
+      final mondayOfCurrentWeek = today.subtract(Duration(days: today.weekday - 1));
+      final sundayOfCurrentWeek = mondayOfCurrentWeek.add(const Duration(days: 6));
+
+      if (!parsedDate.isBefore(mondayOfCurrentWeek) && !parsedDate.isAfter(sundayOfCurrentWeek)) {
+        return _generateSpecificWeekMockMetrics(parsedDate.weekday, diffDays);
+      }
+
+      if (diffDays >= 0 && diffDays < 15) {
+        return _generateMockDailyMetrics(dateStr, diffDays);
+      }
+    } catch (_) {}
+
+    return {
+      'water': 0,
+      'breakfast_cal': 0,
+      'lunch_cal': 0,
+      'dinner_cal': 0,
+      'snacks_cal': 0,
+      'outside_food_cal': 0,
+      'protein': 0,
+      'carbs': 0,
+      'fat': 0,
+      'logged_items': [],
+    };
+  }
+
+  static Map<String, dynamic> _generateSpecificWeekMockMetrics(int weekday, int diffDays) {
+    int calories = 0;
+    int protein = 110;
+    int carbs = 210;
+    int fat = 60;
+    int water = 2000;
+
+    if (weekday == 1) {
+      calories = 1980; // Mon
+      protein = 130;
+      carbs = 215;
+      fat = 65;
+      water = 2400;
+    } else if (weekday == 2) {
+      calories = 2245; // Tue
+      protein = 148;
+      carbs = 250;
+      fat = 72;
+      water = 2800;
+    } else if (weekday == 3) {
+      calories = 2130; // Wed
+      protein = 138;
+      carbs = 240;
+      fat = 68;
+      water = 2500;
+    } else if (weekday == 4) {
+      calories = 1895; // Thu
+      protein = 125;
+      carbs = 210;
+      fat = 62;
+      water = 2200;
+    } else if (weekday == 5) {
+      calories = 2310; // Fri
+      protein = 152;
+      carbs = 265;
+      fat = 75;
+      water = 3100;
+    } else if (weekday == 6) {
+      calories = 2080; // Sat
+      protein = 140;
+      carbs = 235;
+      fat = 67;
+      water = 2600;
+    } else if (weekday == 7) {
+      calories = 1970; // Sun (Today / In Progress)
+      protein = 142;
+      carbs = 228;
+      fat = 58;
+      water = 2300; // 2.3L
     }
-    // Cast and return Map
-    final metrics = Map<String, dynamic>.from(rawMap);
-    if (!metrics.containsKey('logged_items')) {
-      metrics['logged_items'] = [];
-    }
-    if (!metrics.containsKey('outside_food_cal')) {
-      metrics['outside_food_cal'] = 0;
-    }
-    return metrics;
+
+    int breakfast = (calories * 0.25).round();
+    int lunch = (calories * 0.40).round();
+    int dinner = (calories * 0.35).round();
+
+    return {
+      'water': water,
+      'breakfast_cal': breakfast,
+      'lunch_cal': lunch,
+      'dinner_cal': dinner,
+      'snacks_cal': 0,
+      'outside_food_cal': 0,
+      'protein': protein,
+      'carbs': carbs,
+      'fat': fat,
+      'logged_items': [
+        {
+          'name': weekday == 7 ? 'Avocado Toast & Eggs' : 'Standard Fitness Meal',
+          'calories': breakfast,
+          'protein': (protein * 0.25).round(),
+          'carbs': (carbs * 0.25).round(),
+          'fat': (fat * 0.25).round(),
+          'meal': 'BREAKFAST',
+          'time': '8:30 AM',
+        },
+        {
+          'name': weekday == 7 ? 'Grilled Chicken & Rice' : 'Standard Fitness Meal',
+          'calories': lunch,
+          'protein': (protein * 0.45).round(),
+          'carbs': (carbs * 0.45).round(),
+          'fat': (fat * 0.45).round(),
+          'meal': 'LUNCH',
+          'time': '1:15 PM',
+        },
+        {
+          'name': weekday == 7 ? 'Baked Salmon & Broccoli' : 'Standard Fitness Meal',
+          'calories': dinner,
+          'protein': (protein * 0.30).round(),
+          'carbs': (carbs * 0.30).round(),
+          'fat': (fat * 0.30).round(),
+          'meal': 'DINNER',
+          'time': '8:00 PM',
+        }
+      ],
+    };
   }
 
   static Map<String, dynamic> _generateMockDailyMetrics(String dateStr, int diffDays) {
