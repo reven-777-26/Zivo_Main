@@ -7,7 +7,7 @@ class ZivoLogoWidget extends StatelessWidget {
   const ZivoLogoWidget({
     super.key,
     required this.size,
-    this.color = const Color(0xFF859D00), // Zivo brand neon lime-yellow
+    this.color = const Color(0xFFD9FF00), // Zivo brand neon lime-yellow
   });
 
   @override

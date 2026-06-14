@@ -150,7 +150,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                         ),
                         TextSpan(
                           text: 'Fit',
-                          style: const TextStyle(color: Color(0xFF859D00)),
+                          style: const TextStyle(color: Color(0xFFD9FF00)),
                         ),
                       ],
                     ),

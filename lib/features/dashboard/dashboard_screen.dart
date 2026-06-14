@@ -278,10 +278,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF121214) : const Color(0xFF859D00).withOpacity(0.15),
+                  color: isDark ? const Color(0xFF121214) : const Color(0xFFD9FF00).withOpacity(0.15),
                   borderRadius: BorderRadius.circular(9999), // pill shape
                   border: Border.all(
-                    color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFF859D00).withOpacity(0.3),
+                    color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFD9FF00).withOpacity(0.3),
                     width: 1.0,
                   ),
                 ),
@@ -357,9 +357,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 height: 80,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: const Color(0xFF859D00).withOpacity(0.1),
+                  color: const Color(0xFFD9FF00).withOpacity(0.1),
                   border: Border.all(
-                    color: const Color(0xFF859D00).withOpacity(0.3),
+                    color: const Color(0xFFD9FF00).withOpacity(0.3),
                     width: 2.0,
                   ),
                 ),
@@ -388,7 +388,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF859D00),
+                  color: Color(0xFFD9FF00),
                 ),
               ),
               const SizedBox(height: 24),
@@ -432,7 +432,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 child: ElevatedButton(
                   onPressed: () => Navigator.pop(context),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF859D00),
+                    backgroundColor: const Color(0xFFD9FF00),
                     foregroundColor: Colors.black,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
@@ -483,7 +483,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     
     final textColor = isDark ? Colors.white : AppTheme.textPrimary;
     final textMutedColor = isDark ? const Color(0xFF868685) : AppTheme.textSecondary;
-    final accentColor = const Color(0xFF859D00); // Neon Lime
+    final accentColor = const Color(0xFFD9FF00); // Neon Lime
 
     // Calorie Metrics
     final int consumedCal =
@@ -527,8 +527,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
     if (actLevel == 4) {
       statusBadge = "BEAST MODE ACTIVATED ⚡";
-      badgeBg = const Color(0xFF859D00).withOpacity(0.12);
-      badgeColor = const Color(0xFF859D00);
+      badgeBg = const Color(0xFFD9FF00).withOpacity(0.12);
+      badgeColor = const Color(0xFFD9FF00);
       motivationTitle = "CONQUEROR OF THE DAY";
       motivationHeader = "FULL GOALS DEMOLISHED! 🏆⚡";
       motivationQuote = "YOU SHATTERED THE BARRIERS TODAY! Lion mentality. You logged your foods, crushed your training, and hit hydration targets. This is how consistency breeds champions. Do not break the chain! 🦁🔥";
@@ -702,7 +702,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                               valueColor: AlwaysStoppedAnimation<Color>(
                                 consumedCal > calorieGoal 
                                     ? const Color(0xFFEF4444) 
-                                    : const Color(0xFF859D00)
+                                    : const Color(0xFFD9FF00)
                               ),
                             ),
                           ),
@@ -1026,7 +1026,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                   child: Row(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      const Icon(Icons.check_circle_rounded, color: Color(0xFF859D00), size: 13),
+                                      const Icon(Icons.check_circle_rounded, color: Color(0xFFD9FF00), size: 13),
                                       const SizedBox(width: 8),
                                       Expanded(
                                         child: Text(
@@ -1138,7 +1138,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                 style: TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w900,
-                                  color: isDark ? const Color(0xFF859D00) : const Color(0xFF5A6B00),
+                                  color: isDark ? const Color(0xFFD9FF00) : const Color(0xFF5A6B00),
                                 ),
                               ),
                             ],
@@ -1179,7 +1179,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                     fontSize: 10,
                                     fontWeight: FontWeight.w900,
                                     letterSpacing: 1.5,
-                                    color: Color(0xFF859D00),
+                                    color: Color(0xFFD9FF00),
                                   ),
                                   overflow: TextOverflow.ellipsis,
                                 ),
@@ -1537,7 +1537,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
-                        color: isDark ? const Color(0xFF859D00) : const Color(0xFF5A6B00),
+                        color: isDark ? const Color(0xFFD9FF00) : const Color(0xFF5A6B00),
                       ),
                     ),
                   ],
@@ -1622,7 +1622,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                     if (actLevel == 2) opacity = 0.45;
                                     if (actLevel == 3) opacity = 0.7;
                                     if (actLevel == 4) opacity = 1.0;
-                                    cellColor = const Color(0xFF859D00).withOpacity(opacity);
+                                    cellColor = const Color(0xFFD9FF00).withOpacity(opacity);
                                   } else if (isFuture) {
                                     cellColor = Colors.transparent;
                                   }
@@ -1684,10 +1684,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   children: [
                     Text('Less ', style: TextStyle(fontSize: 9, color: textMutedColor)),
                     _buildLegendCell(interactiveBgColor, isDark),
-                    _buildLegendCell(const Color(0xFF859D00).withOpacity(0.2), isDark),
-                    _buildLegendCell(const Color(0xFF859D00).withOpacity(0.45), isDark),
-                    _buildLegendCell(const Color(0xFF859D00).withOpacity(0.7), isDark),
-                    _buildLegendCell(const Color(0xFF859D00), isDark),
+                    _buildLegendCell(const Color(0xFFD9FF00).withOpacity(0.2), isDark),
+                    _buildLegendCell(const Color(0xFFD9FF00).withOpacity(0.45), isDark),
+                    _buildLegendCell(const Color(0xFFD9FF00).withOpacity(0.7), isDark),
+                    _buildLegendCell(const Color(0xFFD9FF00), isDark),
                     Text(' More', style: TextStyle(fontSize: 9, color: textMutedColor)),
                   ],
                 ),
@@ -1703,7 +1703,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 color: isDark ? const Color(0xFF151811) : const Color(0xFFF9FBE7), // Subtle neon tint background
                 borderRadius: BorderRadius.circular(12), // clean look inside circular(24) card
                 border: Border.all(
-                  color: isDark ? const Color(0xFF272C15) : const Color(0xFF859D00).withOpacity(0.3),
+                  color: isDark ? const Color(0xFF272C15) : const Color(0xFFD9FF00).withOpacity(0.3),
                   width: 1.0,
                 ),
               ),
