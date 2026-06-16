@@ -1,11 +1,19 @@
 class HealthMath {
-  /// Calculates BMR using the Mifflin-St Jeor formula with a gender-neutral average offset (-80).
+  /// Calculates BMR using the Mifflin-St Jeor formula with a gender-specific offset (Male: +5, Female: -161).
   static double calculateBMR({
     required double weightKg,
     required double heightCm,
     required int ageYears,
+    required String gender,
   }) {
-    return (10 * weightKg) + (6.25 * heightCm) - (5 * ageYears) - 80;
+    final cleanGender = gender.trim().toLowerCase();
+    if (cleanGender == 'female') {
+      return (10 * weightKg) + (6.25 * heightCm) - (5 * ageYears) - 161;
+    } else if (cleanGender == 'male') {
+      return (10 * weightKg) + (6.25 * heightCm) - (5 * ageYears) + 5;
+    }
+    // Fallback / Gender-neutral average
+    return (10 * weightKg) + (6.25 * heightCm) - (5 * ageYears) - 78;
   }
 
   /// Calculates TDEE by applying activity multipliers to BMR.
@@ -43,8 +51,9 @@ class HealthMath {
     required double weight,
     required double height,
     required String activityLevel,
+    required String gender,
   }) {
-    final bmr = calculateBMR(weightKg: weight, heightCm: height, ageYears: age);
+    final bmr = calculateBMR(weightKg: weight, heightCm: height, ageYears: age, gender: gender);
     final tdee = calculateTDEE(bmr: bmr, activityLevel: activityLevel);
 
     int calorieGoal;

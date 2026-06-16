@@ -240,6 +240,25 @@ class _VisionLensHomeScreenState extends ConsumerState<VisionLensHomeScreen> wit
     _dismissLoadingAndNavigate(barcode);
   }
 
+  void _triggerTakeProductPhoto() {
+    ImagePickerHelper.pickImage(
+      (base64, name, filePath) async {
+        _showLoadingOverlay();
+        await ref.read(unifiedVisionProvider.notifier).analyzeFromImage(
+          base64Content: base64,
+          fileName: name,
+        );
+
+        if (!mounted) return;
+        final state = ref.read(unifiedVisionProvider);
+        final barcodeToUse = state.currentReport.value?.barcode ?? 'unknown';
+        _dismissLoadingAndNavigate(barcodeToUse);
+      },
+      isBarcode: true,
+      fromCamera: true,
+    );
+  }
+
   void _triggerImageScan() {
     ImagePickerHelper.pickImage(
       (base64, name, filePath) async {
@@ -312,7 +331,7 @@ class _VisionLensHomeScreenState extends ConsumerState<VisionLensHomeScreen> wit
                       ),
                       const SizedBox(height: 24),
                       Text(
-                        'Zivo Vision AI',
+                        'Zivo Analyser',
                         style: TextStyle(
                           color: isDark ? Colors.white : AppTheme.textPrimary,
                           fontSize: 18,
@@ -387,7 +406,7 @@ class _VisionLensHomeScreenState extends ConsumerState<VisionLensHomeScreen> wit
     });
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF0E0F0C) : AppTheme.obsidianBackground,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -400,7 +419,7 @@ class _VisionLensHomeScreenState extends ConsumerState<VisionLensHomeScreen> wit
             Icon(Icons.center_focus_strong_rounded, color: isDark ? AppTheme.accentCyan : AppTheme.textPrimary, size: 22),
             const SizedBox(width: 8),
             Text(
-              'ZIVO VISION LENS',
+              'ZIVO ANALYSER',
               style: TextStyle(
                 color: isDark ? Colors.white : AppTheme.textPrimary,
                 fontWeight: FontWeight.w900,
@@ -411,6 +430,10 @@ class _VisionLensHomeScreenState extends ConsumerState<VisionLensHomeScreen> wit
           ],
         ),
         actions: [
+          IconButton(
+            icon: Icon(Icons.help_outline_rounded, color: isDark ? Colors.white : AppTheme.textPrimary),
+            onPressed: () => _showAnalyserHelpSheet(context),
+          ),
           IconButton(
             icon: Icon(Icons.history_rounded, color: isDark ? Colors.white : AppTheme.textPrimary),
             onPressed: () {
@@ -432,26 +455,26 @@ class _VisionLensHomeScreenState extends ConsumerState<VisionLensHomeScreen> wit
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
-                color: isDark ? AppTheme.accentCyan.withOpacity(0.08) : const Color(0xFFE2F6D5),
+                color: AppTheme.accentCyan.withOpacity(0.08),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: isDark ? AppTheme.accentCyan.withOpacity(0.15) : const Color(0xFFC5EDAB),
+                  color: AppTheme.accentCyan.withOpacity(0.15),
                   width: 1.0,
                 ),
               ),
               child: Row(
                 children: [
-                  Icon(
+                  const Icon(
                     Icons.auto_awesome_rounded,
-                    color: isDark ? AppTheme.accentCyan : const Color(0xFF054D28),
+                    color: Colors.white,
                     size: 16,
                   ),
                   const SizedBox(width: 8),
-                  Expanded(
+                  const Expanded(
                     child: Text(
                       'AI auto-detects Food, Supplements & Skincare',
                       style: TextStyle(
-                        color: isDark ? AppTheme.textSecondary : const Color(0xFF054D28),
+                        color: Colors.white,
                         fontSize: 11,
                         fontWeight: FontWeight.bold,
                       ),
@@ -481,7 +504,16 @@ class _VisionLensHomeScreenState extends ConsumerState<VisionLensHomeScreen> wit
                 alignment: Alignment.center,
                 children: [
                   if (_isCameraInitialized && _cameraController != null)
-                    Positioned.fill(child: CameraPreview(_cameraController!))
+                    Positioned.fill(
+                      child: FittedBox(
+                        fit: BoxFit.cover,
+                        child: SizedBox(
+                          width: _cameraController!.value.previewSize?.height ?? 240,
+                          height: _cameraController!.value.previewSize?.width ?? 320,
+                          child: CameraPreview(_cameraController!),
+                        ),
+                      ),
+                    )
                   else
                     Positioned.fill(
                       child: Container(
@@ -566,23 +598,32 @@ class _VisionLensHomeScreenState extends ConsumerState<VisionLensHomeScreen> wit
             ),
             const SizedBox(height: 16),
 
-            // Actions Row 1 (Image Upload & Ingredients Scan)
+            // Actions Row (Take Photo, Upload Photo, Ingredients)
             Row(
               children: [
                 Expanded(
                   child: _buildActionBtn(
+                    icon: Icons.camera_alt_rounded,
+                    label: 'Take Photo',
+                    color: AppTheme.accentCyan,
+                    onTap: _triggerTakeProductPhoto,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _buildActionBtn(
                     icon: Icons.photo_library_rounded,
-                    label: 'Upload Product Photo',
+                    label: 'Upload Photo',
                     color: AppTheme.accentCyan,
                     onTap: _triggerImageScan,
                   ),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 8),
                 Expanded(
                   child: _buildActionBtn(
                     icon: Icons.receipt_long_rounded,
-                    label: 'Scan Ingredients',
-                    color: AppTheme.accentEmerald,
+                    label: 'Ingredients',
+                    color: AppTheme.accentCyan,
                     onTap: _triggerIngredientsScan,
                   ),
                 ),
@@ -795,27 +836,35 @@ class _VisionLensHomeScreenState extends ConsumerState<VisionLensHomeScreen> wit
     required Color color,
     required VoidCallback onTap,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(24),
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
         decoration: BoxDecoration(
-          color: AppTheme.accentCyan,
+          color: isDark ? Colors.white.withOpacity(0.03) : Colors.black.withOpacity(0.03),
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: AppTheme.accentCyan, width: 1.0),
+          border: Border.all(
+            color: isDark ? AppTheme.glassBorder : Colors.black.withOpacity(0.1),
+            width: 1.0,
+          ),
         ),
-        child: Row(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: AppTheme.textPrimary, size: 20),
-            const SizedBox(width: 10),
+            Icon(icon, color: AppTheme.accentCyan, size: 20),
+            const SizedBox(height: 4),
             Text(
               label,
-              style: const TextStyle(
-                color: AppTheme.textPrimary,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: isDark ? Colors.white : AppTheme.textPrimary,
+                fontSize: 10,
+                fontWeight: FontWeight.w800,
                 letterSpacing: -0.2,
               ),
             ),
@@ -838,5 +887,105 @@ class _VisionLensHomeScreenState extends ConsumerState<VisionLensHomeScreen> wit
       default:
         return AppTheme.textSecondary;
     }
+  }
+
+  void _showAnalyserHelpSheet(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: isDark ? const Color(0xFF121214) : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.center_focus_strong_rounded, color: AppTheme.accentCyan, size: 24),
+                    const SizedBox(width: 12),
+                    Text(
+                      'About Zivo Analyser',
+                      style: TextStyle(
+                        color: isDark ? Colors.white : AppTheme.textPrimary,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Zivo Analyser parses product parameters and details to guide your decisions:',
+                  style: TextStyle(
+                    color: isDark ? Colors.white70 : AppTheme.textPrimary,
+                    fontSize: 14,
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                _buildAnalyserHelpItem(Icons.qr_code_scanner_rounded, 'Barcode Scanner', 'Align product barcode in the scan window to automatically fetch ingredients and nutritional scores.'),
+                _buildAnalyserHelpItem(Icons.camera_alt_rounded, 'Image / Ingredient Scan', 'Take a photo of a product label or ingredient list to extract data using optical character recognition (OCR).'),
+                _buildAnalyserHelpItem(Icons.category_rounded, 'Multi-Category Support', 'AI automatically categorizes the scanned item into Food, Supplements, or Skincare, providing targeted metrics for each.'),
+                _buildAnalyserHelpItem(Icons.auto_awesome_rounded, 'Health Suitability Checks', 'Analyzes ingredients for potential toxins, allergens, additives, and fitness goal matching.'),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.accentCyan,
+                    minimumSize: const Size(double.infinity, 44),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Got it', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildAnalyserHelpItem(IconData icon, String title, String desc) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: AppTheme.accentCyan, size: 18),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                    color: isDark ? Colors.white : AppTheme.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  desc,
+                  style: const TextStyle(
+                    color: AppTheme.textSecondary,
+                    fontSize: 12,
+                    height: 1.3,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

@@ -905,8 +905,8 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
 
         // Custom Tab Bar styling
         Container(
-          height: 52,
-          padding: const EdgeInsets.all(4),
+          height: 44,
+          padding: const EdgeInsets.all(2),
           decoration: BoxDecoration(
             color: isDark
                 ? Colors.white.withOpacity(0.03)
@@ -914,7 +914,7 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
             borderRadius: BorderRadius.circular(9999),
             border: Border.all(
               color: isDark
-                  ? AppTheme.glassBorder
+                  ? const Color(0xFF323530)
                   : Colors.black.withOpacity(0.05),
             ),
           ),
@@ -925,14 +925,14 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
               borderRadius: BorderRadius.circular(9999),
             ),
             labelColor: AppTheme.textPrimary,
-            unselectedLabelColor: AppTheme.textSecondary,
+            unselectedLabelColor: isDark ? const Color(0xFF868685) : AppTheme.textSecondary,
             indicatorSize: TabBarIndicatorSize.tab,
             dividerColor: Colors.transparent,
             tabs: const [
-              Tab(icon: Icon(Icons.qr_code_scanner_rounded, size: 20)),
-              Tab(icon: Icon(Icons.camera_alt_rounded, size: 20)),
-              Tab(icon: Icon(Icons.mic_rounded, size: 20)),
-              Tab(icon: Icon(Icons.edit_note_rounded, size: 20)),
+              Tab(icon: Icon(Icons.qr_code_scanner_rounded, size: 18)),
+              Tab(icon: Icon(Icons.camera_alt_rounded, size: 18)),
+              Tab(icon: Icon(Icons.mic_rounded, size: 18)),
+              Tab(icon: Icon(Icons.edit_note_rounded, size: 18)),
             ],
           ),
         ),
@@ -1025,8 +1025,9 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
 
   // Flow Views
   Widget _buildBarcodeFlow(bool isDark) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Camera Viewport
         Center(
@@ -1193,10 +1194,10 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
                 child: Container(
                   padding: const EdgeInsets.symmetric(vertical: 10),
                   decoration: BoxDecoration(
-                    color: AppTheme.accentCyan.withOpacity(0.08),
+                    color: isDark ? Colors.white.withOpacity(0.03) : Colors.black.withOpacity(0.03),
                     borderRadius: BorderRadius.circular(24),
                     border: Border.all(
-                      color: AppTheme.accentCyan.withOpacity(0.2),
+                      color: isDark ? AppTheme.glassBorder : Colors.black.withOpacity(0.1),
                       width: 1.0,
                     ),
                   ),
@@ -1272,96 +1273,169 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
           ],
         ),
       ],
-    );
-  }
+    ),
+  );
+}
 
 
   Widget _buildPhotoFlow(bool isDark) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          "AI PHOTO SCAN",
-          style: TextStyle(
-            fontSize: 10,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1.0,
-            color: AppTheme.textSecondary,
-          ),
-        ),
-        const SizedBox(height: 16),
-        Expanded(
-          child: Center(
-            child: GestureDetector(
-              onTap: () {
-                ImagePickerHelper.pickImage((base64, name, filePath) {
-                  setState(() {
-                    _selectedImageBase64 = base64;
-                  });
-                  _runGeminiAnalysis('image', base64);
-                });
-              },
-              child: Container(
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? Colors.white.withOpacity(0.02)
-                      : Colors.black.withOpacity(0.02),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: isDark
-                        ? AppTheme.glassBorder
-                        : Colors.black.withOpacity(0.08),
-                    width: 1.5,
-                  ),
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: AppTheme.accentCyan.withOpacity(0.08),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.add_photo_alternate_rounded,
-                        color: AppTheme.accentCyan,
-                        size: 36,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      _selectedImageBase64 != null
-                          ? "Image Uploaded!"
-                          : "Upload Food Image",
-                      style: TextStyle(
-                        color: isDark ? Colors.white : AppTheme.textPrimary,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    const Text(
-                      "Supported formats: JPG, PNG",
-                      style: TextStyle(
-                        color: AppTheme.textSecondary,
-                        fontSize: 11,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            "AI PHOTO SCAN",
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1.0,
+              color: AppTheme.textSecondary,
             ),
           ),
-        ),
-      ],
+          const SizedBox(height: 16),
+          SizedBox(
+            height: 180,
+            child: Row(
+              children: [
+                // Take Photo Card
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () {
+                      ImagePickerHelper.pickImage((base64, name, filePath) {
+                        setState(() {
+                          _selectedImageBase64 = base64;
+                        });
+                        _runGeminiAnalysis('image', base64);
+                      }, fromCamera: true);
+                    },
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? Colors.white.withOpacity(0.02)
+                            : Colors.black.withOpacity(0.02),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: isDark
+                              ? const Color(0xFF323530)
+                              : Colors.black.withOpacity(0.08),
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: AppTheme.accentCyan.withOpacity(0.08),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.photo_camera_rounded,
+                              color: AppTheme.accentCyan,
+                              size: 32,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            "Take Photo",
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: isDark ? Colors.white : AppTheme.textPrimary,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          const Text(
+                            "Use camera",
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: AppTheme.textSecondary,
+                              fontSize: 10,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                // Upload Photo Card
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () {
+                      ImagePickerHelper.pickImage((base64, name, filePath) {
+                        setState(() {
+                          _selectedImageBase64 = base64;
+                        });
+                        _runGeminiAnalysis('image', base64);
+                      }, fromCamera: false);
+                    },
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? Colors.white.withOpacity(0.02)
+                            : Colors.black.withOpacity(0.02),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: isDark
+                              ? const Color(0xFF323530)
+                              : Colors.black.withOpacity(0.08),
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: AppTheme.accentCyan.withOpacity(0.08),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.add_photo_alternate_rounded,
+                              color: AppTheme.accentCyan,
+                              size: 32,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            "Upload Photo",
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: isDark ? Colors.white : AppTheme.textPrimary,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          const Text(
+                            "From gallery",
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: AppTheme.textSecondary,
+                              fontSize: 10,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildVoiceFlow(bool isDark) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
           "VOICE INPUT",
@@ -1476,7 +1550,7 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
             );
           }).toList(),
         ),
-        const Spacer(),
+        const SizedBox(height: 20),
         GestureDetector(
           onTap: _voiceTranscript.isEmpty
               ? null
@@ -1484,13 +1558,14 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
           child: Container(
             height: 52,
             decoration: BoxDecoration(
-              gradient: _voiceTranscript.isEmpty
-                  ? null
-                  : AppTheme.primaryGradient,
-              color: _voiceTranscript.isEmpty
-                  ? Colors.white.withOpacity(0.04)
-                  : null,
+              color: isDark ? Colors.white.withOpacity(0.03) : Colors.black.withOpacity(0.03),
               borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: _voiceTranscript.isEmpty
+                    ? (isDark ? AppTheme.glassBorder : Colors.black.withOpacity(0.1))
+                    : AppTheme.accentCyan,
+                width: 1.2,
+              ),
             ),
             child: Center(
               child: Text(
@@ -1498,7 +1573,7 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
                 style: TextStyle(
                   color: _voiceTranscript.isEmpty
                       ? AppTheme.textSecondary
-                      : AppTheme.textPrimary,
+                      : (isDark ? AppTheme.accentCyan : AppTheme.textPrimary),
                   fontSize: 15,
                   fontWeight: FontWeight.bold,
                 ),
@@ -1507,12 +1582,14 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
           ),
         ),
       ],
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildTextFlow(bool isDark) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
           "TEXT INPUT",
@@ -1527,6 +1604,7 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
         TextField(
           controller: _textDescriptionController,
           maxLines: 2,
+          onChanged: (_) => setState(() {}),
           style: TextStyle(color: isDark ? Colors.white : Colors.black),
           decoration: InputDecoration(
             hintText: "Type what you ate (e.g. 2 eggs and a banana)...",
@@ -1595,21 +1673,30 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
             );
           }).toList(),
         ),
-        const Spacer(),
+        const SizedBox(height: 20),
         GestureDetector(
-          onTap: () =>
-              _runGeminiAnalysis('text', _textDescriptionController.text),
+          onTap: _textDescriptionController.text.trim().isEmpty
+              ? null
+              : () => _runGeminiAnalysis('text', _textDescriptionController.text),
           child: Container(
             height: 52,
             decoration: BoxDecoration(
-              color: AppTheme.accentCyan,
+              color: isDark ? Colors.white.withOpacity(0.03) : Colors.black.withOpacity(0.03),
               borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: _textDescriptionController.text.trim().isEmpty
+                    ? (isDark ? AppTheme.glassBorder : Colors.black.withOpacity(0.1))
+                    : AppTheme.accentCyan,
+                width: 1.2,
+              ),
             ),
-            child: const Center(
+            child: Center(
               child: Text(
                 "Analyze Meal Description",
                 style: TextStyle(
-                  color: AppTheme.textPrimary,
+                  color: _textDescriptionController.text.trim().isEmpty
+                      ? AppTheme.textSecondary
+                      : (isDark ? AppTheme.accentCyan : AppTheme.textPrimary),
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
                 ),
@@ -1618,8 +1705,9 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
           ),
         ),
       ],
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildCategorySelector(bool isDark) {
     final categories = [

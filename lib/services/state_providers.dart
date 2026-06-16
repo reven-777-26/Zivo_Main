@@ -10,6 +10,7 @@ import '../models/reminder_setting.dart';
 import 'storage_service.dart';
 import 'firebase_service.dart';
 import 'widget_sync_service.dart';
+import 'workout_notification_service.dart';
 
 class NotificationManager {
   static final StreamController<Map<String, String>> controller =
@@ -217,6 +218,30 @@ final themeModeProvider = StateProvider<ThemeMode>((ref) {
   return ThemeMode.dark; // Default to FitMax Premium Dark UI
 });
 
+// Accent Color Index Provider: Manages the selected accent color theme.
+// 0=Neon Lime, 1=Cyan, 2=Purple, 3=Orange, 4=Pink, 5=Blue, 6=Red
+final accentColorIndexProvider = StateProvider<int>((ref) {
+  return StorageService.getAccentColorIndex();
+});
+
+final accentColors = [
+  const Color(0xFFD9FF00), // Neon Lime (Default)
+  const Color(0xFF00E5FF), // Cyan
+  const Color(0xFFB026FF), // Purple
+  const Color(0xFFFF9100), // Orange
+  const Color(0xFFFF4081), // Pink
+  const Color(0xFF2979FF), // Blue
+  const Color(0xFFFF1744), // Red
+];
+
+final accentColorProvider = Provider<Color>((ref) {
+  final index = ref.watch(accentColorIndexProvider);
+  if (index >= 0 && index < accentColors.length) {
+    return accentColors[index];
+  }
+  return const Color(0xFFD9FF00);
+});
+
 // Selected Date Provider: Manages the active calendar selection date string (yyyy-MM-dd).
 final selectedDateProvider = StateProvider<String>((ref) {
   return DateFormat('yyyy-MM-dd').format(DateTime.now());
@@ -230,6 +255,11 @@ final activeTabProvider = StateProvider<int>((ref) {
 // Profile Picture Provider: Manages the base64 encoded profile picture string
 final profilePictureProvider = StateProvider<String?>((ref) {
   return StorageService.getProfilePicture();
+});
+
+// Custom Background Provider: Manages the base64 encoded wallpaper background string
+final customBackgroundProvider = StateProvider<String?>((ref) {
+  return StorageService.getCustomBackground();
 });
 
 // Profile Provider: Manages the UserProfile state, loaded from Hive.
@@ -424,12 +454,13 @@ class RemindersNotifier extends StateNotifier<Map<String, ReminderSetting>> {
     String key, {
     bool? isEnabled,
     String? time,
+    String? label,
   }) async {
     final current = state[key];
     if (current == null) return;
 
     final updated = ReminderSetting(
-      label: current.label,
+      label: label ?? current.label,
       isEnabled: isEnabled ?? current.isEnabled,
       time: time ?? current.time,
     );
@@ -451,6 +482,40 @@ class RemindersNotifier extends StateNotifier<Map<String, ReminderSetting>> {
         'Aura will notify you daily at ${updated.time}.',
       );
     }
+  }
+
+  Future<void> addCustomReminder(String label, String time) async {
+    final key = 'custom_${DateTime.now().millisecondsSinceEpoch}';
+    final updated = ReminderSetting(
+      label: label,
+      isEnabled: true,
+      time: time,
+    );
+
+    final newState = Map<String, ReminderSetting>.from(state);
+    newState[key] = updated;
+
+    state = newState;
+
+    final rawMap = newState.map((k, v) => MapEntry(k, v.toJson()));
+    await StorageService.saveReminders(rawMap);
+    await FirebaseService.saveRemindersCloud(rawMap);
+
+    showWebNotification(
+      '🔔 Custom Reminder Created!',
+      'Aura will notify you daily at $time for $label.',
+    );
+  }
+
+  Future<void> deleteReminder(String key) async {
+    final newState = Map<String, ReminderSetting>.from(state);
+    newState.remove(key);
+
+    state = newState;
+
+    final rawMap = newState.map((k, v) => MapEntry(k, v.toJson()));
+    await StorageService.saveReminders(rawMap);
+    await FirebaseService.saveRemindersCloud(rawMap);
   }
 }
 
@@ -541,15 +606,17 @@ class ActiveWorkoutNotifier extends StateNotifier<ActiveWorkout> {
   }
 
   void startWorkout() {
+    final startTime = DateTime.now();
     state = ActiveWorkout(
       isActive: true,
       date: DateFormat('yyyy-MM-dd').format(DateTime.now()),
       exercises: [],
-      startTime: DateTime.now(),
+      startTime: startTime,
     );
   }
 
   void startWorkoutWithExercises(List<Map<String, String>> exercisesList) {
+    final startTime = DateTime.now();
     state = ActiveWorkout(
       isActive: true,
       date: DateFormat('yyyy-MM-dd').format(DateTime.now()),
@@ -569,12 +636,14 @@ class ActiveWorkoutNotifier extends StateNotifier<ActiveWorkout> {
           sets: [ExerciseSet(weight: weight, reps: reps, isCompleted: false)],
         );
       }).toList(),
-      startTime: DateTime.now(),
+      startTime: startTime,
     );
   }
 
   void cancelWorkout() {
     state = ActiveWorkout(isActive: false, date: '', exercises: []);
+    ref.read(workoutTimerProvider.notifier).stop();
+    ref.read(workoutTimerStartedProvider.notifier).state = false;
   }
 
   void addExercise(String name, String category) {
@@ -659,6 +728,7 @@ class ActiveWorkoutNotifier extends StateNotifier<ActiveWorkout> {
     int setIndex, {
     double? weight,
     int? reps,
+    int? durationSeconds,
     bool? isCompleted,
   }) {
     if (!state.isActive) return;
@@ -670,7 +740,7 @@ class ActiveWorkoutNotifier extends StateNotifier<ActiveWorkout> {
     setsList[setIndex] = ExerciseSet(
       weight: weight ?? set.weight,
       reps: reps ?? set.reps,
-      durationSeconds: set.durationSeconds,
+      durationSeconds: durationSeconds ?? set.durationSeconds,
       isCompleted: isCompleted ?? set.isCompleted,
     );
 
@@ -686,9 +756,7 @@ class ActiveWorkoutNotifier extends StateNotifier<ActiveWorkout> {
   Future<void> finishWorkout(String notes) async {
     if (!state.isActive) return;
 
-    final duration = DateTime.now()
-        .difference(state.startTime ?? DateTime.now())
-        .inSeconds;
+    final duration = ref.read(workoutTimerProvider);
 
     final session = WorkoutSession(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -703,6 +771,108 @@ class ActiveWorkoutNotifier extends StateNotifier<ActiveWorkout> {
 
     // Reset active state
     state = ActiveWorkout(isActive: false, date: '', exercises: []);
+    ref.read(workoutTimerProvider.notifier).stop();
+    ref.read(workoutTimerStartedProvider.notifier).state = false;
+  }
+}
+
+final workoutTimerPausedProvider = StateProvider<bool>((ref) => false);
+final workoutTimerStartedProvider = StateProvider<bool>((ref) => false);
+
+final workoutTimerProvider = StateNotifierProvider<WorkoutTimerNotifier, int>((ref) {
+  return WorkoutTimerNotifier(ref);
+});
+
+class WorkoutTimerNotifier extends StateNotifier<int> {
+  final Ref ref;
+  Timer? _timer;
+  DateTime? _startTime;
+
+  WorkoutTimerNotifier(this.ref) : super(0);
+
+  void start(DateTime startTime) {
+    _timer?.cancel();
+    _startTime = startTime;
+    state = DateTime.now().difference(_startTime!).inSeconds;
+    ref.read(workoutTimerPausedProvider.notifier).state = false;
+    ref.read(workoutTimerStartedProvider.notifier).state = true;
+    
+    // Trigger notification permission check/request
+    WorkoutNotificationService.requestPermission();
+    
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_startTime == null) return;
+      
+      final isPaused = ref.read(workoutTimerPausedProvider);
+      if (isPaused) return;
+
+      final elapsed = DateTime.now().difference(_startTime!).inSeconds;
+      state = elapsed;
+      
+      // Format duration
+      final int hours = elapsed ~/ 3600;
+      final int minutes = (elapsed % 3600) ~/ 60;
+      final int seconds = elapsed % 60;
+      final timerStr = hours > 0
+          ? '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}'
+          : '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+      
+      WidgetSyncService.syncWorkoutTimer(true, timerStr);
+    });
+
+    WorkoutNotificationService.startNotification(
+      title: "Active Workout Session",
+      body: "Workout in progress...",
+      startTimeMillis: startTime.millisecondsSinceEpoch,
+    );
+  }
+
+  void pause() {
+    ref.read(workoutTimerPausedProvider.notifier).state = true;
+    final elapsed = state;
+    final int hours = elapsed ~/ 3600;
+    final int minutes = (elapsed % 3600) ~/ 60;
+    final int seconds = elapsed % 60;
+    final timerStr = hours > 0
+        ? '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}'
+        : '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+    WidgetSyncService.syncWorkoutTimer(true, "Paused ($timerStr)");
+
+    WorkoutNotificationService.pauseNotification(
+      title: "Workout Session Paused",
+      body: "Paused at $timerStr",
+    );
+  }
+
+  void resume() {
+    if (_startTime != null) {
+      _startTime = DateTime.now().subtract(Duration(seconds: state));
+      ref.read(workoutTimerPausedProvider.notifier).state = false;
+
+      WorkoutNotificationService.startNotification(
+        title: "Active Workout Session",
+        body: "Workout in progress...",
+        startTimeMillis: _startTime!.millisecondsSinceEpoch,
+      );
+    }
+  }
+
+  void stop() {
+    _timer?.cancel();
+    _timer = null;
+    _startTime = null;
+    state = 0;
+    ref.read(workoutTimerPausedProvider.notifier).state = false;
+    ref.read(workoutTimerStartedProvider.notifier).state = false;
+    WidgetSyncService.syncWorkoutTimer(false, "");
+
+    WorkoutNotificationService.stopNotification();
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
   }
 }
 

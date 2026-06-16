@@ -86,7 +86,7 @@ class WidgetSyncService {
       if (streak > 365) break;
     }
 
-    return streak > 0 ? streak : 7;
+    return streak;
   }
 
   static bool _isDayActive(DateTime date, List<WorkoutSession> workouts) {
@@ -131,5 +131,19 @@ class WidgetSyncService {
     } catch (_) {}
 
     return false;
+  }
+
+  /// Syncs active workout timer details to Android widget SharedPreferences
+  static Future<void> syncWorkoutTimer(bool isActive, String timerStr) async {
+    try {
+      await HomeWidget.saveWidgetData<bool>('workout_active', isActive);
+      await HomeWidget.saveWidgetData<String>('workout_timer', timerStr);
+      await HomeWidget.updateWidget(
+        name: 'ZivoWidgetProvider',
+        androidName: 'ZivoWidgetProvider',
+      );
+    } catch (e) {
+      print("Error syncing workout timer to widget: $e");
+    }
   }
 }

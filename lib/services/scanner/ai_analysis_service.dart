@@ -6,6 +6,7 @@ import '../storage_service.dart';
 import 'nutrition_normalizer.dart';
 import 'ocr_service.dart';
 import 'database_service.dart';
+import '../ai_backend_service.dart';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -210,20 +211,26 @@ class AiAnalysisService {
       await Future.delayed(const Duration(milliseconds: 200));
     }
 
-    // 3. Query Gemini 2.5 Flash with compressed constraint payload
+    // 3. Query Gemini 2.5 Flash with compressed constraint payload via analyzeMeal Cloud Function
     onProgress("Querying Gemini 2.5 Flash for unique plate visual estimation...");
-    final prompt = "Analyze this compressed food item. Return ONLY raw JSON mapping single-portion estimations. Reference USDA FoodData Central (FDC) and ICMR-NIN (National Institute of Nutrition, India) / IFCT guidelines for standard portion sizes and nutritional values to ensure maximum accuracy and consistency (e.g., 2 slices of whole wheat bread must be ~138 kcal, 1 standard home-cooked Roti is ~70-80 kcal, 1 cup of Dal Tadka is ~150 kcal, 1 large egg is ~70 kcal, etc.). No markdown formatting or text wrappers. Schema: {'food_name': '$queryText', 'calories': 0, 'protein': 0, 'carbs': 0, 'fat': 0}";
-
     try {
-      final result = await queryGemini(
-        prompt: prompt,
-        imageBase64: optimizedImage,
-      );
+      final Map<String, dynamic> result;
+      if (optimizedImage != null && optimizedImage.isNotEmpty) {
+        result = await AIBackendService.analyzeMeal(
+          type: 'image',
+          content: optimizedImage,
+        );
+      } else {
+        result = await AIBackendService.analyzeMeal(
+          type: 'text',
+          content: queryText,
+        );
+      }
 
-      if (result != null) {
+      if (result.isNotEmpty && !result.containsKey('error')) {
         onProgress("Gemini structured estimation completed successfully!");
         return {
-          'name': result['food_name'] ?? queryText,
+          'name': result['foodName'] ?? queryText,
           'calories': _parseToInt(result['calories']),
           'protein': _parseToInt(result['protein']),
           'carbs': _parseToInt(result['carbs']),

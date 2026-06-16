@@ -53,15 +53,19 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
         calorieLogs.add(consumedCal);
         waterLogs.add(consumedWaterLtr);
       }
-      weightLogs.addAll([
-        currentWeight + 0.6,
-        currentWeight + 0.3,
-        currentWeight + 0.5,
-        currentWeight + 0.1,
-        currentWeight - 0.2,
-        currentWeight + 0.0,
-        currentWeight,
-      ]);
+      if (StorageService.getFakeDataEnabled()) {
+        weightLogs.addAll([
+          currentWeight + 0.6,
+          currentWeight + 0.3,
+          currentWeight + 0.5,
+          currentWeight + 0.1,
+          currentWeight - 0.2,
+          currentWeight + 0.0,
+          currentWeight,
+        ]);
+      } else {
+        weightLogs.addAll(List.filled(7, currentWeight));
+      }
       periodWorkouts.addAll(history.where((session) {
         try {
           final parsedDate = DateFormat('yyyy-MM-dd').parse(session.date);
@@ -100,7 +104,11 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
         }
         calorieLogs.add(weekCalSum / 7.0);
         waterLogs.add(weekWaterSum / 7.0);
-        weightLogs.add(currentWeight + (i * 0.4) - 0.1);
+        if (StorageService.getFakeDataEnabled()) {
+          weightLogs.add(currentWeight + (i * 0.4) - 0.1);
+        } else {
+          weightLogs.add(currentWeight);
+        }
       }
       
       periodWorkouts.addAll(history.where((session) {
@@ -141,7 +149,11 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
         
         calorieLogs.add(sampledDays > 0 ? (monthCalSum / sampledDays) : 0.0);
         waterLogs.add(sampledDays > 0 ? (monthWaterSum / sampledDays) : 0.0);
-        weightLogs.add(currentWeight + (i * 0.6) - 0.2);
+        if (StorageService.getFakeDataEnabled()) {
+          weightLogs.add(currentWeight + (i * 0.6) - 0.2);
+        } else {
+          weightLogs.add(currentWeight);
+        }
       }
       
       periodWorkouts.addAll(history.where((session) {
@@ -182,7 +194,11 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
         
         calorieLogs.add(sampledDays > 0 ? (monthCalSum / sampledDays) : 0.0);
         waterLogs.add(sampledDays > 0 ? (monthWaterSum / sampledDays) : 0.0);
-        weightLogs.add(currentWeight + (i * 0.8) - 0.4);
+        if (StorageService.getFakeDataEnabled()) {
+          weightLogs.add(currentWeight + (i * 0.8) - 0.4);
+        } else {
+          weightLogs.add(currentWeight);
+        }
       }
       
       periodWorkouts.addAll(history);
@@ -213,13 +229,37 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Header Section
-              const Text(
-                'Metrics Trends',
-                style: TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: -0.5,
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Metrics Trends',
+                    style: TextStyle(
+                      fontSize: 26,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () => _showStatsHelpSheet(context),
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: isDark ? Colors.white.withOpacity(0.04) : Colors.black.withOpacity(0.03),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: isDark ? const Color(0xFF323530) : AppTheme.glassBorder,
+                          width: 1,
+                        ),
+                      ),
+                      child: Icon(
+                        Icons.help_outline_rounded,
+                        color: isDark ? Colors.white : AppTheme.textPrimary,
+                        size: 18,
+                      ),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 4),
               const Text(
@@ -361,7 +401,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                                 children: [
                                   const Icon(
                                     Icons.water_drop_rounded,
-                                    color: AppTheme.accentOrange,
+                                    color: AppTheme.accentCyan,
                                     size: 22,
                                   ),
                                   const SizedBox(height: 8),
@@ -393,7 +433,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                                         ? 'Fully Hydrated! 💧'
                                         : 'Drink 0.6L more to align 🌊',
                                     style: const TextStyle(
-                                      color: AppTheme.accentOrange,
+                                      color: AppTheme.accentCyan,
                                       fontSize: 10,
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -447,7 +487,11 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              'Level Up progress: 80% to Gold Athlete tier! 🏆',
+                              targetSessionsGoal > 0
+                                  ? (workoutsThisPeriodCount >= targetSessionsGoal
+                                      ? 'Goal unlocked! Elite Form status achieved! 🔥'
+                                      : 'Level Up: ${(workoutsThisPeriodCount / targetSessionsGoal * 100).round()}% done. Next: ${workoutsThisPeriodCount >= targetSessionsGoal * 0.5 ? "Elite Form 🔥" : (workoutsThisPeriodCount >= targetSessionsGoal * 0.25 ? "Disciplined 🔥" : "Grindset 💪")}')
+                                  : 'Start logging workouts to progress!',
                               style: const TextStyle(
                                 color: AppTheme.accentPurple,
                                 fontSize: 10,
@@ -534,13 +578,13 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
               ),
               const SizedBox(height: 24),
 
-              // AI Performance Coach Header
+              // AI Insights Header
               Row(
                 children: [
                   const Icon(Icons.psychology_rounded, color: AppTheme.accentCyan, size: 20),
                   const SizedBox(width: 8),
                   Text(
-                    'AI Performance Coach',
+                    'AI Insights',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w900,
@@ -990,7 +1034,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.bold,
-                  color: AppTheme.accentEmerald,
+                  color: AppTheme.accentCyan,
                   letterSpacing: 1.5,
                 ),
               ),
@@ -998,7 +1042,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                 'Goal: ${waterGoalLtr.toStringAsFixed(1)}L',
                 style: const TextStyle(
                   fontSize: 11,
-                  color: AppTheme.accentEmerald,
+                  color: AppTheme.accentCyan,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -1065,12 +1109,12 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                 lineBarsData: [
                   LineChartBarData(
                     isCurved: true,
-                    color: AppTheme.accentEmerald,
+                    color: AppTheme.accentCyan,
                     barWidth: 3,
                     dotData: const FlDotData(show: true),
                     belowBarData: BarAreaData(
                       show: true,
-                      color: AppTheme.accentEmerald.withOpacity(0.04),
+                      color: AppTheme.accentCyan.withOpacity(0.04),
                     ),
                     spots: List.generate(
                       waterLogs.length,
@@ -1098,7 +1142,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                 
                 // Color mapping matching line color
                 Color textColor = waterLtr >= waterGoalLtr
-                    ? AppTheme.accentEmerald
+                    ? AppTheme.accentCyan
                     : (waterLtr > 0 ? AppTheme.accentCyan : AppTheme.textSecondary);
 
                 return Column(
@@ -1337,9 +1381,12 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: AppTheme.glassBackground,
+        color: isDark ? const Color(0xFF121214) : AppTheme.glassBackground,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppTheme.glassBorder, width: 1),
+        border: Border.all(
+          color: isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder,
+          width: 1,
+        ),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(16),
@@ -1440,6 +1487,107 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
             ),
           );
         }).toList(),
+      ),
+    );
+  }
+
+  void _showStatsHelpSheet(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: isDark ? const Color(0xFF121214) : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.analytics_rounded, color: AppTheme.accentCyan, size: 24),
+                    const SizedBox(width: 12),
+                    Text(
+                      'About Metrics & Trends',
+                      style: TextStyle(
+                        color: isDark ? Colors.white : AppTheme.textPrimary,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'This section provides visual analysis of your progress over time:',
+                  style: TextStyle(
+                    color: isDark ? Colors.white70 : AppTheme.textPrimary,
+                    fontSize: 14,
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                _buildHelpItem(Icons.scale_rounded, 'Weight Trends', 'Track weight fluctuations against your fitness goals (lose, maintain, bulk) to monitor progress.'),
+                _buildHelpItem(Icons.bolt_rounded, 'Calorie Intake', 'Compare your active daily calorie intake against your calculated baseline targets.'),
+                _buildHelpItem(Icons.water_drop_rounded, 'Hydration Log', 'Monitor your water consumption levels to optimize recovery and physical health.'),
+                _buildHelpItem(Icons.psychology_rounded, 'AI Insights', 'Actionable alerts and recovery advice generated by Zivo AI based on your logged patterns.'),
+                _buildHelpItem(Icons.history_rounded, 'Active Logs / History', 'Review detailed logs of your active gym training sessions and caloric inflows in a chronological layout.'),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.accentCyan,
+                    minimumSize: const Size(double.infinity, 44),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Got it', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildHelpItem(IconData icon, String title, String desc) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: AppTheme.accentCyan, size: 18),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                    color: isDark ? Colors.white : AppTheme.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  desc,
+                  style: const TextStyle(
+                    color: AppTheme.textSecondary,
+                    fontSize: 12,
+                    height: 1.3,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

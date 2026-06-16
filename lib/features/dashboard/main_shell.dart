@@ -18,6 +18,8 @@ import 'workout_screen.dart';
 import '../vision_lens/vision_lens/screens/vision_lens_home_screen.dart';
 import 'progress_screen.dart';
 import '../../services/ai_backend_service.dart';
+import '../../core/health_math.dart';
+import '../../services/firebase_service.dart';
 
 class MainShell extends ConsumerStatefulWidget {
   const MainShell({super.key});
@@ -217,8 +219,8 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
 
     Overlay.of(context).insert(overlayEntry);
 
-    // Auto-remove after 4 seconds
-    Future.delayed(const Duration(seconds: 4), () {
+    // Auto-remove after 5 seconds
+    Future.delayed(const Duration(seconds: 5), () {
       if (overlayEntry.mounted) {
         overlayEntry.remove();
       }
@@ -230,12 +232,40 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final currentIndex = ref.watch(activeTabProvider);
     final bgColor = isDark ? const Color(0xFF000000) : AppTheme.obsidianBackground;
+    final customBgStr = ref.watch(customBackgroundProvider);
+    final hasBg = customBgStr != null && customBgStr.isNotEmpty;
+
+    DecorationImage? bgImage;
+    if (hasBg) {
+      try {
+        String cleaned = customBgStr;
+        final commaIndex = cleaned.indexOf(',');
+        if (commaIndex != -1) {
+          cleaned = cleaned.substring(commaIndex + 1);
+        }
+        cleaned = cleaned.replaceAll(RegExp(r'\s+'), '');
+        final bytes = base64Decode(cleaned);
+        bgImage = DecorationImage(
+          image: MemoryImage(bytes),
+          fit: BoxFit.cover,
+          colorFilter: ColorFilter.mode(
+            Colors.black.withOpacity(isDark ? 0.85 : 0.6),
+            BlendMode.darken,
+          ),
+        );
+      } catch (e) {
+        debugPrint("Error loading custom background: $e");
+      }
+    }
 
     return Scaffold(
       extendBody: true,
       backgroundColor: bgColor,
       body: Container(
-        color: bgColor,
+        decoration: BoxDecoration(
+          color: bgColor,
+          image: bgImage,
+        ),
         child: IndexedStack(index: currentIndex, children: _screens),
       ),
       bottomNavigationBar: _buildGlassNavigationBar(currentIndex),
@@ -280,13 +310,14 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
   Widget _buildNavItem(IconData icon, String label, int index, int currentIndex) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final isSelected = currentIndex == index;
+    final accentColor = ref.watch(accentColorProvider);
     
     final iconColor = isSelected
         ? const Color(0xFF0E0F0C) // Black icon inside the neon lime capsule
         : (isDark ? const Color(0xFF868685) : AppTheme.textSecondary);
         
     final textColor = isSelected
-        ? AppTheme.accentCyan // Accent color for active text
+        ? accentColor // Accent color for active text
         : (isDark ? const Color(0xFF868685) : AppTheme.textSecondary);
 
     return Expanded(
@@ -307,7 +338,7 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
               ),
               decoration: BoxDecoration(
                 color: isSelected
-                    ? AppTheme.accentCyan // Neon Lime background capsule
+                    ? accentColor // Dynamic active background capsule
                     : Colors.transparent,
                 borderRadius: BorderRadius.circular(16), // standard pill corner radius
               ),
@@ -348,6 +379,8 @@ class _ProfilePlaceholderScreenState
     extends ConsumerState<ProfilePlaceholderScreen> {
   final _calController = TextEditingController();
   final _protController = TextEditingController();
+  final _carbsController = TextEditingController();
+  final _fatsController = TextEditingController();
   final _watController = TextEditingController();
   final _ageController = TextEditingController();
   final _weightController = TextEditingController();
@@ -360,6 +393,91 @@ class _ProfilePlaceholderScreenState
   bool _systemNotificationsEnabled = true;
   String? _healthCheckResult;
   bool _isLoadingHealthCheck = false;
+  bool _fakeDataEnabled = false;
+  Timer? _debounceTimer;
+
+  void _onSettingsChanged() {
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(const Duration(milliseconds: 500), () {
+      _saveProfileDataSilent();
+    });
+  }
+
+  Future<void> _saveProfileDataSilent() async {
+    final calorieInput = int.tryParse(_calController.text);
+    final proteinInput = int.tryParse(_protController.text);
+    final carbsInput = int.tryParse(_carbsController.text);
+    final fatsInput = int.tryParse(_fatsController.text);
+    final waterLtrInput = double.tryParse(_watController.text);
+    final ageInput = int.tryParse(_ageController.text);
+    final weightInput = double.tryParse(_weightController.text);
+    final heightInput = double.tryParse(_heightController.text);
+
+    if (calorieInput == null || calorieInput <= 0 ||
+        proteinInput == null || proteinInput <= 0 ||
+        carbsInput == null || carbsInput <= 0 ||
+        fatsInput == null || fatsInput <= 0 ||
+        waterLtrInput == null || waterLtrInput <= 0 ||
+        ageInput == null || ageInput <= 0 ||
+        weightInput == null || weightInput <= 0 ||
+        heightInput == null || heightInput <= 0) {
+      return;
+    }
+
+    final waterInput = (waterLtrInput * 1000).round();
+
+    final updatedProfile = UserProfile(
+      goal: _selectedGoal,
+      gender: _selectedGender,
+      age: ageInput,
+      weight: weightInput,
+      height: heightInput,
+      activityLevel: _selectedActivityLevel,
+      calorieGoal: calorieInput,
+      proteinGoal: proteinInput,
+      waterGoal: waterInput,
+      skinType: _selectedSkinType,
+    );
+
+    await StorageService.saveCarbsGoal(carbsInput);
+    await StorageService.saveFatsGoal(fatsInput);
+
+    await ref.read(profileProvider.notifier).saveProfile(updatedProfile);
+    ref.invalidate(profileProvider); // force invalidate to refresh dashboard targets
+  }
+
+  void _autoRecalculateTargets() {
+    final age = int.tryParse(_ageController.text);
+    final weight = double.tryParse(_weightController.text);
+    final height = double.tryParse(_heightController.text);
+
+    if (age != null && age > 0 && weight != null && weight > 0 && height != null && height > 0) {
+      final targets = HealthMath.calculateTargets(
+        goal: _selectedGoal,
+        age: age,
+        weight: weight,
+        height: height,
+        activityLevel: _selectedActivityLevel,
+        gender: _selectedGender,
+      );
+
+      setState(() {
+        _calController.text = targets.calorieGoal.toString();
+        _protController.text = targets.proteinGoal.toString();
+        _carbsController.text = targets.carbGoal.toString();
+        _fatsController.text = targets.fatGoal.toString();
+
+        double ltr = targets.waterGoal / 1000.0;
+        String formatted = ltr.toStringAsFixed(2);
+        if (formatted.endsWith('.00')) {
+          formatted = formatted.substring(0, formatted.length - 3);
+        } else if (formatted.endsWith('0')) {
+          formatted = formatted.substring(0, formatted.length - 1);
+        }
+        _watController.text = formatted;
+      });
+    }
+  }
 
   @override
   void initState() {
@@ -387,78 +505,59 @@ class _ProfilePlaceholderScreenState
       _selectedActivityLevel = profile.activityLevel.toLowerCase();
     }
 
+    _carbsController.text = StorageService.getCarbsGoal().toString();
+    _fatsController.text = StorageService.getFatsGoal().toString();
+
     _auraNotificationsEnabled = StorageService.getAuraNotificationsEnabled();
     _systemNotificationsEnabled = StorageService.getSystemNotificationsEnabled();
+    _fakeDataEnabled = StorageService.getFakeDataEnabled();
+
+    // Listen to profile inputs to trigger automatic targets calculation
+    _ageController.addListener(_autoRecalculateTargets);
+    _weightController.addListener(_autoRecalculateTargets);
+    _heightController.addListener(_autoRecalculateTargets);
+
+    // Listen to settings updates for automatic background saving
+    _calController.addListener(_onSettingsChanged);
+    _protController.addListener(_onSettingsChanged);
+    _carbsController.addListener(_onSettingsChanged);
+    _fatsController.addListener(_onSettingsChanged);
+    _watController.addListener(_onSettingsChanged);
+    _ageController.addListener(_onSettingsChanged);
+    _weightController.addListener(_onSettingsChanged);
+    _heightController.addListener(_onSettingsChanged);
   }
 
   @override
   void dispose() {
+    _ageController.removeListener(_autoRecalculateTargets);
+    _weightController.removeListener(_autoRecalculateTargets);
+    _heightController.removeListener(_autoRecalculateTargets);
+
+    _calController.removeListener(_onSettingsChanged);
+    _protController.removeListener(_onSettingsChanged);
+    _carbsController.removeListener(_onSettingsChanged);
+    _fatsController.removeListener(_onSettingsChanged);
+    _watController.removeListener(_onSettingsChanged);
+    _ageController.removeListener(_onSettingsChanged);
+    _weightController.removeListener(_onSettingsChanged);
+    _heightController.removeListener(_onSettingsChanged);
+
     _calController.dispose();
     _protController.dispose();
+    _carbsController.dispose();
+    _fatsController.dispose();
     _watController.dispose();
     _ageController.dispose();
     _weightController.dispose();
     _heightController.dispose();
 
+    _debounceTimer?.cancel();
+
     super.dispose();
   }
 
-  Future<void> _saveManualTargets() async {
-    final calorieInput = int.tryParse(_calController.text);
-    final proteinInput = int.tryParse(_protController.text);
-    final waterLtrInput = double.tryParse(_watController.text);
-    final ageInput = int.tryParse(_ageController.text);
-    final weightInput = double.tryParse(_weightController.text);
-    final heightInput = double.tryParse(_heightController.text);
 
-    if (calorieInput == null ||
-        proteinInput == null ||
-        waterLtrInput == null ||
-        ageInput == null ||
-        weightInput == null ||
-        heightInput == null ||
-        calorieInput <= 0 ||
-        proteinInput <= 0 ||
-        waterLtrInput <= 0 ||
-        ageInput <= 0 ||
-        weightInput <= 0 ||
-        heightInput <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please enter valid, positive numeric targets.'),
-        ),
-      );
-      return;
-    }
-
-    final waterInput = (waterLtrInput * 1000).round();
-
-    final updatedProfile = UserProfile(
-      goal: _selectedGoal,
-      gender: _selectedGender,
-      age: ageInput,
-      weight: weightInput,
-      height: heightInput,
-      activityLevel: _selectedActivityLevel,
-      calorieGoal: calorieInput,
-      proteinGoal: proteinInput,
-      waterGoal: waterInput,
-      skinType: _selectedSkinType,
-    );
-
-    await ref.read(profileProvider.notifier).saveProfile(updatedProfile);
-    await StorageService.setAuraNotificationsEnabled(_auraNotificationsEnabled);
-    await StorageService.setSystemNotificationsEnabled(_systemNotificationsEnabled);
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Profile settings saved!'),
-          backgroundColor: AppTheme.accentEmerald,
-        ),
-      );
-    }
-  }
 
   void _showProfilePicturePicker(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -533,9 +632,9 @@ class _ProfilePlaceholderScreenState
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final fieldBg = isDark
-        ? AppTheme.obsidianBackground
+        ? const Color(0xFF1C1E1B)
         : Colors.black.withOpacity(0.015);
-    final fieldBorder = isDark ? AppTheme.glassBorder : const Color(0xFFEADBFF);
+    final fieldBorder = isDark ? const Color(0xFF323530) : const Color(0xFFEADBFF);
     final textColor = isDark ? Colors.white : AppTheme.textPrimary;
 
     return GestureDetector(
@@ -586,13 +685,89 @@ class _ProfilePlaceholderScreenState
     );
   }
 
+  final Map<String, bool> _expandedSections = {
+    'profile': true,
+    'goals': false,
+    'reminders': false,
+    'notifications': false,
+    'appearance': false,
+    'developer': false,
+    'support': false,
+    'account': false,
+  };
+
+  Widget _buildAccordionSection({
+    required String title,
+    required String sectionKey,
+    required Widget content,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isExpanded = _expandedSections[sectionKey] ?? false;
+    final accentColor = ref.watch(accentColorProvider);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: GlassCard(
+        width: double.infinity,
+        padding: EdgeInsets.zero,
+        borderRadius: BorderRadius.circular(20),
+        child: Column(
+          children: [
+            InkWell(
+              onTap: () {
+                setState(() {
+                  _expandedSections[sectionKey] = !isExpanded;
+                });
+              },
+              borderRadius: BorderRadius.circular(20),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        color: isDark ? Colors.white : AppTheme.textPrimary,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: -0.3,
+                      ),
+                    ),
+                    Icon(
+                      isExpanded
+                          ? Icons.keyboard_arrow_up_rounded
+                          : Icons.keyboard_arrow_down_rounded,
+                      color: accentColor,
+                      size: 22,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            AnimatedCrossFade(
+              firstChild: const SizedBox(width: double.infinity),
+              secondChild: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+                child: content,
+              ),
+              crossFadeState: isExpanded
+                  ? CrossFadeState.showSecond
+                  : CrossFadeState.showFirst,
+              duration: const Duration(milliseconds: 200),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final profile = ref.watch(profileProvider);
     final reminders = ref.watch(remindersProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-
-
+    final accentColor = ref.watch(accentColorProvider);
 
     final double currentWeight = profile?.weight ?? 78.5;
     final double currentHeight = profile?.height ?? 182.0;
@@ -622,7 +797,7 @@ class _ProfilePlaceholderScreenState
                       decoration: BoxDecoration(
                         color: isDark ? const Color(0xFF121214) : const Color(0xFFE8EBE6),
                         shape: BoxShape.circle,
-                        border: Border.all(color: AppTheme.accentCyan.withOpacity(0.3), width: 2.0),
+                        border: Border.all(color: accentColor.withOpacity(0.3), width: 2.0),
                       ),
                       child: () {
                         final profilePic = ref.watch(profilePictureProvider);
@@ -677,7 +852,7 @@ class _ProfilePlaceholderScreenState
                   ),
                   const SizedBox(height: 4),
                   const Text(
-                    'Elite Athlete • Premium Member',
+                    'Elite Form • Premium Member',
                     style: TextStyle(
                       color: AppTheme.textSecondary,
                       fontSize: 13,
@@ -689,162 +864,226 @@ class _ProfilePlaceholderScreenState
             ),
             const SizedBox(height: 32),
 
-            // Personal Metrics Bento Grid
-            Row(
-              children: [
-                Expanded(
-                  child: GlassCard(
-                    padding: const EdgeInsets.symmetric(vertical: 20),
-                    child: Column(
-                      children: [
-                        Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: AppTheme.accentCyan.withOpacity(0.1),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.scale_rounded,
-                            color: AppTheme.accentCyan,
-                            size: 20,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        const Text(
-                          'WEIGHT',
-                          style: TextStyle(
-                            color: AppTheme.textSecondary,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1.0,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          '${currentWeight.toStringAsFixed(1)} kg',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: GlassCard(
-                    padding: const EdgeInsets.symmetric(vertical: 20),
-                    child: Column(
-                      children: [
-                        Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: AppTheme.accentPurple.withOpacity(0.1),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.straighten_rounded,
-                            color: AppTheme.accentPurple,
-                            size: 20,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        const Text(
-                          'HEIGHT',
-                          style: TextStyle(
-                            color: AppTheme.textSecondary,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1.0,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          '${currentHeight.round()} cm',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
+            // Combined Personal Metrics Bento Grid (Unified 2x2 Layout, no chevrons)
             GlassCard(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              child: Row(
+              padding: const EdgeInsets.all(20),
+              customBgColor: isDark ? const Color(0xFF1C1E1B) : AppTheme.glassBackground,
+              customBorder: Border.all(color: isDark ? const Color(0xFF323530) : AppTheme.glassBorder, width: 1.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: AppTheme.accentOrange.withOpacity(0.1),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.cake_rounded,
-                      color: AppTheme.accentOrange,
-                      size: 20,
+                  Text(
+                    'BODY PROFILE SUMMARY',
+                    style: TextStyle(
+                      color: isDark ? const Color(0xFF868685) : AppTheme.textSecondary,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.0,
                     ),
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'AGE & GENDER',
-                          style: TextStyle(
-                            color: AppTheme.textSecondary,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1.0,
-                          ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      // Weight
+                      Expanded(
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 36,
+                              height: 36,
+                              decoration: BoxDecoration(
+                                color: accentColor.withOpacity(0.12),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.scale_rounded,
+                                color: accentColor,
+                                size: 18,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'WEIGHT',
+                                    style: TextStyle(
+                                      color: AppTheme.textSecondary,
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    '${currentWeight.toStringAsFixed(1)} kg',
+                                    style: TextStyle(
+                                      color: isDark ? Colors.white : AppTheme.textPrimary,
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 2),
-                        Text(
-                          '$currentAge Years • $currentGender',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 15,
-                            fontWeight: FontWeight.bold,
-                          ),
+                      ),
+                      // Height
+                      Expanded(
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 36,
+                              height: 36,
+                              decoration: BoxDecoration(
+                                color: accentColor.withOpacity(0.12),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.straighten_rounded,
+                                color: accentColor,
+                                size: 18,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'HEIGHT',
+                                    style: TextStyle(
+                                      color: AppTheme.textSecondary,
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    '${currentHeight.round()} cm',
+                                    style: TextStyle(
+                                      color: isDark ? Colors.white : AppTheme.textPrimary,
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                  const Icon(
-                    Icons.chevron_right_rounded,
-                    color: AppTheme.textSecondary,
+                  const SizedBox(height: 16),
+                  const Divider(color: AppTheme.glassBorder, height: 1),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      // Age
+                      Expanded(
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 36,
+                              height: 36,
+                              decoration: BoxDecoration(
+                                color: accentColor.withOpacity(0.12),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.cake_rounded,
+                                color: accentColor,
+                                size: 18,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'AGE',
+                                    style: TextStyle(
+                                      color: AppTheme.textSecondary,
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    '$currentAge Years',
+                                    style: TextStyle(
+                                      color: isDark ? Colors.white : AppTheme.textPrimary,
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      // Gender
+                      Expanded(
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 36,
+                              height: 36,
+                              decoration: BoxDecoration(
+                                color: accentColor.withOpacity(0.12),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.person_outline_rounded,
+                                color: accentColor,
+                                size: 18,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'GENDER',
+                                    style: TextStyle(
+                                      color: AppTheme.textSecondary,
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    currentGender,
+                                    style: TextStyle(
+                                      color: isDark ? Colors.white : AppTheme.textPrimary,
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 28),
 
-            // Target budgets editor
-            const Text(
-              'Edit Profile & Targets',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w900,
-                color: Colors.white,
-                letterSpacing: -0.5,
-              ),
-            ),
-            const SizedBox(height: 16),
-            GlassCard(
-              width: double.infinity,
-              child: Column(
+            // ── 1. PROFILE & BODY ACCORDION ──
+            _buildAccordionSection(
+              title: '👤  Profile & Body',
+              sectionKey: 'profile',
+              content: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   () {
@@ -854,7 +1093,7 @@ class _ProfilePlaceholderScreenState
                       label: 'Profile Photo',
                       value: isPhotoActive ? 'Custom photo active' : 'Default icon active',
                       icon: Icons.photo_camera_rounded,
-                      color: AppTheme.accentCyan,
+                      color: accentColor,
                       onTap: () => _showProfilePicturePicker(context),
                     );
                   }(),
@@ -872,11 +1111,13 @@ class _ProfilePlaceholderScreenState
                     items: const ['male', 'female', 'other'],
                     label: 'Gender',
                     icon: Icons.person_outline_rounded,
-                    color: AppTheme.accentCyan,
+                    color: accentColor,
                     onChanged: (val) {
                       if (val != null) {
                         setState(() {
                           _selectedGender = val;
+                          _autoRecalculateTargets();
+                          _onSettingsChanged();
                         });
                       }
                     },
@@ -887,7 +1128,7 @@ class _ProfilePlaceholderScreenState
                     'Weight',
                     'kg',
                     Icons.scale_rounded,
-                    AppTheme.accentCyan,
+                    accentColor,
                   ),
                   const SizedBox(height: 12),
                   _buildEditorField(
@@ -895,9 +1136,19 @@ class _ProfilePlaceholderScreenState
                     'Height',
                     'cm',
                     Icons.straighten_rounded,
-                    AppTheme.accentPurple,
+                    accentColor,
                   ),
-                  const SizedBox(height: 12),
+                ],
+              ),
+            ),
+
+            // ── 2. GOALS & TARGETS ACCORDION ──
+            _buildAccordionSection(
+              title: '🎯  Goals & Targets',
+              sectionKey: 'goals',
+              content: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                   _buildDropdownField(
                     value: _selectedGoal,
                     items: const ['lose', 'gain', 'maintain'],
@@ -908,6 +1159,8 @@ class _ProfilePlaceholderScreenState
                       if (val != null) {
                         setState(() {
                           _selectedGoal = val;
+                          _autoRecalculateTargets();
+                          _onSettingsChanged();
                         });
                       }
                     },
@@ -918,11 +1171,13 @@ class _ProfilePlaceholderScreenState
                     items: const ['sedentary', 'light', 'moderate', 'very'],
                     label: 'Activity Level',
                     icon: Icons.directions_run_rounded,
-                    color: AppTheme.accentPurple,
+                    color: accentColor,
                     onChanged: (val) {
                       if (val != null) {
                         setState(() {
                           _selectedActivityLevel = val;
+                          _autoRecalculateTargets();
+                          _onSettingsChanged();
                         });
                       }
                     },
@@ -934,14 +1189,30 @@ class _ProfilePlaceholderScreenState
                     'Calorie Goal',
                     'kcal',
                     Icons.bolt_rounded,
-                    AppTheme.accentCyan,
+                    accentColor,
                   ),
                   const SizedBox(height: 12),
-                  _buildEditorField(
+                   _buildEditorField(
                     _protController,
                     'Protein Goal',
                     'g',
                     Icons.fitness_center_rounded,
+                    AppTheme.accentOrange,
+                  ),
+                  const SizedBox(height: 12),
+                  _buildEditorField(
+                    _carbsController,
+                    'Carbohydrate Goal',
+                    'g',
+                    Icons.bakery_dining_rounded,
+                    accentColor,
+                  ),
+                  const SizedBox(height: 12),
+                  _buildEditorField(
+                    _fatsController,
+                    'Fat Goal',
+                    'g',
+                    Icons.opacity_rounded,
                     AppTheme.accentOrange,
                   ),
                   const SizedBox(height: 12),
@@ -958,33 +1229,74 @@ class _ProfilePlaceholderScreenState
                     items: const ['Dry', 'Oily', 'Sensitive', 'Acne', 'Normal'],
                     label: 'Skincare Skin Type',
                     icon: Icons.face_retouching_natural_rounded,
-                    color: AppTheme.accentPurple,
+                    color: accentColor,
                     onChanged: (val) {
                       if (val != null) {
                         setState(() {
                           _selectedSkinType = val;
+                          _onSettingsChanged();
                         });
                       }
                     },
                   ),
-                  const SizedBox(height: 16),
-                  GestureDetector(
-                    onTap: _saveManualTargets,
-                    child: Container(
+                ],
+              ),
+            ),
+
+            // ── 3. REMINDERS ACCORDION ──
+            _buildAccordionSection(
+              title: '⏰  Reminders',
+              sectionKey: 'reminders',
+              content: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (reminders.isEmpty)
+                    const GlassCard(
                       width: double.infinity,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        gradient: AppTheme.primaryGradient,
-                        borderRadius: BorderRadius.circular(9999), // pill shape
-                      ),
-                      child: const Center(
+                      padding: EdgeInsets.all(20.0),
+                      child: Center(
                         child: Text(
-                          'Save Profile Settings',
+                          'No configured reminders.',
                           style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
+                            color: AppTheme.textSecondary,
+                            fontSize: 13,
                           ),
                         ),
+                      ),
+                    )
+                  else
+                    ...reminders.entries.map((entry) {
+                      return _buildReminderAlarmTile(entry.key, entry.value);
+                    }),
+                  const SizedBox(height: 8),
+                  GestureDetector(
+                    onTap: () => _showAddReminderDialog(context),
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.transparent,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: accentColor.withOpacity(0.3),
+                          width: 1.0,
+                          style: BorderStyle.solid,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.add_alarm_rounded, color: accentColor, size: 18),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Add Custom Reminder',
+                            style: TextStyle(
+                              color: accentColor,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -992,53 +1304,11 @@ class _ProfilePlaceholderScreenState
               ),
             ),
 
-            const SizedBox(height: 32),
-
-            // Reminders Section
-            const Text(
-              'Daily Reminders',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w900,
-                color: Colors.white,
-                letterSpacing: -0.5,
-              ),
-            ),
-            const SizedBox(height: 16),
-            if (reminders.isEmpty)
-              const GlassCard(
-                width: double.infinity,
-                padding: EdgeInsets.all(20.0),
-                child: Center(
-                  child: Text(
-                    'No configured reminders.',
-                    style: TextStyle(
-                      color: AppTheme.textSecondary,
-                      fontSize: 13,
-                    ),
-                  ),
-                ),
-              )
-            else
-              ...reminders.entries.map((entry) {
-                return _buildReminderAlarmTile(entry.key, entry.value);
-              }),
-            const SizedBox(height: 24),
-
-            // Notification Settings
-            const Text(
-              'Notification Settings',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w900,
-                color: Colors.white,
-                letterSpacing: -0.5,
-              ),
-            ),
-            const SizedBox(height: 16),
-            GlassCard(
-              width: double.infinity,
-              child: Column(
+            // ── 4. NOTIFICATIONS ACCORDION ──
+            _buildAccordionSection(
+              title: '🔔  Notifications',
+              sectionKey: 'notifications',
+              content: Column(
                 children: [
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1071,6 +1341,7 @@ class _ProfilePlaceholderScreenState
                           setState(() {
                             _auraNotificationsEnabled = val;
                           });
+                          StorageService.setAuraNotificationsEnabled(val);
                         },
                       ),
                     ],
@@ -1102,11 +1373,12 @@ class _ProfilePlaceholderScreenState
                       ),
                       Switch(
                         value: _systemNotificationsEnabled,
-                        activeColor: AppTheme.accentCyan,
+                        activeColor: accentColor,
                         onChanged: (val) {
                           setState(() {
                             _systemNotificationsEnabled = val;
                           });
+                          StorageService.setSystemNotificationsEnabled(val);
                         },
                       ),
                     ],
@@ -1114,110 +1386,199 @@ class _ProfilePlaceholderScreenState
                 ],
               ),
             ),
-            const SizedBox(height: 32),
 
-            // App Style theme toggle
-            GlassCard(
-              width: double.infinity,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            // ── 5. APPEARANCE ACCORDION ──
+            _buildAccordionSection(
+              title: '🎨  Appearance',
+              sectionKey: 'appearance',
+              content: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  // Dark mode toggle
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        'Obsidian Dark Mode',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 15,
-                          color: Colors.white,
-                        ),
+                      const Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Obsidian Dark Mode',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                              color: Colors.white,
+                            ),
+                          ),
+                          SizedBox(height: 2),
+                          Text(
+                            'Premium velvet midnight aesthetic',
+                            style: TextStyle(
+                              color: AppTheme.textSecondary,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
                       ),
-                      SizedBox(height: 2),
-                      Text(
-                        'Premium velvet midnight aesthetic',
-                        style: TextStyle(
-                          color: AppTheme.textSecondary,
-                          fontSize: 12,
-                        ),
+                      Switch(
+                        value: isDark,
+                        activeColor: accentColor,
+                        onChanged: (val) {
+                          ref.read(themeModeProvider.notifier).state =
+                              val ? ThemeMode.dark : ThemeMode.light;
+                        },
                       ),
                     ],
                   ),
-                  Switch(
-                    value: isDark,
-                    activeColor: AppTheme.accentPurple,
-                    onChanged: (val) {
-                      ref.read(themeModeProvider.notifier).state =
-                          val ? ThemeMode.dark : ThemeMode.light;
-                    },
+                  const Divider(color: AppTheme.glassBorder, height: 24),
+
+                  // Accent Color Picker
+                  const Text(
+                    'ACCENT COLOR',
+                    style: TextStyle(
+                      color: AppTheme.textSecondary,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.0,
+                    ),
                   ),
+                  const SizedBox(height: 12),
+                  _buildAccentColorPicker(),
+                  const SizedBox(height: 16),
+                  const Divider(color: AppTheme.glassBorder, height: 24),
+
+                  // Custom Background selector
+                  () {
+                    final customBg = ref.watch(customBackgroundProvider);
+                    final hasBg = customBg != null && customBg.isNotEmpty;
+                    return GestureDetector(
+                      onTap: () {
+                        if (hasBg) {
+                          showModalBottomSheet(
+                            context: context,
+                            backgroundColor: isDark ? const Color(0xFF121214) : Colors.white,
+                            shape: const RoundedRectangleBorder(
+                              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                            ),
+                            builder: (context) {
+                              return SafeArea(
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    ListTile(
+                                      leading: Icon(Icons.wallpaper_rounded, color: accentColor),
+                                      title: Text(
+                                        'Change Wallpaper',
+                                        style: TextStyle(
+                                          color: isDark ? Colors.white : AppTheme.textPrimary,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      onTap: () {
+                                        Navigator.pop(context);
+                                        ImagePickerHelper.pickImage((base64, name, filePath) {
+                                          ref.read(customBackgroundProvider.notifier).state = base64;
+                                          StorageService.saveCustomBackground(base64);
+                                        });
+                                      },
+                                    ),
+                                    ListTile(
+                                      leading: const Icon(Icons.delete_rounded, color: AppTheme.accentCoral),
+                                      title: const Text(
+                                        'Remove Wallpaper',
+                                        style: TextStyle(
+                                          color: AppTheme.accentCoral,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      onTap: () {
+                                        Navigator.pop(context);
+                                        ref.read(customBackgroundProvider.notifier).state = null;
+                                        StorageService.saveCustomBackground(null);
+                                      },
+                                    ),
+                                    ListTile(
+                                      leading: const Icon(Icons.close_rounded, color: AppTheme.textSecondary),
+                                      title: Text(
+                                        'Cancel',
+                                        style: TextStyle(
+                                          color: isDark ? Colors.white70 : AppTheme.textSecondary,
+                                        ),
+                                      ),
+                                      onTap: () => Navigator.pop(context),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          );
+                        } else {
+                          ImagePickerHelper.pickImage((base64, name, filePath) {
+                            ref.read(customBackgroundProvider.notifier).state = base64;
+                            StorageService.saveCustomBackground(base64);
+                          });
+                        }
+                      },
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
+                        decoration: BoxDecoration(
+                          color: isDark ? Colors.white.withOpacity(0.02) : Colors.black.withOpacity(0.02),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.06),
+                            width: 0.8,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.wallpaper_rounded, color: accentColor, size: 18),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Custom Background',
+                                    style: TextStyle(
+                                      color: isDark ? Colors.white : AppTheme.textPrimary,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    hasBg ? 'Wallpaper is active' : 'Upload your own wallpaper',
+                                    style: const TextStyle(
+                                      color: AppTheme.textSecondary,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Text(
+                              hasBg ? 'ACTIVE' : 'CHOOSE',
+                              style: TextStyle(
+                                color: hasBg ? AppTheme.accentEmerald : accentColor,
+                                fontSize: 9,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1.0,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }(),
                 ],
               ),
             ),
-            const SizedBox(height: 32),
-            const Text(
-              'Support & Feedback',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w900,
-                color: Colors.white,
-                letterSpacing: -0.5,
-              ),
-            ),
-            const SizedBox(height: 16),
-            GestureDetector(
-              onTap: _launchWhatsAppSupport,
-              child: Container(
-                width: double.infinity,
-                height: 48,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF25D366), Color(0xFF075E54)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(14),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF25D366).withOpacity(0.25),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: const Center(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.chat_bubble_rounded, color: Colors.white, size: 18),
-                      SizedBox(width: 8),
-                      Text(
-                        'Help',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 15,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 32),
-            const Text(
-              'AI Backend Integration',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w900,
-                color: Colors.white,
-                letterSpacing: -0.5,
-              ),
-            ),
-            const SizedBox(height: 16),
-            GlassCard(
-              width: double.infinity,
-              child: Column(
+
+            // ── 6. DEVELOPER ACCORDION ──
+            _buildAccordionSection(
+              title: '🛠  Developer',
+              sectionKey: 'developer',
+              content: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
@@ -1248,11 +1609,11 @@ class _ProfilePlaceholderScreenState
                       width: double.infinity,
                       height: 44,
                       decoration: BoxDecoration(
-                        gradient: AppTheme.primaryGradient,
+                        color: accentColor,
                         borderRadius: BorderRadius.circular(14),
                         boxShadow: [
                           BoxShadow(
-                            color: AppTheme.accentCyan.withOpacity(0.15),
+                            color: accentColor.withOpacity(0.15),
                             blurRadius: 12,
                             offset: const Offset(0, 4),
                           ),
@@ -1266,13 +1627,13 @@ class _ProfilePlaceholderScreenState
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
                                   valueColor:
-                                      AlwaysStoppedAnimation<Color>(Colors.white),
+                                      AlwaysStoppedAnimation<Color>(Colors.black),
                                 ),
                               )
                             : const Text(
                                 'Run healthCheckAI()',
                                 style: TextStyle(
-                                  color: Colors.white,
+                                  color: Colors.black,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -1294,53 +1655,170 @@ class _ProfilePlaceholderScreenState
                       ),
                       child: Text(
                         _healthCheckResult!,
-                        style: const TextStyle(
-                          color: AppTheme.accentCyan,
+                        style: TextStyle(
+                          color: accentColor,
                           fontFamily: 'monospace',
                           fontSize: 12,
                         ),
                       ),
                     ),
                   ],
+                  const Divider(color: AppTheme.glassBorder, height: 32),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Mock / Fake Data',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                              color: Colors.white,
+                            ),
+                          ),
+                          SizedBox(height: 2),
+                          Text(
+                            'Enable to seed mock logs & workout trends',
+                            style: TextStyle(
+                              color: AppTheme.textSecondary,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Switch(
+                        value: _fakeDataEnabled,
+                        activeColor: accentColor,
+                        onChanged: (val) async {
+                          setState(() {
+                            _fakeDataEnabled = val;
+                          });
+                          await StorageService.saveFakeDataEnabled(val);
+                          if (val) {
+                            await StorageService.seedDummyData();
+                            ref.invalidate(workoutHistoryProvider);
+                            ref.invalidate(profileProvider);
+                            ref.invalidate(dailyMetricsProvider);
+                            final selectedDate = ref.read(selectedDateProvider);
+                            ref.invalidate(dailyMetricsProvider(selectedDate));
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Fake mock data generated successfully!'),
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                            }
+                          } else {
+                            await StorageService.clearMockDataOnly();
+                            await FirebaseService.clearMockDataCloud();
+                            ref.invalidate(workoutHistoryProvider);
+                            ref.invalidate(profileProvider);
+                            final selectedDate = ref.read(selectedDateProvider);
+                            ref.invalidate(dailyMetricsProvider(selectedDate));
+                            ref.invalidate(dailyMetricsProvider);
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Mock logs and history cleared.'),
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                            }
+                          }
+                        },
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),
-            const SizedBox(height: 24),
 
-            // Database Reset Wiping Button (Sign Out style)
-            GestureDetector(
-              onTap: () {
-                _showResetDialog(context, ref);
-              },
-              child: Container(
-                width: double.infinity,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: AppTheme.accentCoral.withOpacity(0.05),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: AppTheme.accentCoral.withOpacity(0.3),
-                    width: 1.0,
-                  ),
-                ),
-                child: const Center(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.logout_rounded,
-                        color: AppTheme.accentCoral,
-                        size: 18,
-                      ),
-                      SizedBox(width: 8),
-                      Text(
-                        'Sign Out & Reset Logs',
-                        style: TextStyle(
-                          color: AppTheme.accentCoral,
-                          fontWeight: FontWeight.bold,
-                        ),
+            // ── 7. SUPPORT ACCORDION ──
+            _buildAccordionSection(
+              title: '💬  Support',
+              sectionKey: 'support',
+              content: GestureDetector(
+                onTap: _launchWhatsAppSupport,
+                child: Container(
+                  width: double.infinity,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: accentColor, // dynamic accent color
+                    borderRadius: BorderRadius.circular(9999),
+                    border: Border.all(
+                      color: accentColor,
+                      width: 1.5,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: accentColor.withOpacity(0.25),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
                       ),
                     ],
+                  ),
+                  child: const Center(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.chat_bubble_rounded, color: Color(0xFF0E0F0C), size: 18),
+                        SizedBox(width: 8),
+                        Text(
+                          'Help',
+                          style: TextStyle(
+                            color: Color(0xFF0E0F0C), // Black text
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+
+            // ── 8. ACCOUNT ACCORDION ──
+            _buildAccordionSection(
+              title: '🚪  Account',
+              sectionKey: 'account',
+              content: GestureDetector(
+                onTap: () {
+                  _showResetDialog(context, ref);
+                },
+                child: Container(
+                  width: double.infinity,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: AppTheme.accentCoral.withOpacity(0.05),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: AppTheme.accentCoral.withOpacity(0.3),
+                      width: 1.0,
+                    ),
+                  ),
+                  child: const Center(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.logout_rounded,
+                          color: AppTheme.accentCoral,
+                          size: 18,
+                        ),
+                        SizedBox(width: 8),
+                        Text(
+                          'Sign Out & Reset Logs',
+                          style: TextStyle(
+                            color: AppTheme.accentCoral,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -1371,6 +1849,157 @@ class _ProfilePlaceholderScreenState
     final period = tod.period == DayPeriod.am ? 'AM' : 'PM';
     final hourStr = hour.toString().padLeft(2, '0');
     return '$hourStr:$minute $period'; // e.g. "08:30 AM"
+  }
+
+  void _showRenameReminderDialog(BuildContext context, String key, String currentLabel) {
+    final controller = TextEditingController(text: currentLabel);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: isDark ? const Color(0xFF1C1E1B) : Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(color: isDark ? const Color(0xFF323530) : AppTheme.glassBorder, width: 1),
+        ),
+        title: Text(
+          'Rename Reminder',
+          style: TextStyle(color: isDark ? Colors.white : AppTheme.textPrimary, fontWeight: FontWeight.bold, fontSize: 16),
+        ),
+        content: TextField(
+          controller: controller,
+          style: TextStyle(color: isDark ? Colors.white : AppTheme.textPrimary),
+          decoration: InputDecoration(
+            hintText: 'Enter new name...',
+            focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: ref.read(accentColorProvider))),
+          ),
+        ),
+        actions: [
+          TextButton(
+            child: const Text('Cancel', style: TextStyle(color: AppTheme.textSecondary)),
+            onPressed: () => Navigator.pop(ctx),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: ref.read(accentColorProvider),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text('Save', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+            onPressed: () {
+              final newName = controller.text.trim();
+              if (newName.isNotEmpty) {
+                ref.read(remindersProvider.notifier).updateReminder(key, label: newName);
+              }
+              Navigator.pop(ctx);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showAddReminderDialog(BuildContext context) {
+    final controller = TextEditingController(text: 'New Reminder');
+    TimeOfDay selectedTime = const TimeOfDay(hour: 8, minute: 0);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (dialogCtx, setDialogState) {
+          final timeStr = _formatTimeOfDay(selectedTime);
+          return AlertDialog(
+            backgroundColor: isDark ? const Color(0xFF1C1E1B) : Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+              side: BorderSide(color: isDark ? const Color(0xFF323530) : AppTheme.glassBorder, width: 1),
+            ),
+            title: Text(
+              'Add Custom Reminder',
+              style: TextStyle(color: isDark ? Colors.white : AppTheme.textPrimary, fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TextField(
+                  controller: controller,
+                  style: TextStyle(color: isDark ? Colors.white : AppTheme.textPrimary),
+                  decoration: InputDecoration(
+                    labelText: 'Reminder Name',
+                    labelStyle: const TextStyle(color: AppTheme.textSecondary, fontSize: 12),
+                    focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: ref.read(accentColorProvider))),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                  'Daily Reminder Time',
+                  style: TextStyle(color: AppTheme.textSecondary, fontSize: 11, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                GestureDetector(
+                  onTap: () async {
+                    final picked = await showTimePicker(
+                      context: context,
+                      initialTime: selectedTime,
+                    );
+                    if (picked != null) {
+                      setDialogState(() {
+                        selectedTime = picked;
+                      });
+                    }
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: isDark ? Colors.black26 : Colors.black.withOpacity(0.02),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: ref.read(accentColorProvider).withOpacity(0.2)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.access_time_rounded, size: 16, color: Colors.white70),
+                        const SizedBox(width: 8),
+                        Text(
+                          timeStr,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: 'monospace',
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                child: const Text('Cancel', style: TextStyle(color: AppTheme.textSecondary)),
+                onPressed: () => Navigator.pop(ctx),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: ref.read(accentColorProvider),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                child: const Text('Add', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                onPressed: () {
+                  final label = controller.text.trim();
+                  if (label.isNotEmpty) {
+                    ref.read(remindersProvider.notifier).addCustomReminder(label, timeStr);
+                  }
+                  Navigator.pop(ctx);
+                },
+              ),
+            ],
+          );
+        },
+      ),
+    );
   }
 
   Widget _buildReminderAlarmTile(String key, ReminderSetting reminder) {
@@ -1425,13 +2054,44 @@ class _ProfilePlaceholderScreenState
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      reminder.label,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                        color: Colors.white,
-                      ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () => _showRenameReminderDialog(context, key, reminder.label),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    reminder.label,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                      color: Colors.white,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                Icon(Icons.edit_rounded, color: Colors.white.withOpacity(0.4), size: 12),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        GestureDetector(
+                          onTap: () {
+                            ref.read(remindersProvider.notifier).deleteReminder(key);
+                          },
+                          child: const Icon(
+                            Icons.delete_outline_rounded,
+                            color: AppTheme.accentCoral,
+                            size: 16,
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 4),
                     GestureDetector(
@@ -1517,9 +2177,9 @@ class _ProfilePlaceholderScreenState
   ) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final fieldBg = isDark
-        ? AppTheme.obsidianBackground
+        ? const Color(0xFF1C1E1B)
         : Colors.black.withOpacity(0.015);
-    final fieldBorder = isDark ? AppTheme.glassBorder : const Color(0xFFEADBFF);
+    final fieldBorder = isDark ? const Color(0xFF323530) : AppTheme.glassBorder;
     final textColor = isDark ? Colors.white : AppTheme.textPrimary;
 
     return Container(
@@ -1574,43 +2234,257 @@ class _ProfilePlaceholderScreenState
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final fieldBg = isDark
-        ? AppTheme.obsidianBackground
+        ? const Color(0xFF1C1E1B)
         : Colors.black.withOpacity(0.015);
-    final fieldBorder = isDark ? AppTheme.glassBorder : const Color(0xFFEADBFF);
+    final fieldBorder = isDark ? const Color(0xFF323530) : AppTheme.glassBorder;
     final textColor = isDark ? Colors.white : AppTheme.textPrimary;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: fieldBg,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: fieldBorder, width: 1.0),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
-      child: DropdownButtonFormField<String>(
-        value: selectedVal,
-        dropdownColor: isDark ? AppTheme.obsidianBackground : Colors.white,
-        decoration: InputDecoration(
-          icon: Icon(icon, color: color, size: 18),
-          labelText: label,
-          labelStyle: const TextStyle(
-            color: AppTheme.textSecondary,
-            fontSize: 11,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Container(
+          decoration: BoxDecoration(
+            color: fieldBg,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: fieldBorder, width: 1.0),
           ),
-          border: InputBorder.none,
-          contentPadding: EdgeInsets.zero,
-        ),
-        style: TextStyle(
-          color: textColor,
-          fontWeight: FontWeight.bold,
-          fontSize: 14,
-        ),
-        items: items.map((type) {
-          return DropdownMenuItem<String>(
-            value: type,
-            child: Text(type),
+          child: MenuAnchor(
+            style: MenuStyle(
+              backgroundColor: WidgetStateProperty.all(isDark ? const Color(0xFF1C1E1B) : Colors.white),
+              surfaceTintColor: WidgetStateProperty.all(Colors.transparent),
+              elevation: WidgetStateProperty.all(8),
+              shadowColor: WidgetStateProperty.all(Colors.black.withOpacity(isDark ? 0.5 : 0.15)),
+              shape: WidgetStateProperty.all(
+                RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: BorderSide(color: fieldBorder, width: 1.0),
+                ),
+              ),
+              minimumSize: WidgetStateProperty.all(Size(constraints.maxWidth, 0)),
+              maximumSize: WidgetStateProperty.all(Size(constraints.maxWidth, 400)),
+            ),
+            builder: (context, controller, child) {
+              IconData? itemIcon;
+              final normalized = selectedVal.toLowerCase();
+              if (normalized == 'lose') {
+                itemIcon = Icons.trending_down_rounded;
+              } else if (normalized == 'gain') {
+                itemIcon = Icons.fitness_center_rounded;
+              } else if (normalized == 'maintain') {
+                itemIcon = Icons.balance_rounded;
+              } else if (normalized == 'sedentary') {
+                itemIcon = Icons.chair_rounded;
+              } else if (normalized == 'light') {
+                itemIcon = Icons.directions_walk_rounded;
+              } else if (normalized == 'moderate') {
+                itemIcon = Icons.fitness_center_rounded;
+              } else if (normalized == 'very') {
+                itemIcon = Icons.bolt_rounded;
+              } else if (normalized == 'male') {
+                itemIcon = Icons.male_rounded;
+              } else if (normalized == 'female') {
+                itemIcon = Icons.female_rounded;
+              } else if (normalized == 'other') {
+                itemIcon = Icons.transgender_rounded;
+              }
+
+              return InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: () {
+                  if (controller.isOpen) {
+                    controller.close();
+                  } else {
+                    controller.open();
+                  }
+                },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  child: Row(
+                    children: [
+                      Icon(icon, color: color, size: 18),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              label,
+                              style: const TextStyle(
+                                color: AppTheme.textSecondary,
+                                fontSize: 11,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Row(
+                              children: [
+                                if (itemIcon != null) ...[
+                                  Icon(itemIcon, color: color, size: 16),
+                                  const SizedBox(width: 8),
+                                ],
+                                Text(
+                                  selectedVal.toUpperCase(),
+                                  style: TextStyle(
+                                    color: textColor,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      Icon(
+                        controller.isOpen ? Icons.arrow_drop_up_rounded : Icons.arrow_drop_down_rounded,
+                        color: textColor.withOpacity(0.6),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+            menuChildren: items.map((type) {
+              IconData? itemIcon;
+              final normalized = type.toLowerCase();
+              if (normalized == 'lose') {
+                itemIcon = Icons.trending_down_rounded;
+              } else if (normalized == 'gain') {
+                itemIcon = Icons.fitness_center_rounded;
+              } else if (normalized == 'maintain') {
+                itemIcon = Icons.balance_rounded;
+              } else if (normalized == 'sedentary') {
+                itemIcon = Icons.chair_rounded;
+              } else if (normalized == 'light') {
+                itemIcon = Icons.directions_walk_rounded;
+              } else if (normalized == 'moderate') {
+                itemIcon = Icons.fitness_center_rounded;
+              } else if (normalized == 'very') {
+                itemIcon = Icons.bolt_rounded;
+              } else if (normalized == 'male') {
+                itemIcon = Icons.male_rounded;
+              } else if (normalized == 'female') {
+                itemIcon = Icons.female_rounded;
+              } else if (normalized == 'other') {
+                itemIcon = Icons.transgender_rounded;
+              }
+
+              return MenuItemButton(
+                onPressed: () {
+                  onChanged(type);
+                },
+                leadingIcon: itemIcon != null ? Icon(itemIcon, color: color, size: 16) : null,
+                style: ButtonStyle(
+                  padding: WidgetStateProperty.all(const EdgeInsets.symmetric(horizontal: 16, vertical: 12)),
+                ),
+                child: Text(
+                  type.toUpperCase(),
+                  style: TextStyle(
+                    color: textColor,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildAccentColorPicker() {
+    final colors = [
+      const Color(0xFFD9FF00), // Neon Lime (Default)
+      const Color(0xFF00E5FF), // Cyan
+      const Color(0xFFB026FF), // Purple
+      const Color(0xFFFF9100), // Orange
+      const Color(0xFFFF4081), // Pink
+      const Color(0xFF2979FF), // Blue
+      const Color(0xFFFF1744), // Red
+    ];
+    final colorNames = [
+      'Neon Lime',
+      'Cyan',
+      'Purple',
+      'Orange',
+      'Pink',
+      'Blue',
+      'Red',
+    ];
+    final selectedIdx = ref.watch(accentColorIndexProvider);
+
+    return SizedBox(
+      height: 48,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: colors.length,
+        itemBuilder: (context, index) {
+          final isSelected = selectedIdx == index;
+          final color = colors[index];
+          return GestureDetector(
+            onTap: () {
+              ref.read(accentColorIndexProvider.notifier).state = index;
+              StorageService.saveAccentColorIndex(index);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Accent color changed to ${colorNames[index]} (Preview)'),
+                  behavior: SnackBarBehavior.floating,
+                  duration: const Duration(seconds: 1),
+                ),
+              );
+            },
+            child: Container(
+              margin: const EdgeInsets.only(right: 12),
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: color,
+                shape: BoxShape.circle,
+                border: isSelected
+                    ? Border.all(
+                        color: Colors.white,
+                        width: 3.0,
+                      )
+                    : Border.all(
+                        color: Colors.white.withOpacity(0.2),
+                        width: 1.0,
+                      ),
+                boxShadow: isSelected
+                    ? [
+                        BoxShadow(
+                          color: color.withOpacity(0.6),
+                          blurRadius: 8,
+                          spreadRadius: 2,
+                        )
+                      ]
+                    : null,
+              ),
+              child: isSelected
+                  ? const Icon(
+                      Icons.check_rounded,
+                      color: Colors.black,
+                      size: 18,
+                    )
+                  : null,
+            ),
           );
-        }).toList(),
-        onChanged: onChanged,
+        },
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Padding(
+      padding: const EdgeInsets.only(left: 4, top: 16, bottom: 4),
+      child: Text(
+        title,
+        style: TextStyle(
+          color: isDark ? Colors.white : AppTheme.textPrimary,
+          fontSize: 15,
+          fontWeight: FontWeight.w900,
+          letterSpacing: -0.3,
+        ),
       ),
     );
   }
