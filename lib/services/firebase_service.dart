@@ -1,6 +1,9 @@
+import 'dart:convert';
+import 'dart:io';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter/foundation.dart';
 import '../models/user_profile.dart';
@@ -192,6 +195,22 @@ class FirebaseService {
       for (final date in dates) {
         final docRef = userDoc.collection('daily_metrics').doc(date);
         final metrics = StorageService.getDailyMetrics(date);
+        
+        // Intercept and upload any legacy offline base64 physique photos
+        final String? gymPic = metrics['gym_pic'] as String?;
+        if (gymPic != null && !gymPic.startsWith('http')) {
+          final url = await uploadPhysiquePhoto(
+            uid: uid,
+            dateStr: date,
+            base64Content: gymPic,
+          );
+          if (url != null) {
+            metrics['gym_pic'] = url;
+            // Persist the URL reference locally so we don't upload again
+            await StorageService.saveDailyMetrics(date, metrics);
+          }
+        }
+        
         metricsBatch.set(docRef, metrics);
       }
       await metricsBatch.commit();
@@ -273,6 +292,29 @@ class FirebaseService {
       debugPrint("Firebase cloud sync to local completed.");
     } catch (e) {
       debugPrint("Error syncing cloud to local: $e");
+    }
+  }
+
+  /// Clears daily metrics and workouts collections in cloud Firestore
+  static Future<void> clearMockDataCloud() async {
+    if (!isLoggedIn) return;
+    try {
+      final userDoc = firestore.collection('users').doc(currentUser!.uid);
+      
+      // Clear workouts
+      final workoutsSnap = await userDoc.collection('workouts').get();
+      for (final doc in workoutsSnap.docs) {
+        await doc.reference.delete();
+      }
+      
+      // Clear daily metrics
+      final metricsSnap = await userDoc.collection('daily_metrics').get();
+      for (final doc in metricsSnap.docs) {
+        await doc.reference.delete();
+      }
+      debugPrint("Firebase cloud mock data cleared.");
+    } catch (e) {
+      debugPrint("Error clearing cloud mock data: $e");
     }
   }
 
@@ -379,6 +421,55 @@ class FirebaseService {
           .set(scanData);
     } catch (e) {
       debugPrint("Error saving scan to Firestore: $e");
+    }
+  }
+
+  /// Uploads a physique photo (either via filePath or base64) to Firebase Storage.
+  /// Returns the public download URL of the uploaded image.
+  static Future<String?> uploadPhysiquePhoto({
+    required String uid,
+    required String dateStr,
+    String? filePath,
+    String? base64Content,
+  }) async {
+    if (Firebase.apps.isEmpty) return null;
+    try {
+      final ref = FirebaseStorage.instance.ref().child('users/$uid/physique/$dateStr.jpg');
+      
+      UploadTask task;
+      if (!kIsWeb && filePath != null && filePath.isNotEmpty) {
+        task = ref.putFile(File(filePath));
+      } else if (base64Content != null && base64Content.isNotEmpty) {
+        String cleanBase64 = base64Content;
+        if (cleanBase64.contains(',')) {
+          cleanBase64 = cleanBase64.split(',').last;
+        }
+        final bytes = base64Decode(cleanBase64.replaceAll(RegExp(r'\s+'), ''));
+        task = ref.putData(bytes, SettableMetadata(contentType: 'image/jpeg'));
+      } else {
+        return null;
+      }
+      
+      final snap = await task;
+      final url = await snap.ref.getDownloadURL();
+      return url;
+    } catch (e) {
+      debugPrint("Firebase Storage Upload Error: $e");
+      return null;
+    }
+  }
+
+  /// Deletes a physique photo from Firebase Storage.
+  static Future<void> deletePhysiquePhoto({
+    required String uid,
+    required String dateStr,
+  }) async {
+    if (Firebase.apps.isEmpty) return;
+    try {
+      final ref = FirebaseStorage.instance.ref().child('users/$uid/physique/$dateStr.jpg');
+      await ref.delete();
+    } catch (e) {
+      debugPrint("Firebase Storage Delete Error (expected if file doesn't exist): $e");
     }
   }
 }

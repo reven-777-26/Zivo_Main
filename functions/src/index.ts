@@ -8,7 +8,13 @@ setGlobalOptions({maxInstances: 10});
 export const healthCheckAI = onCall({
   secrets: ["GEMINI_API_KEY"],
   invoker: "public",
-}, async () => {
+}, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError(
+      "unauthenticated",
+      "The function must be called by an authenticated user."
+    );
+  }
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     throw new HttpsError(
@@ -37,6 +43,12 @@ export const analyzeMeal = onCall({
   secrets: ["GEMINI_API_KEY"],
   invoker: "public",
 }, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError(
+      "unauthenticated",
+      "The function must be called by an authenticated user."
+    );
+  }
   const data = request.data;
   if (!data || !data.type || !data.content) {
     throw new HttpsError(
@@ -203,6 +215,12 @@ export const identifyProduct = onCall({
   secrets: ["GEMINI_API_KEY"],
   invoker: "public",
 }, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError(
+      "unauthenticated",
+      "The function must be called by an authenticated user."
+    );
+  }
   const data = request.data;
   if (!data || !data.imageBase64) {
     throw new HttpsError(
@@ -298,6 +316,12 @@ export const analyzeVisionProduct = onCall({
   secrets: ["GEMINI_API_KEY"],
   invoker: "public",
 }, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError(
+      "unauthenticated",
+      "The function must be called by an authenticated user."
+    );
+  }
   const data = request.data;
   if (!data || !data.category || !data.payload) {
     throw new HttpsError(

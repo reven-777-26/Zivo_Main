@@ -62,11 +62,19 @@ class ZivoWidgetProvider : AppWidgetProvider() {
             val calorieGoal = prefs.getInt("calorie_goal", 2200)
             val water = prefs.getInt("water_logged", 0)
             val waterGoal = prefs.getInt("water_goal", 3000)
+            val workoutActive = prefs.getBoolean("workout_active", false)
+            val workoutTimer = prefs.getString("workout_timer", "")
 
             // Populate layout views
             views.setTextViewText(R.id.widget_streak, "🔥 $streak days")
             views.setTextViewText(R.id.widget_calories, "$calories / $calorieGoal kcal")
             views.setTextViewText(R.id.widget_water, "💧 Water logged: $water / $waterGoal ml")
+
+            if (workoutActive && !workoutTimer.isNullOrEmpty()) {
+                views.setTextViewText(R.id.widget_title, "ZIVO: GYM LIVE")
+            } else {
+                views.setTextViewText(R.id.widget_title, "ZIVOFIT")
+            }
 
             // Calculate progress bar percentage
             val progress = if (calorieGoal > 0) {
@@ -101,6 +109,12 @@ class ZivoWidgetProvider : AppWidgetProvider() {
             )
             views.setOnClickPendingIntent(R.id.btn_open_app, pendingOpen)
             views.setOnClickPendingIntent(R.id.widget_title, pendingOpen)
+
+            if (workoutActive && !workoutTimer.isNullOrEmpty()) {
+                views.setTextViewText(R.id.btn_open_app, "Active: $workoutTimer")
+            } else {
+                views.setTextViewText(R.id.btn_open_app, "Open Zivo")
+            }
 
             // Instruct the widget manager to update the widget
             appWidgetManager.updateAppWidget(appWidgetId, views)

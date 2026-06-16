@@ -196,6 +196,24 @@ class _UnifiedVisionScannerDialogState extends ConsumerState<UnifiedVisionScanne
     _dismissAndNavigate(barcode);
   }
 
+  void _triggerTakeProductPhoto() async {
+    _disposeCamera();
+    ImagePickerHelper.pickImage(
+      (base64, name, filePath) async {
+        await ref.read(unifiedVisionProvider.notifier).analyzeFromImage(
+          base64Content: base64,
+          fileName: name,
+        );
+
+        final state = ref.read(unifiedVisionProvider);
+        final barcodeToUse = state.currentReport.value?.barcode ?? 'unknown';
+        _dismissAndNavigate(barcodeToUse);
+      },
+      isBarcode: true,
+      fromCamera: true,
+    );
+  }
+
   void _triggerImageScan() async {
     _disposeCamera();
     ImagePickerHelper.pickImage(
@@ -405,7 +423,16 @@ class _UnifiedVisionScannerDialogState extends ConsumerState<UnifiedVisionScanne
             alignment: Alignment.center,
             children: [
               if (_isCameraInitialized && _cameraController != null)
-                Positioned.fill(child: CameraPreview(_cameraController!))
+                Positioned.fill(
+                  child: FittedBox(
+                    fit: BoxFit.cover,
+                    child: SizedBox(
+                      width: _cameraController!.value.previewSize?.height ?? 240,
+                      height: _cameraController!.value.previewSize?.width ?? 320,
+                      child: CameraPreview(_cameraController!),
+                    ),
+                  ),
+                )
               else
                 Positioned.fill(
                   child: Center(
@@ -458,20 +485,27 @@ class _UnifiedVisionScannerDialogState extends ConsumerState<UnifiedVisionScanne
         ),
         const SizedBox(height: 12),
 
-        // Sub actions row
+        // Actions Row (Take Photo, Upload Photo, Ingredients)
         Row(
           children: [
+            Expanded(
+              child: GestureDetector(
+                onTap: _triggerTakeProductPhoto,
+                child: _buildSubActionBtn(Icons.camera_alt_rounded, "Take Photo", AppTheme.accentCyan),
+              ),
+            ),
+            const SizedBox(width: 6),
             Expanded(
               child: GestureDetector(
                 onTap: _triggerImageScan,
                 child: _buildSubActionBtn(Icons.photo_library_rounded, "Upload Photo", AppTheme.accentCyan),
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 6),
             Expanded(
               child: GestureDetector(
                 onTap: _triggerIngredientsScan,
-                child: _buildSubActionBtn(Icons.receipt_long_rounded, "Scan Ingredients", AppTheme.accentEmerald),
+                child: _buildSubActionBtn(Icons.receipt_long_rounded, "Ingredients", AppTheme.accentCyan),
               ),
             ),
           ],
@@ -541,26 +575,31 @@ class _UnifiedVisionScannerDialogState extends ConsumerState<UnifiedVisionScanne
 
   Widget _buildSubActionBtn(IconData icon, String label, Color color) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final themeColor = isDark ? color : (color == AppTheme.accentCyan ? const Color(0xFF054D28) : color);
-
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1C1E1B) : AppTheme.glassBackground, // flat background
+        color: isDark ? Colors.white.withOpacity(0.03) : Colors.black.withOpacity(0.03),
         borderRadius: BorderRadius.circular(24), // button radius is canonical 24px
-        border: Border.all(color: themeColor.withOpacity(isDark ? 0.3 : 0.5), width: 1.0), // hairline
+        border: Border.all(
+          color: isDark ? AppTheme.glassBorder : Colors.black.withOpacity(0.1),
+          width: 1.0,
+        ),
       ),
-      child: Row(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, color: themeColor, size: 16),
-          const SizedBox(width: 8),
+          Icon(icon, color: AppTheme.accentCyan, size: 18),
+          const SizedBox(height: 4),
           Text(
             label,
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              fontSize: 12,
+              fontSize: 10,
               color: isDark ? Colors.white : AppTheme.textPrimary,
-              fontWeight: FontWeight.w600, // semibold weight 600
+              fontWeight: FontWeight.w800,
               letterSpacing: -0.2,
             ),
           ),

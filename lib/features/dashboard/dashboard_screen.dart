@@ -73,9 +73,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final int remainingCal = calorieGoal - consumedCal;
     final caloriePercent = (consumedCal / calorieGoal).clamp(0.0, 1.0);
 
-    // Carb and fat goals derived from fitness target spec
-    final double carbGoal = 260.0;
-    final double fatGoal = 70.0;
+    // Carb and fat goals derived from profile targets
+    final double carbGoal = StorageService.getCarbsGoal().toDouble();
+    final double fatGoal = StorageService.getFatsGoal().toDouble();
 
     final double pConsumed = (dailyStats['protein'] ?? 0).toDouble();
     final double cConsumed = (dailyStats['carbs'] ?? 0).toDouble();
@@ -244,9 +244,20 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'GOOD MORNING,',
-                  style: TextStyle(
+                Text(
+                  () {
+                    final hour = DateTime.now().hour;
+                    if (hour < 12) {
+                      return 'GOOD MORNING,';
+                    } else if (hour < 17) {
+                      return 'GOOD AFTERNOON,';
+                    } else if (hour < 21) {
+                      return 'GOOD EVENING,';
+                    } else {
+                      return 'GOOD NIGHT,';
+                    }
+                  }(),
+                  style: const TextStyle(
                     fontSize: 9,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 1.0,
@@ -312,6 +323,198 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ],
         ),
       ],
+    );
+  }
+
+  void _showMonthPickerBottomSheet(BuildContext context, int year, int month, List<WorkoutSession> workouts) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : AppTheme.textPrimary;
+    final textMutedColor = isDark ? const Color(0xFF868685) : AppTheme.textSecondary;
+    final interactiveBgColor = isDark ? const Color(0xFF121214) : const Color(0xFFF5F5F5);
+    final borderColor = isDark ? const Color(0xFF2C2C2E) : const Color(0xFFE8EBE6);
+
+    final String monthName = DateFormat('MMMM yyyy').format(DateTime(year, month));
+    final int daysInMonth = DateTime(year, month + 1, 0).day;
+    final today = DateTime.now();
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.75,
+          minChildSize: 0.5,
+          maxChildSize: 0.95,
+          expand: false,
+          builder: (context, scrollController) {
+            return GlassCard(
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(28),
+                topRight: Radius.circular(28),
+              ),
+              padding: const EdgeInsets.only(left: 20, right: 20, top: 16, bottom: 20),
+              customBgColor: isDark ? const Color(0xFF121214) : Colors.white,
+              customBorder: Border(
+                top: BorderSide(
+                  color: borderColor,
+                  width: 1.0,
+                ),
+              ),
+              child: Column(
+                children: [
+                  Container(
+                    width: 36,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFE8EBE6),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        '$monthName Logs',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w900,
+                          color: textColor,
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: Icon(
+                          Icons.close_rounded,
+                          color: textColor,
+                          size: 20,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Expanded(
+                    child: ListView.builder(
+                      controller: scrollController,
+                      physics: const BouncingScrollPhysics(),
+                      itemCount: daysInMonth,
+                      itemBuilder: (context, index) {
+                        final int day = daysInMonth - index;
+                        final DateTime date = DateTime(year, month, day);
+                        final String dateKey = DateFormat('yyyy-MM-dd').format(date);
+                        final isFuture = date.isAfter(today);
+
+                        if (isFuture) {
+                          return const SizedBox.shrink();
+                        }
+
+                        final metrics = StorageService.getDailyMetrics(dateKey);
+                        final int actLevel = _getDayActivityLevel(date, workouts);
+                        
+                        final int consumedCal =
+                            ((metrics['breakfast_cal'] ?? 0) as num).toInt() +
+                            ((metrics['lunch_cal'] ?? 0) as num).toInt() +
+                            ((metrics['dinner_cal'] ?? 0) as num).toInt() +
+                            ((metrics['snacks_cal'] ?? 0) as num).toInt() +
+                            ((metrics['outside_food_cal'] ?? 0) as num).toInt();
+
+                        final int waterConsumed = ((metrics['water'] ?? 0) as num).toInt();
+                        final int loggedFoodCount = (metrics['logged_items'] as List?)?.length ?? 0;
+                        final hasWorkout = workouts.any((w) => w.date == dateKey);
+
+                        String summaryText = "";
+                        if (consumedCal > 0 || waterConsumed > 0 || loggedFoodCount > 0 || hasWorkout) {
+                          final List<String> parts = [];
+                          if (consumedCal > 0) parts.add("$consumedCal kcal");
+                          if (waterConsumed > 0) parts.add("${waterConsumed}ml Water");
+                          if (loggedFoodCount > 0) parts.add("$loggedFoodCount foods");
+                          if (hasWorkout) parts.add("🏋️ Workout");
+                          summaryText = parts.join(" • ");
+                        } else {
+                          summaryText = "No logs recorded (Rest Day)";
+                        }
+
+                        Color cellColor = isDark ? const Color(0xFF2C2C2E) : const Color(0xFFE8EBE6);
+                        if (actLevel > 0) {
+                          double opacity = 0.2;
+                          if (actLevel == 2) opacity = 0.45;
+                          if (actLevel == 3) opacity = 0.7;
+                          if (actLevel == 4) opacity = 1.0;
+                          cellColor = const Color(0xFFD9FF00).withOpacity(opacity);
+                        }
+
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 10),
+                          decoration: BoxDecoration(
+                            color: interactiveBgColor,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFE8EBE6),
+                              width: 1.0,
+                            ),
+                          ),
+                          child: ListTile(
+                            onTap: () {
+                              Navigator.pop(context);
+                              _showDayStreakDetailBottomSheet(context, date, workouts);
+                            },
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                            leading: Container(
+                              width: 24,
+                              height: 24,
+                              decoration: BoxDecoration(
+                                color: cellColor,
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(
+                                  color: isDark ? Colors.black.withOpacity(0.3) : Colors.white.withOpacity(0.5),
+                                  width: 0.5,
+                                ),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  "$day",
+                                  style: TextStyle(
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.bold,
+                                    color: actLevel >= 3 ? Colors.black : textColor,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            title: Text(
+                              DateFormat('EEEE, MMMM d').format(date),
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: textColor,
+                              ),
+                            ),
+                            subtitle: Text(
+                              summaryText,
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: textMutedColor,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            trailing: Icon(
+                              Icons.chevron_right_rounded,
+                              color: isDark ? const Color(0xFF868685) : AppTheme.textSecondary,
+                              size: 20,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 
@@ -383,9 +586,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               ),
               const SizedBox(height: 8),
 
-              const Text(
-                'Top 18% of users this month',
-                style: TextStyle(
+              Text(
+                streak == 0
+                    ? 'Start your streak today! 🚀'
+                    : streak == 1
+                        ? 'First milestone unlocked! 🔥'
+                        : streak < 7
+                            ? 'Consistency is building! ⚡'
+                            : 'Top 18% of users this month! 🏆',
+                style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
                   color: Color(0xFFD9FF00),
@@ -418,9 +627,22 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     const SizedBox(height: 12),
                     _buildRuleItem('🥗', 'Log any meal in your journal', isDark),
                     const SizedBox(height: 10),
-                    _buildRuleItem('📷', 'Scan a product with Vision Lens', isDark),
+                    _buildRuleItem('📷', 'Scan a product with Zivo Analyser', isDark),
+                    const SizedBox(height: 10),
+                    _buildRuleItem('🏋️', 'Complete a workout session', isDark),
                     const SizedBox(height: 10),
                     _buildRuleItem('🎯', 'Reach 70%+ of your calorie target', isDark),
+                    const SizedBox(height: 16),
+                    Divider(color: isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.08), height: 1),
+                    const SizedBox(height: 12),
+                    Text(
+                      '💡 Completing any single task keeps your daily streak active. Completing multiple logs (e.g. workout + 3 meals) boosts your daily activity grid color to Level 4!',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: textMutedColor,
+                        height: 1.4,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -497,8 +719,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final int calorieGoal = profile?.calorieGoal ?? 2200;
     final double waterGoal = (profile?.waterGoal ?? 3000).toDouble();
     final double proteinGoal = (profile?.proteinGoal ?? 150).toDouble();
-    final double carbGoal = 260.0;
-    final double fatGoal = 70.0;
+    final double carbGoal = StorageService.getCarbsGoal().toDouble();
+    final double fatGoal = StorageService.getFatsGoal().toDouble();
 
     // Macro Metrics
     final double proteinConsumed = (metrics['protein'] ?? 0).toDouble();
@@ -1392,11 +1614,18 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     }
 
     // Level calculation based on healthy habits progress
-    if (hasWorkout && loggedItems.length >= 3 && water >= 2000) {
+    if ((hasWorkout && loggedItems.length >= 3) ||
+        (hasWorkout && water >= 1500) ||
+        (loggedItems.length >= 3 && water >= 2000)) {
       return 4; // Max activity
-    } else if ((loggedItems.length >= 3 && water >= 1500) || (hasWorkout && water >= 1500)) {
+    } else if (hasWorkout ||
+               loggedItems.length >= 3 ||
+               water >= 1500 ||
+               (loggedItems.length >= 2 && water >= 1000)) {
       return 3; // High activity
-    } else if (hasWorkout || loggedItems.length >= 2 || water >= 1000) {
+    } else if (loggedItems.length >= 2 ||
+               water >= 1000 ||
+               (loggedItems.length >= 1 && water >= 500)) {
       return 2; // Medium activity
     } else {
       return 1; // Light activity
@@ -1416,7 +1645,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       if (streak > 365) break;
     }
 
-    return streak > 0 ? streak : 7;
+    return streak;
   }
 
   Widget _buildDailyStreakCard(List<WorkoutSession> workouts, bool isDark) {
@@ -1435,8 +1664,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
     // Zoomed sizes: cell size 12x12, margins: 2.0 horizontal/vertical.
     // So column spacing is 12 + 4.0 = 16.0. Row height is 12 + 4.0 = 16.0.
-    const double colSpacing = 16.0;
-    const double cellHeight = 16.0;
+    const double cellWidth = 12.0;
+    const double cellHeightVal = 12.0;
+    const double cellMarginY = 2.0;
+    const double cellPaddingX = 2.0;
+
+    const double colSpacing = cellWidth + (cellPaddingX * 2); // 16.0
+    const double cellHeight = cellHeightVal + (cellMarginY * 2); // 16.0
 
     // Construct years headers
     final List<Widget> yearLabels = [];
@@ -1470,38 +1704,76 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       }
     }
 
-    // Construct months headers
-    final List<Widget> monthLabels = [];
-    String? lastMonth;
-
-    for (int col = 0; col < 53; col++) {
-      final sundayOfThisWeek = gridStart.add(Duration(days: col * 7));
-      final monthStr = DateFormat('MMM').format(sundayOfThisWeek);
+    // Group columns by month for invisible monthly button hit test grids and aligned headers
+    final List<Map<String, dynamic>> monthGroups = [];
+    for (int colIndex = 0; colIndex < 53; colIndex++) {
+      final DateTime sundayOfThisWeek = gridStart.add(Duration(days: colIndex * 7));
+      final int y = sundayOfThisWeek.year;
+      final int m = sundayOfThisWeek.month;
       
-      if (col == 0 || monthStr != lastMonth) {
-        monthLabels.add(
-          Container(
-            width: colSpacing * 4, // Scale with colSpacing
-            alignment: Alignment.centerLeft,
-            child: Text(
-              monthStr,
-              style: TextStyle(
-                fontSize: 9,
-                fontWeight: FontWeight.bold,
-                color: textMutedColor,
-              ),
-            ),
-          ),
-        );
-        lastMonth = monthStr;
-        col += 3;
+      if (monthGroups.isEmpty || monthGroups.last['year'] != y || monthGroups.last['month'] != m) {
+        monthGroups.add({
+          'year': y,
+          'month': m,
+          'columns': [colIndex],
+        });
       } else {
-        monthLabels.add(
-          const SizedBox(width: colSpacing),
-        );
+        (monthGroups.last['columns'] as List<int>).add(colIndex);
       }
     }
 
+    // Construct months headers styled in rectangular boxes aligned perfectly to columns
+    final List<Widget> monthLabels = [];
+    for (final group in monthGroups) {
+      final int y = group['year'];
+      final int m = group['month'];
+      final List<int> cols = group['columns'];
+      final String monthStr = DateFormat('MMM').format(DateTime(y, m));
+      final double monthWidth = cols.length * colSpacing;
+
+      monthLabels.add(
+        GestureDetector(
+          onTap: () => _showMonthPickerBottomSheet(context, y, m, workouts),
+          behavior: HitTestBehavior.opaque,
+          child: Container(
+            width: monthWidth,
+            padding: const EdgeInsets.symmetric(horizontal: 2.0),
+            alignment: Alignment.center,
+            child: OverflowBox(
+              minWidth: 0,
+              maxWidth: double.infinity,
+              minHeight: 0,
+              maxHeight: double.infinity,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 3.0),
+                decoration: BoxDecoration(
+                  color: AppTheme.accentCyan.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(
+                    color: AppTheme.accentCyan.withOpacity(0.35),
+                    width: 1.0,
+                  ),
+                ),
+                child: Center(
+                  widthFactor: 1.0,
+                  heightFactor: 1.0,
+                  child: Text(
+                    monthStr,
+                    style: const TextStyle(
+                      fontSize: 8.5,
+                      fontWeight: FontWeight.w900,
+                      color: AppTheme.accentCyan,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    // Horizontal grid scroll container with pinch-to-zoom support and monthly hit test button blocks
     return GestureDetector(
       onTap: () => _showStreakDetailsBottomSheet(context, workouts),
       child: GlassCard(
@@ -1517,14 +1789,27 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'Daily Streaks',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 0.5,
-                    color: textMutedColor,
-                  ),
+                Row(
+                  children: [
+                    Text(
+                      'Daily Streaks',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.5,
+                        color: textMutedColor,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      '(Tap month to view list)',
+                      style: TextStyle(
+                        fontSize: 9,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.accentCyan,
+                      ),
+                    ),
+                  ],
                 ),
                 Row(
                   children: [
@@ -1546,7 +1831,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             ),
             const SizedBox(height: 12),
 
-            // Horizontal grid scroll container
+            // Horizontal grid scroll container with pinch-to-zoom support and monthly hit test button blocks
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -1556,30 +1841,32 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Matching spacer matching year + month headers
-                      const Text('', style: TextStyle(fontSize: 9)),
-                      const SizedBox(height: 2),
-                      const Text('', style: TextStyle(fontSize: 9)),
-                      const SizedBox(height: 4),
+                      // Exact height matching Year Row (12) + Spacing (2) + Month Row (20) + Spacing (4) = 38
+                      const SizedBox(height: 38),
 
-                      // Aligned cells scaled dynamically with cellHeight
-                      SizedBox(height: cellHeight), // Row 0 (Sun)
+                      // Aligned cells scaled dynamically with cellHeight (Cyan/Yellow color to match Month names)
                       Container(
                         height: cellHeight,
                         alignment: Alignment.centerLeft,
-                        child: Text('Mon', style: TextStyle(fontSize: 8, color: textMutedColor, fontWeight: FontWeight.bold)),
+                        child: const Text('Sun', style: TextStyle(fontSize: 8, color: AppTheme.accentCyan, fontWeight: FontWeight.w800)),
                       ),
-                      SizedBox(height: cellHeight), // Row 2 (Tue)
+                      SizedBox(height: cellHeight), // Row 1 (Mon)
                       Container(
                         height: cellHeight,
                         alignment: Alignment.centerLeft,
-                        child: Text('Wed', style: TextStyle(fontSize: 8, color: textMutedColor, fontWeight: FontWeight.bold)),
+                        child: const Text('Tue', style: TextStyle(fontSize: 8, color: AppTheme.accentCyan, fontWeight: FontWeight.w800)),
                       ),
-                      SizedBox(height: cellHeight), // Row 4 (Thu)
+                      SizedBox(height: cellHeight), // Row 3 (Wed)
                       Container(
                         height: cellHeight,
                         alignment: Alignment.centerLeft,
-                        child: Text('Fri', style: TextStyle(fontSize: 8, color: textMutedColor, fontWeight: FontWeight.bold)),
+                        child: const Text('Thu', style: TextStyle(fontSize: 8, color: AppTheme.accentCyan, fontWeight: FontWeight.w800)),
+                      ),
+                      SizedBox(height: cellHeight), // Row 5 (Fri)
+                      Container(
+                        height: cellHeight,
+                        alignment: Alignment.centerLeft,
+                        child: const Text('Sat', style: TextStyle(fontSize: 8, color: AppTheme.accentCyan, fontWeight: FontWeight.w800)),
                       ),
                     ],
                   ),
@@ -1595,64 +1882,75 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         // Year Names Row
-                        Row(
-                          children: yearLabels,
+                        SizedBox(
+                          height: 12,
+                          child: Row(
+                            children: yearLabels,
+                          ),
                         ),
                         const SizedBox(height: 2),
                         // Month Names Row
-                        Row(
-                          children: monthLabels,
+                        SizedBox(
+                          height: 20,
+                          child: Row(
+                            children: monthLabels,
+                          ),
                         ),
                         const SizedBox(height: 4),
 
-                        // Weeks grid columns
+                        // Weeks grid columns grouped by month as clickable sections
                         Row(
-                          children: List.generate(53, (colIndex) {
-                            return Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 2.0),
-                              child: Column(
-                                children: List.generate(7, (rowIndex) {
-                                  final DateTime date = gridStart.add(Duration(days: colIndex * 7 + rowIndex));
-                                  final isFuture = date.isAfter(today);
-                                  final int actLevel = isFuture ? 0 : _getDayActivityLevel(date, workouts);
-                                  
-                                  Color cellColor = interactiveBgColor;
-                                  if (!isFuture && actLevel > 0) {
-                                    double opacity = 0.2;
-                                    if (actLevel == 2) opacity = 0.45;
-                                    if (actLevel == 3) opacity = 0.7;
-                                    if (actLevel == 4) opacity = 1.0;
-                                    cellColor = const Color(0xFFD9FF00).withOpacity(opacity);
-                                  } else if (isFuture) {
-                                    cellColor = Colors.transparent;
-                                  }
+                          children: monthGroups.map((group) {
+                            final int y = group['year'];
+                            final int m = group['month'];
+                            final List<int> cols = group['columns'];
 
-                                  return GestureDetector(
-                                    onTap: () {
-                                      if (!isFuture) {
-                                        _showDayStreakDetailBottomSheet(context, date, workouts);
-                                      }
-                                    },
-                                    child: Container(
-                                      width: 12,
-                                      height: 12,
-                                      margin: const EdgeInsets.symmetric(vertical: 2.0),
-                                      decoration: BoxDecoration(
-                                        color: cellColor,
-                                        borderRadius: BorderRadius.circular(2.5),
-                                        border: isFuture
-                                            ? null
-                                            : Border.all(
-                                                color: isDark ? Colors.black.withOpacity(0.3) : Colors.white.withOpacity(0.5),
-                                                width: 0.5,
-                                              ),
-                                      ),
+                            return GestureDetector(
+                              onTap: () => _showMonthPickerBottomSheet(context, y, m, workouts),
+                              behavior: HitTestBehavior.opaque,
+                              child: Row(
+                                children: cols.map((colIndex) {
+                                  return Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 2.0),
+                                    child: Column(
+                                      children: List.generate(7, (rowIndex) {
+                                        final DateTime date = gridStart.add(Duration(days: colIndex * 7 + rowIndex));
+                                        final isFuture = date.isAfter(today);
+                                        final int actLevel = isFuture ? 0 : _getDayActivityLevel(date, workouts);
+                                        
+                                        Color cellColor = interactiveBgColor;
+                                        if (!isFuture && actLevel > 0) {
+                                          double opacity = 0.2;
+                                          if (actLevel == 2) opacity = 0.45;
+                                          if (actLevel == 3) opacity = 0.7;
+                                          if (actLevel == 4) opacity = 1.0;
+                                          cellColor = const Color(0xFFD9FF00).withOpacity(opacity);
+                                        } else if (isFuture) {
+                                          cellColor = Colors.transparent;
+                                        }
+
+                                        return Container(
+                                          width: cellWidth,
+                                          height: cellHeightVal,
+                                          margin: const EdgeInsets.symmetric(vertical: cellMarginY),
+                                          decoration: BoxDecoration(
+                                            color: cellColor,
+                                            borderRadius: BorderRadius.circular(2.5),
+                                            border: isFuture
+                                                ? null
+                                                : Border.all(
+                                                    color: isDark ? Colors.black.withOpacity(0.3) : Colors.white.withOpacity(0.5),
+                                                    width: 0.5,
+                                                  ),
+                                          ),
+                                        );
+                                      }),
                                     ),
                                   );
-                                }),
+                                }).toList(),
                               ),
                             );
-                          }),
+                          }).toList(),
                         ),
                       ],
                     ),
@@ -1715,9 +2013,17 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   ),
                   Expanded(
                     child: Text(
-                      isTodayActive
-                          ? "You're in the top 18% of users this month. 🔥 Keep it up!"
-                          : "Keep your streak alive today by logging one meal.",
+                      !isTodayActive
+                          ? "Keep your streak alive today by logging one meal."
+                          : streak == 1
+                              ? "You started your streak today! Keep the momentum going! 🚀"
+                              : streak == 2
+                                  ? "2-day streak! You are building consistency. 🔥"
+                                  : streak == 3
+                                      ? "3-day streak! Consistency is the key to progress. ⚡"
+                                      : streak < 7
+                                          ? "Looking strong! $streak-day consistency streak. 🌟"
+                                          : "You're in the top 18% of users this month. 🔥 Keep it up!",
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
@@ -1841,9 +2147,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     Text(
                       calorieLabel,
                       style: const TextStyle(
-                        fontSize: 8,
+                        fontSize: 6.5,
                         fontWeight: FontWeight.bold,
-                        letterSpacing: 0.5,
+                        letterSpacing: 0.2,
                         color: Colors.white,
                       ),
                     ),

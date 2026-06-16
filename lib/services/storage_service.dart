@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../models/user_profile.dart';
 
 class StorageService {
@@ -21,6 +23,24 @@ class StorageService {
   static late Box<Map> _analysisCacheBox;
   static late Box<Map> _recentScansBox;
 
+  static Future<List<int>> _getOrCreateEncryptionKey() async {
+    const secureStorage = FlutterSecureStorage();
+    try {
+      final base64Key = await secureStorage.read(key: 'hive_encryption_key');
+      if (base64Key == null) {
+        final key = Hive.generateSecureKey();
+        await secureStorage.write(key: 'hive_encryption_key', value: base64Encode(key));
+        return key;
+      } else {
+        return base64Decode(base64Key);
+      }
+    } catch (e) {
+      // Fallback key derivation in case secure storage is not available (e.g. test environment or unsupported platform)
+      final fallbackSeed = 'zivofit_secure_local_encryption_key_seed_10385';
+      return List<int>.generate(32, (i) => (fallbackSeed.codeUnitAt(i % fallbackSeed.length) + i) % 256);
+    }
+  }
+
   /// Initializes Hive database and opens the required boxes.
   static Future<void> init() async {
     await Hive.initFlutter();
@@ -30,18 +50,30 @@ class StorageService {
       Hive.registerAdapter(UserProfileAdapter());
     }
 
-    // Open boxes
-    _profileBox = await Hive.openBox<UserProfile>(_profileBoxName);
-    _dailyBox = await Hive.openBox<Map>(_dailyBoxName);
-    _workoutBox = await Hive.openBox<Map>(_workoutBoxName);
-    _reminderBox = await Hive.openBox<Map>(_reminderBoxName);
-    _barcodeCacheBox = await Hive.openBox<Map>(_barcodeCacheBoxName);
-    _productCacheBox = await Hive.openBox<Map>(_productCacheBoxName);
-    _analysisCacheBox = await Hive.openBox<Map>(_analysisCacheBoxName);
-    _recentScansBox = await Hive.openBox<Map>(_recentScansBoxName);
+    final encryptionKey = await _getOrCreateEncryptionKey();
+    final cipher = HiveAesCipher(encryptionKey);
 
-    // Seed realistic dummy data for interactive metrics visual experience
-    await seedDummyData();
+    Future<Box<T>> openSecureBox<T>(String name) async {
+      try {
+        return await Hive.openBox<T>(name, encryptionCipher: cipher);
+      } catch (e) {
+        // Fallback for upgrade cases where database was previously unencrypted
+        await Hive.deleteBoxFromDisk(name);
+        return await Hive.openBox<T>(name, encryptionCipher: cipher);
+      }
+    }
+
+    // Open encrypted boxes
+    _profileBox = await openSecureBox<UserProfile>(_profileBoxName);
+    _dailyBox = await openSecureBox<Map>(_dailyBoxName);
+    _workoutBox = await openSecureBox<Map>(_workoutBoxName);
+    _reminderBox = await openSecureBox<Map>(_reminderBoxName);
+    _barcodeCacheBox = await openSecureBox<Map>(_barcodeCacheBoxName);
+    _productCacheBox = await openSecureBox<Map>(_productCacheBoxName);
+    _analysisCacheBox = await openSecureBox<Map>(_analysisCacheBoxName);
+    _recentScansBox = await openSecureBox<Map>(_recentScansBoxName);
+
+    // Do not seed dummy data automatically on startup per user request
   }
 
   /// Retrieves the saved user profile from Hive.
@@ -68,6 +100,76 @@ class StorageService {
     } else {
       await _reminderBox.put('profile_picture', {'base64': base64Str});
     }
+  }
+
+  /// Retrieves the custom background wallpaper base64 from Hive.
+  static String? getCustomBackground() {
+    final raw = _reminderBox.get('custom_background');
+    if (raw == null) return null;
+    return raw['base64'] as String?;
+  }
+
+  /// Saves the custom background wallpaper base64 to Hive.
+  static Future<void> saveCustomBackground(String? base64Str) async {
+    if (base64Str == null) {
+      await _reminderBox.delete('custom_background');
+    } else {
+      await _reminderBox.put('custom_background', {'base64': base64Str});
+    }
+  }
+
+  /// Retrieves the accent color index from Hive.
+  static int getAccentColorIndex() {
+    final raw = _reminderBox.get('accent_color_index');
+    if (raw == null) return 0;
+    return raw['index'] as int? ?? 0;
+  }
+
+  /// Saves the accent color index to Hive.
+  static Future<void> saveAccentColorIndex(int index) async {
+    await _reminderBox.put('accent_color_index', {'index': index});
+  }
+
+  /// Retrieves whether mock/fake data is enabled.
+  static bool getFakeDataEnabled() {
+    final raw = _reminderBox.get('fake_data_enabled');
+    if (raw == null) return false;
+    return raw['enabled'] as bool? ?? false;
+  }
+
+  /// Saves whether mock/fake data is enabled.
+  static Future<void> saveFakeDataEnabled(bool enabled) async {
+    await _reminderBox.put('fake_data_enabled', {'enabled': enabled});
+  }
+
+  /// Retrieves the custom carbs goal.
+  static int getCarbsGoal() {
+    final raw = _reminderBox.get('carbs_goal');
+    if (raw == null) return 260;
+    return raw['val'] as int? ?? 260;
+  }
+
+  /// Saves the custom carbs goal.
+  static Future<void> saveCarbsGoal(int val) async {
+    await _reminderBox.put('carbs_goal', {'val': val});
+  }
+
+  /// Retrieves the custom fats goal.
+  static int getFatsGoal() {
+    final raw = _reminderBox.get('fats_goal');
+    if (raw == null) return 70;
+    return raw['val'] as int? ?? 70;
+  }
+
+  /// Saves the custom fats goal.
+  static Future<void> saveFatsGoal(int val) async {
+    await _reminderBox.put('fats_goal', {'val': val});
+  }
+
+  /// Clears only mock nutrition logs and workout logs.
+  static Future<void> clearMockDataOnly() async {
+    await _dailyBox.clear();
+    await _workoutBox.delete('workout_list');
   }
 
   /// Clears the user profile and daily stats (resets the database).
@@ -191,11 +293,13 @@ class StorageService {
     // Add real database keys
     allDates.addAll(_dailyBox.keys.map((k) => k.toString()));
     
-    // Add mock dates for the past 15 days
-    final now = DateTime.now();
-    for (int i = 0; i < 15; i++) {
-      final date = now.subtract(Duration(days: i));
-      allDates.add(DateFormat('yyyy-MM-dd').format(date));
+    // Add mock dates for the past 15 days only if fake data is enabled
+    if (getFakeDataEnabled()) {
+      final now = DateTime.now();
+      for (int i = 0; i < 15; i++) {
+        final date = now.subtract(Duration(days: i));
+        allDates.add(DateFormat('yyyy-MM-dd').format(date));
+      }
     }
     
     final sorted = allDates.toList();
@@ -228,12 +332,14 @@ class StorageService {
       final mondayOfCurrentWeek = today.subtract(Duration(days: today.weekday - 1));
       final sundayOfCurrentWeek = mondayOfCurrentWeek.add(const Duration(days: 6));
 
-      if (!parsedDate.isBefore(mondayOfCurrentWeek) && !parsedDate.isAfter(sundayOfCurrentWeek)) {
-        return _generateSpecificWeekMockMetrics(parsedDate.weekday, diffDays);
-      }
+      if (getFakeDataEnabled()) {
+        if (!parsedDate.isBefore(mondayOfCurrentWeek) && !parsedDate.isAfter(sundayOfCurrentWeek)) {
+          return _generateSpecificWeekMockMetrics(parsedDate.weekday, diffDays);
+        }
 
-      if (diffDays >= 0 && diffDays < 15) {
-        return _generateMockDailyMetrics(dateStr, diffDays);
+        if (diffDays >= 0 && diffDays < 15) {
+          return _generateMockDailyMetrics(dateStr, diffDays);
+        }
       }
     } catch (_) {}
 
@@ -626,24 +732,6 @@ class StorageService {
             {'name': 'Bicep Barbell Curl', 'category': 'Arms'},
           ],
         },
-        {
-          'name': 'Leg Day',
-          'exercises': [
-            {'name': 'Barbell Squat', 'category': 'Legs'},
-            {'name': 'Leg Press', 'category': 'Legs'},
-            {'name': 'Leg Extension', 'category': 'Legs'},
-            {'name': 'Romanian Deadlift', 'category': 'Legs'},
-          ],
-        },
-        {
-          'name': 'Full Body AI',
-          'exercises': [
-            {'name': 'Bench Press', 'category': 'Chest'},
-            {'name': 'Deadlift', 'category': 'Back'},
-            {'name': 'Barbell Squat', 'category': 'Legs'},
-            {'name': 'Pullups', 'category': 'Back'},
-          ],
-        },
       ];
     }
     return (rawList['list'] as List?)
@@ -740,10 +828,10 @@ class StorageService {
     // Check db version to force re-seeding if we upgraded the schema
     final Map? currentDbVersionMap = _workoutBox.get('db_version');
     final String? currentDbVersion = currentDbVersionMap?['version'] as String?;
-    if (currentDbVersion != 'v6') {
+    if (currentDbVersion != 'v7') {
       await _dailyBox.clear();
       await _workoutBox.clear();
-      await _workoutBox.put('db_version', {'version': 'v6'});
+      await _workoutBox.put('db_version', {'version': 'v7'});
     }
 
     // 1. Seed User Profile if not existing
@@ -771,21 +859,17 @@ class StorageService {
       });
     }
 
-    // 3. Seed Workouts and Nutrition history dynamically for the past 180 days
+    // 3. Seed Workouts and Nutrition history dynamically for the past 100 days (around 3 months)
     final now = DateTime.now();
     String formatDate(DateTime dt) => DateFormat('yyyy-MM-dd').format(dt);
 
-    final existingWorkouts = _workoutBox.get('workout_list');
-    final existingDaily = _dailyBox.get(formatDate(now));
-
-    if (existingWorkouts == null || existingDaily == null) {
-      final List<Map<String, dynamic>> mockWorkouts = [];
-      
-      for (int i = 0; i < 180; i++) {
-        final date = now.subtract(Duration(days: i));
-        final dateKey = formatDate(date);
+    final List<Map<String, dynamic>> mockWorkouts = [];
+    
+    for (int i = 0; i < 100; i++) {
+      final date = now.subtract(Duration(days: i));
+      final dateKey = formatDate(date);
         
-        // ── Only the last 18 days are active, everything else is empty ──
+        // ── Only the last 18 days are active unbroken streak, older days have normal training frequencies ──
         int level = 0;
         if (i < 18) {
           // 18-day streak with organic shade variation (level 1-4, never 0)
@@ -794,6 +878,20 @@ class StorageService {
             3, 2, 4, 3, 1, 2, 4, 3, 2, // days 9-17 (9 → 17 days ago)
           ];
           level = recentLevels[i];
+        } else {
+          // Beyond 18 days, train 4 days a week organically (e.g. Mon, Wed, Fri, Sat are training days)
+          final weekday = date.weekday;
+          if (weekday == DateTime.monday) {
+            level = 4;
+          } else if (weekday == DateTime.wednesday) {
+            level = 3;
+          } else if (weekday == DateTime.friday) {
+            level = 4;
+          } else if (weekday == DateTime.saturday) {
+            level = 2;
+          } else {
+            level = 0; // rest days
+          }
         }
 
         // 1. Generate workouts based on level
@@ -1023,7 +1121,6 @@ class StorageService {
       }
 
       await _workoutBox.put('workout_list', {'list': mockWorkouts});
-    }
   }
 
   /// PERSISTENT SECURE GEMINI KEYS Rotator
