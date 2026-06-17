@@ -1,103 +1,106 @@
 # Zivofit — Unit Economics & Scaled Cost Projections (1,000 Users)
 
-This document breaks down the unit economics of Zivofit per individual user and models the financial performance (costs, revenues, margins, and profits) scaled to **1,000 active users**.
+This document breaks down the unit economics of Zivofit per individual user and models the financial performance (costs, revenues, margins, and profits) scaled to **1,000 active users** based on the updated pricing structure and usage limits.
 
 ---
 
 ## 1. Core Pricing & Net Revenue (After 15% Play Store Fee)
 
-Before looking at backend costs, here is the net revenue the app retains after Google Play's 15% developer commission.
+Before looking at backend costs, here is the net revenue the app retains after Google Play/App Store's 15% developer commission.
 
-| Subscription Plan | Gross Price | Play Store Fee (15%) | Monthly Gross Revenue | Monthly Net Revenue |
-| :--- | :--- | :--- | :--- | :--- |
-| **Monthly Subscription** | ₹249 / month | ₹37.35 | ₹249.00 | **₹211.65** |
-| **Yearly Subscription** | ₹1,499 / year | ₹224.85 | ₹124.92 | **₹106.18** |
-
----
-
-## 2. Unit Economics: Cost & Margin Per User Segment
-
-User costs are driven by their backend usage (Gemini 2.5 Flash-Lite API calls and Firestore transactions). 
-
-Below is the monthly cost and net margin per user across the five recognized user profiles, calculated for both the **Monthly** and **Yearly** plans.
-
-### Monthly Cost and Margin Breakdown
-
-| User Profile | % of Users | Avg. AI Scans / Day | Monthly Cost (INR) | Monthly Net Margin (Monthly Plan) | Monthly Net Margin (Yearly Plan) |
-| :--- | :---: | :---: | :---: | :---: | :---: |
-| **Light User** | 50% | 1–2 scans | **₹0.72** | **99.7%** (₹210.93 profit) | **99.3%** (₹105.46 profit) |
-| **Regular User** | 35% | 3–5 scans | **₹1.98** | **99.1%** (₹209.67 profit) | **98.1%** (₹104.20 profit) |
-| **Power User** | 12% | 8–15 scans | **₹6.48** | **96.9%** (₹205.17 profit) | **93.9%** (₹99.70 profit) |
-| **Extreme User** | 3% | 30–50 scans | **₹33.50** | **84.2%** (₹178.15 profit) | **68.4%** (₹72.68 profit) |
-| **Worst-Case Abuser** | 0% | 75 scans (Cap) | **₹47.19** | **77.7%** (₹164.46 profit) | **55.6%** (₹58.99 profit) |
-
-> **Note**: **Worst-Case Abuser** represents a theoretical user hitting the absolute daily Fair Usage Policy (FUP) cap of 75 AI scans (25 text + 25 photo + 25 Vision Lens) every day of the month, which triggers billing for Firebase Cloud Functions and Firestore read/write operations beyond the free tier.
+| Subscription Plan | Gross Price | Play Store Fee (15%) | Monthly Gross Equivalent | Monthly Net Revenue | Annual Net Revenue |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Monthly Subscription** | ₹249 / month | ₹37.35 | ₹249.00 | **₹211.65** | **₹2,539.80** |
+| **Yearly Subscription** | ₹1,249 / year | ₹187.35 | ₹104.08 | **₹88.47** | **₹1,061.65** |
 
 ---
 
-## 3. Scaled Projections: Per 1,000 Users (Realistic Mix)
+## 2. Infrastructure & API Costs (Cost of Goods Sold - COGS)
 
-This model shows the realistic performance of 1,000 paying users, based on the audit-derived distribution: **500 Light, 350 Regular, 120 Power, and 30 Extreme users**.
+User costs are driven by their backend usage (Gemini 2.5 Flash-Lite API calls and Firebase Auth, Firestore database sync, and Cloud Functions).
 
-### Cost and Volume per Month (Realistic Mix)
+### Cost per Action Assumed:
+* **Firebase Auth**: **₹0.00** (100% Free)
+* **Barcode Lookups (OpenFoodFacts)**: **₹0.00** (100% Free API)
+* **Average AI Scan**: **₹0.020** (Assumes a 1:1:1 blend of Text logs at ₹0.006, Photo logs at ₹0.024, and Zivo Lens scans at ₹0.030)
+* **Firebase Sync/Infra (per user/month)**: Est. Firestore reads (3/scan) and writes (2/scan) and Cloud Run invocation compute overhead beyond the free tier:
+  * At 20 scans/day: **₹0.05 / user**
+  * At 30 scans/day: **₹0.12 / user**
+  * At 50 scans/day: **₹0.26 / user**
 
-* **Light Users (500)**: 500 × ₹0.72 = **₹360.00**
-* **Regular Users (350)**: 350 × ₹1.98 = **₹693.00**
-* **Power Users (120)**: 120 × ₹6.48 = **₹777.60**
-* **Extreme Users (30)**: 30 × ₹33.50 = **₹1,005.00**
-* **Firebase Infra (Firestore/Functions)**: **₹0.00** *(Fully covered by Firebase Daily Free Tiers)*
-* **Total Cost / Month**: **₹2,835.60** (approx. **₹2,836**)
+---
 
-### P&L Summary (1,000 Users — Realistic Mix)
+## 3. Unit Economics: Cost & Margin Per User (Monthly)
 
-| Metric | Monthly Subscription Plan (₹249/mo) | Yearly Subscription Plan (₹1,499/yr) |
+Below is the monthly cost and net profit/margin per user across the three specified active user scenarios, calculated for both the **Monthly** and **Yearly** plans.
+
+| Usage Scenario | Daily AI Scans | Monthly AI Cost | Monthly Sync Cost | Total Monthly COGS | Monthly Plan Margin % (Profit) | Yearly Plan Margin % (Profit) |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Moderate Active** | 20 scans | ₹12.00 | ₹0.05 | **₹12.05** | **94.3%** (+₹199.60) | **86.4%** (+₹76.42) |
+| **High Active** | 30 scans | ₹18.00 | ₹0.12 | **₹18.12** | **91.4%** (+₹193.53) | **79.5%** (+₹70.35) |
+| **FUP Daily Cap** | 50 scans | ₹30.00 | ₹0.26 | **₹30.26** | **85.7%** (+₹181.39) | **65.8%** (+₹58.21) |
+
+> **Note**: Barcode scans are 100% free in the food log since they use local cache or OpenFoodFacts lookup without invoking the AI backend.
+
+---
+
+## 4. Scaled Projections: Per 1,000 Users (Uniform Usage Models)
+
+These models show the absolute financial safety margins of the business. Even if **every single one of the 1,000 users** logs heavily at these volumes every single day, the business remains highly profitable.
+
+### Scenario A: 1,000 Users at 20 Scans / Day (Moderate Active)
+* **Total monthly scans**: 600,000 scans
+* **Total Monthly COGS**: **₹12,053** (₹12,000 AI + ₹53 Firebase Sync)
+
+| Metric | Monthly Subscription Plan (₹249/mo) | Yearly Subscription Plan (₹1,249/yr) |
 | :--- | :--- | :--- |
-| **Total Gross Revenue** | ₹2,49,000 | ₹1,24,917 *(₹14,99,000 / yr)* |
-| **Total Net Revenue** (after Play Store 15%) | **₹2,11,650** | **₹106,179** *(₹12,74,150 / yr)* |
-| **Total Expenses** (COGS) | **₹2,836** | **₹2,836** |
-| **Net Profit / Month** | **+₹208,814** | **+₹103,343** |
-| **Net Profit / Year** | **+₹25,05,768** | **+₹12,40,116** |
-| **Gross Profit Margin** | **98.7%** | **97.3%** |
+| **Total Gross Revenue / Mo** | ₹2,49,000 | ₹1,04,083 *(₹12,49,000 / yr)* |
+| **Total Net Revenue / Mo** | **₹2,11,650** | **₹88,471** *(₹10,61,650 / yr)* |
+| **Total Expenses (COGS) / Mo** | **₹12,053** | **₹12,053** |
+| **Net Profit / Month** | **+₹199,597** | **+₹76,418** |
+| **Net Profit / Year** | **+₹23,95,164** | **+₹9,17,016** |
+| **Gross Profit Margin** | **94.3%** | **86.4%** |
 
 ---
 
-## 4. Scaled Projections: Per 1,000 Users (Worst-Case Scenario)
+### Scenario B: 1,000 Users at 30 Scans / Day (High Active)
+* **Total monthly scans**: 900,000 scans
+* **Total Monthly COGS**: **₹18,120** (₹18,000 AI + ₹120 Firebase Sync)
 
-This model shows the absolute worst-case scenario: **every single one of the 1,000 users is a worst-case abuser** hitting the daily limit of 75 AI scans every day of the month.
-
-### Cost and Volume per Month (Worst-Case)
-
-* **Gemini AI API (Text Meal Logs)**: 1,000 × 25 scans × 30 days × ₹0.006 = **₹4,500.00**
-* **Gemini AI API (Photo Meal Logs)**: 1,000 × 25 scans × 30 days × ₹0.024 = **₹18,000.00**
-* **Gemini AI API (Vision Lens Scans)**: 1,000 × 25 scans × 30 days × ₹0.030 = **₹22,500.00**
-* **Firestore Writes**: (4.5M writes - 600K free tier) × ₹7.50 / 100K = **₹292.50**
-* **Firestore Reads**: (6.75M reads - 1.5M free tier) × ₹2.50 / 100K = **₹131.25**
-* **Cloud Functions (v2)**: (3.25M runs - 2M free tier) = 1.25M billable runs = **₹1,762.25** *(includes compute surcharge)*
-* **Total Cost / Month**: **₹47,186.00**
-
-### P&L Summary (1,000 Users — Worst-Case Scenario)
-
-| Metric | Monthly Subscription Plan (₹249/mo) | Yearly Subscription Plan (₹1,499/yr) |
+| Metric | Monthly Subscription Plan (₹249/mo) | Yearly Subscription Plan (₹1,249/yr) |
 | :--- | :--- | :--- |
-| **Total Gross Revenue** | ₹2,49,000 | ₹1,24,917 *(₹14,99,000 / yr)* |
-| **Total Net Revenue** (after Play Store 15%) | **₹2,11,650** | **₹106,179** *(₹12,74,150 / yr)* |
-| **Total Expenses** (COGS) | **₹47,186** | **₹47,186** |
-| **Net Profit / Month** | **+₹164,464** | **+₹58,993** |
-| **Net Profit / Year** | **+₹19,73,568** | **+₹7,07,916** |
-| **Gross Profit Margin** | **77.7%** | **55.6%** |
-
-> **Tip**: Even if 100% of your users are bad actors trying to max out the system on the cheapest yearly subscription, the business remains **solidly profitable** (+₹58.9K profit/month per 1,000 users) due to the low per-token cost of Gemini 2.5 Flash-Lite and FUP soft-capping.
+| **Total Gross Revenue / Mo** | ₹2,49,000 | ₹1,04,083 *(₹12,49,000 / yr)* |
+| **Total Net Revenue / Mo** | **₹2,11,650** | **₹88,471** *(₹10,61,650 / yr)* |
+| **Total Expenses (COGS) / Mo** | **₹18,120** | **₹18,120** |
+| **Net Profit / Month** | **+₹193,530** | **+₹70,351** |
+| **Net Profit / Year** | **+₹23,22,360** | **+₹8,44,212** |
+| **Gross Profit Margin** | **91.4%** | **79.5%** |
 
 ---
 
-## 5. Summary of Key Financial Indicators (Realistic Mix)
+### Scenario C: 1,000 Users at 50 Scans / Day (Fair Usage Policy Cap)
+* **Total monthly scans**: 1,500,000 scans
+* **Total Monthly COGS**: **₹30,255** (₹30,000 AI + ₹255 Firebase Sync)
 
-| Metric | Value | Meaning |
+| Metric | Monthly Subscription Plan (₹249/mo) | Yearly Subscription Plan (₹1,249/yr) |
 | :--- | :--- | :--- |
-| **ARPU** (Average Revenue Per User) | **₹106.18 / month** | Net monthly income per user on the yearly plan (conservative baseline). |
-| **COGS** (Cost of Goods Sold) | **₹2.84 / month** | Average monthly infrastructure & API cost per active user. |
-| **Contribution Margin** | **₹103.34 / month** | Profit per user before customer acquisition costs (CAC). |
-| **Gross Margin %** | **97.3%** | Percentage of revenue remaining after hosting, database, and AI cost. |
-| **LTV** (Lifetime Value - 12m retention) | **₹1,274.15** | Projected total net revenue generated per user. |
-| **LTV-to-COGS Ratio** | **37 : 1** | Scale metric showing that revenue easily outpaces backend costs. |
-| **Breakeven Threshold** | **User #1** | Profitable from the first user due to zero fixed server maintenance fees. |
+| **Total Gross Revenue / Mo** | ₹2,49,000 | ₹1,04,083 *(₹12,49,000 / yr)* |
+| **Total Net Revenue / Mo** | **₹2,11,650** | **₹88,471** *(₹10,61,650 / yr)* |
+| **Total Expenses (COGS) / Mo** | **₹30,255** | **₹30,255** |
+| **Net Profit / Month** | **+₹181,395** | **+₹58,216** |
+| **Net Profit / Year** | **+₹21,76,740** | **+₹6,98,592** |
+| **Gross Profit Margin** | **85.7%** | **65.8%** |
+
+---
+
+## 5. Summary of Key Safety and Financial Protections
+
+1. **Unlimited Marketing with Fair Usage Protection**:
+   * Marketing the product as "unlimited scans" matches user expectations. 
+   * A soft daily cap of **50 AI scans** (combined across food logs and analysers) is set. This is virtually impossible for a legitimate user to hit (requires logging meals or scanning items 3+ times every hour of a 16-hour awake cycle).
+   * It completely prevents malicious actors or script attacks from running up massive API bills, capping the absolute worst-case monthly COGS per user at **₹30.26**.
+2. **Positive Profit Margins in All Scenarios**:
+   * Even on the cheapest Yearly Plan (₹1,249/yr) and at the absolute FUP maximum of 50 scans/day, the gross margin is a highly secure **65.8%** (+₹58.21 net profit/user/month).
+   * On the standard Monthly Plan (₹249/mo), the margin remains a staggering **85.7%** at the FUP cap.
+3. **Cross-Subsidization Dynamic**:
+   * Real-world usage shows that over 85% of users will log 1–5 times daily (averaging ~₹1.50 to ₹2.50 in monthly backend cost). This generates a huge surplus that easily covers the occasional heavy user.

@@ -1,6 +1,6 @@
 # Zivofit — 7-Day Free Trial Cost Projections (25,000 Installs)
 
-This document estimates the backend operational costs (Gemini API tokens, Firestore, and Cloud Functions) if you run ads and get **25,000 installs in a single week** with a **7-day free, unlimited trial**.
+This document estimates the backend operational costs (Gemini API tokens, Firestore, and Cloud Functions) if you run ads and get **25,000 installs in a single week** with a **7-day free, unlimited trial** (capped by the 50 AI scans/day FUP).
 
 ---
 
@@ -8,9 +8,9 @@ This document estimates the backend operational costs (Gemini API tokens, Firest
 
 | Scenario | Active Users (DAU/WAU) | Cost per User (7 days) | Total Cost for the Week | Analysis |
 | :--- | :-: | :-: | ---: | :--- |
-| **Realistic Funnel (50% Activation)** | 12,500 | ₹0.66 | **₹8,250** | Standard industry conversion. 50% of installers onboard and log logs. |
+| **Realistic Funnel (50% Activation)** | 12,500 | ₹0.66 | **₹8,250** | Standard industry conversion. 50% of installers onboard and log data. |
 | **High Engagement (100% Activation)** | 25,000 | ₹0.67 | **₹16,684** | Every single downloader logs meals and uses Zivo Lens. |
-| **Absolute Worst-Case (100% Max Abusers)** | 25,000 | ₹11.67 | **₹2,91,750** | Every installer hits the Fair Usage Limit (75 scans/day) every day. |
+| **Absolute Worst-Case (100% Max Abusers)** | 25,000 | ₹7.62 | **₹1,90,442** | Every installer hits the Fair Usage Limit (50 scans/day) every day. |
 
 ---
 
@@ -22,8 +22,8 @@ Assuming all 25,000 users are active and exhibit Zivofit's typical user distribu
 * **Light Users** (12,500): 12,500 × ₹0.72/mo × (7/30 days) = **₹2,100**
 * **Regular Users** (8,750): 8,750 × ₹1.98/mo × (7/30 days) = **₹4,043**
 * **Power Users** (3,000): 3,000 × ₹6.48/mo × (7/30 days) = **₹4,536**
-* **Extreme Users** (750): 750 × ₹33.50/mo × (7/30 days) = **₹5,863**
-* **Total Gemini Token Cost**: **₹16,542**
+* **Extreme Users** (750): 750 × ₹30.26/mo × (7/30 days) = **₹5,296**
+* **Total Gemini Token Cost**: **₹15,975**
 
 ### B. Firestore Database Costs (Beyond Free Tier)
 With 25,000 concurrent active users in one week, you will exceed the daily free tier limits:
@@ -40,7 +40,7 @@ With 25,000 concurrent active users in one week, you will exceed the daily free 
 * **Monthly Free Tier**: 2 Million invocations.
 * Since 1.25M is under your 2.0M monthly limit, Cloud Functions are **100% free** (₹0.00).
 
-### 💎 Total Cost: ₹16,684
+### 💎 Total Cost (Standard Mix): ₹16,118
 
 ---
 
@@ -52,10 +52,10 @@ In consumer mobile apps, **not everyone who installs the app actually uses it**.
 * This results in an **Activation Rate of ~40% to 50%**.
 
 If you get 25,000 installs, you will likely have **12,500 active trial users** logging data. Under this realistic funnel:
-* **Gemini AI**: ₹8,271
+* **Gemini AI & Sync**: ₹8,250
 * **Firestore**: ₹0 (Fits entirely inside the daily free tier with 12.5k users!)
 * **Cloud Functions**: ₹0
-* **Total Cost**: **₹8,271** (or roughly $100 USD).
+* **Total Cost**: **₹8,250** (or roughly $100 USD).
 
 ---
 
@@ -63,14 +63,15 @@ If you get 25,000 installs, you will likely have **12,500 active trial users** l
 
 ### ⚠️ Risk: Referral loops or bot networks abusing the unlimited trial
 If competitors or script-kiddies automate installs to spam your backend:
-* **Solution**: Ensure your **Fair Usage Policy (75 scans/day combined limit)** is active and compiled in your Firestore security rules or Cloud Functions. This limits your absolute maximum exposure to ₹11.67 per installer.
+* **Solution**: Ensure your **Fair Usage Policy (50 scans/day combined limit)** is active and compiled in your Firestore security rules or Cloud Functions. This limits your absolute maximum exposure to ₹7.62 per installer for the entire 7-day period.
 * **Solution**: Implement basic rate-limiting on the Firebase Auth sign-up endpoint or use **Firebase App Check** to prevent automated bot scripts from making accounts.
 
 ---
 
 ## 5. Strategic Takeaway
-A trial week of 25,000 installs will cost you between **₹8,250 and ₹16,684** in infrastructure. If even **1.5% to 2%** of those users convert to the ₹1,499 yearly subscription at the end of the trial:
+
+A trial week of 25,000 installs will cost you between **₹8,250 and ₹16,684** in infrastructure. If even **1.5% to 2%** of those users convert to the ₹1,249 yearly subscription at the end of the trial:
 * **Conversions**: 375 to 500 users
-* **Net Revenue (After 15% Play Store cut)**: **₹4,77,800 to ₹6,37,000**
-* **ROI**: ~30x to 40x on backend cost (excluding advertising spend). 
+* **Net Revenue (After 15% Play Store cut)**: **₹3,98,119 to ₹5,30,825**
+* **ROI**: ~24x to 32x on backend cost (excluding advertising spend). 
 * Operational costs are a tiny fraction of your revenue. The trial is **extremely safe** to run.
