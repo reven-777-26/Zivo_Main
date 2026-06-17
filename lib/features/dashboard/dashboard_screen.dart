@@ -11,6 +11,7 @@ import '../../services/state_providers.dart';
 import '../../services/storage_service.dart';
 import '../../utils/image_picker_helper.dart';
 import '../../services/scanner/ai_analysis_service.dart';
+import '../../services/firebase_service.dart';
 import 'food_history_screen.dart';
 import 'food_logger_dialog.dart';
 import '../vision_lens/vision_lens/screens/unified_scanner_dialog.dart';
@@ -290,7 +291,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   ),
                 ),
                 Text(
-                  'Alex',
+                  () {
+                    final name = FirebaseService.currentUser?.displayName;
+                    if (name != null && name.trim().isNotEmpty) {
+                      return name.split(' ').first;
+                    }
+                    return 'User';
+                  }(),
                   style: TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.w900, // Wise Sans display weight
