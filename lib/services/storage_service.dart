@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -168,8 +169,41 @@ class StorageService {
 
   /// Clears only mock nutrition logs and workout logs.
   static Future<void> clearMockDataOnly() async {
-    await _dailyBox.clear();
-    await _workoutBox.delete('workout_list');
+    final keys = List<String>.from(_dailyBox.keys.map((k) => k.toString()));
+    for (final key in keys) {
+      final val = _dailyBox.get(key);
+      if (val != null) {
+        final map = Map<String, dynamic>.from(val);
+        final bool isMock = map['is_mock'] == true || (
+          map['logged_items'] != null &&
+          (map['logged_items'] as List).isNotEmpty &&
+          !(map['logged_items'] as List).any((item) {
+            final name = item['name']?.toString() ?? '';
+            return name != 'Oatmeal & Banana' &&
+                   name != 'Protein Shake & Banana' &&
+                   name != 'Tuna Salad Wrap' &&
+                   name != 'Avocado Toast & Eggs' &&
+                   name != 'Grilled Chicken & Rice' &&
+                   name != 'Baked Salmon & Broccoli' &&
+                   name != 'Baked Salmon & Asparagus' &&
+                   name != 'Whey Protein Shake & Almonds';
+          })
+        );
+        if (isMock) {
+          await _dailyBox.delete(key);
+        }
+      }
+    }
+
+    final rawList = _workoutBox.get('workout_list');
+    if (rawList != null) {
+      final list = (rawList['list'] as List?)
+              ?.map((e) => Map<String, dynamic>.from(e))
+              .toList() ??
+          [];
+      list.removeWhere((w) => w['id']?.toString().startsWith('mock_') ?? false);
+      await _workoutBox.put('workout_list', {'list': list});
+    }
   }
 
   /// Clears the user profile and daily stats (resets the database).
@@ -286,6 +320,11 @@ class StorageService {
     await _recentScansBox.put('scans_list', {'list': list});
   }
 
+  /// Saves the full list of recent scans.
+  static Future<void> saveRecentScansList(List<Map<String, dynamic>> list) async {
+    await _recentScansBox.put('scans_list', {'list': list});
+  }
+
 
   /// Returns all dates that have logged metrics, sorted reverse chronologically (newest first).
   static List<String> getAllLoggedDates() {
@@ -313,13 +352,35 @@ class StorageService {
     final rawMap = _dailyBox.get(dateStr);
     if (rawMap != null) {
       final metrics = Map<String, dynamic>.from(rawMap);
-      if (!metrics.containsKey('logged_items')) {
-        metrics['logged_items'] = [];
+      
+      // Determine if this is a seeded mock entry to hide when fake data is disabled
+      final bool isMockEntry = metrics['is_mock'] == true || (
+        !getFakeDataEnabled() && metrics['logged_items'] != null &&
+        (metrics['logged_items'] as List).isNotEmpty &&
+        !(metrics['logged_items'] as List).any((item) {
+          final name = item['name']?.toString() ?? '';
+          return name != 'Oatmeal & Banana' &&
+                 name != 'Protein Shake & Banana' &&
+                 name != 'Tuna Salad Wrap' &&
+                 name != 'Avocado Toast & Eggs' &&
+                 name != 'Grilled Chicken & Rice' &&
+                 name != 'Baked Salmon & Broccoli' &&
+                 name != 'Baked Salmon & Asparagus' &&
+                 name != 'Whey Protein Shake & Almonds';
+        })
+      );
+
+      if (isMockEntry && !getFakeDataEnabled()) {
+        // Return default empty metrics instead of mock data
+      } else {
+        if (!metrics.containsKey('logged_items')) {
+          metrics['logged_items'] = [];
+        }
+        if (!metrics.containsKey('outside_food_cal')) {
+          metrics['outside_food_cal'] = 0;
+        }
+        return metrics;
       }
-      if (!metrics.containsKey('outside_food_cal')) {
-        metrics['outside_food_cal'] = 0;
-      }
-      return metrics;
     }
 
     // Check if date falls in the current week (Monday to Sunday) relative to today
@@ -681,10 +742,14 @@ class StorageService {
   static List<Map<String, dynamic>> getWorkouts() {
     final rawList = _workoutBox.get('workout_list');
     if (rawList == null) return [];
-    return (rawList['list'] as List?)
+    final list = (rawList['list'] as List?)
             ?.map((e) => Map<String, dynamic>.from(e))
             .toList() ??
         [];
+    if (!getFakeDataEnabled()) {
+      list.removeWhere((w) => w['id']?.toString().startsWith('mock_') ?? false);
+    }
+    return list;
   }
 
   static Future<void> saveWorkout(Map<String, dynamic> workoutJson) async {
@@ -800,21 +865,21 @@ class StorageService {
     await _workoutBox.put('favorite_foods_list', {'list': list});
   }
 
+  /// Saves the full list of favorite foods.
+  static Future<void> saveFavoriteFoodsList(List<Map<String, dynamic>> list) async {
+    await _workoutBox.put('favorite_foods_list', {'list': list});
+  }
+
+  /// Saves the full list of workouts.
+  static Future<void> saveWorkoutsList(List<Map<String, dynamic>> list) async {
+    await _workoutBox.put('workout_list', {'list': list});
+  }
+
   /// REMINDERS PERSISTENCE LOGS
   static Map<String, dynamic> getReminders() {
     final rawMap = _reminderBox.get('reminder_settings');
     if (rawMap == null) {
-      return {
-        'water': {'label': 'Water', 'isEnabled': true, 'time': '09:00 AM'},
-        'meal': {'label': 'Meals', 'isEnabled': true, 'time': '12:30 PM'},
-        'workout': {'label': 'Workouts', 'isEnabled': true, 'time': '06:00 PM'},
-        'supplement': {
-          'label': 'Supplements',
-          'isEnabled': false,
-          'time': '08:00 AM',
-        },
-        'sleep': {'label': 'Sleep Time', 'isEnabled': true, 'time': '10:30 PM'},
-      };
+      return {};
     }
     return Map<String, dynamic>.from(rawMap);
   }
@@ -828,10 +893,10 @@ class StorageService {
     // Check db version to force re-seeding if we upgraded the schema
     final Map? currentDbVersionMap = _workoutBox.get('db_version');
     final String? currentDbVersion = currentDbVersionMap?['version'] as String?;
-    if (currentDbVersion != 'v7') {
+    if (currentDbVersion != 'v8') {
       await _dailyBox.clear();
       await _workoutBox.clear();
-      await _workoutBox.put('db_version', {'version': 'v7'});
+      await _workoutBox.put('db_version', {'version': 'v8'});
     }
 
     // 1. Seed User Profile if not existing
@@ -879,18 +944,19 @@ class StorageService {
           ];
           level = recentLevels[i];
         } else {
-          // Beyond 18 days, train 4 days a week organically (e.g. Mon, Wed, Fri, Sat are training days)
-          final weekday = date.weekday;
-          if (weekday == DateTime.monday) {
-            level = 4;
-          } else if (weekday == DateTime.wednesday) {
-            level = 3;
-          } else if (weekday == DateTime.friday) {
-            level = 4;
-          } else if (weekday == DateTime.saturday) {
-            level = 2;
+          // Beyond 18 days, simulate organic human behavior using a deterministic random seed per day
+          final rand = Random(i + 1337);
+          final double roll = rand.nextDouble();
+          if (roll < 0.22) {
+            level = 4; // High activity (Workout + good nutrition)
+          } else if (roll < 0.52) {
+            level = 3; // Medium-high activity
+          } else if (roll < 0.72) {
+            level = 2; // Medium activity (Active rest/Cardio/Light logs)
+          } else if (roll < 0.88) {
+            level = 1; // Light activity
           } else {
-            level = 0; // rest days
+            level = 0; // Complete rest day / missed log
           }
         }
 
@@ -1117,6 +1183,7 @@ class StorageService {
           'carbs': carbs,
           'fat': fat,
           'logged_items': items,
+          'is_mock': true,
         });
       }
 

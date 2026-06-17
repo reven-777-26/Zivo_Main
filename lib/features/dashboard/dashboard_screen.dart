@@ -26,12 +26,20 @@ class DashboardScreen extends ConsumerStatefulWidget {
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   String _selectedMacro = 'Protein';
   late ScrollController _streakScrollController;
+  final ScrollController _calendarScrollController = ScrollController();
+  String _visibleMonthStr = '';
+  String _visibleYearStr = '';
 
   bool get isDark => Theme.of(context).brightness == Brightness.dark;
 
   @override
   void initState() {
     super.initState();
+    final now = DateTime.now();
+    _visibleMonthStr = DateFormat('MMM').format(now).toUpperCase();
+    _visibleYearStr = DateFormat('yyyy').format(now);
+    _calendarScrollController.addListener(_onCalendarScroll);
+
     _streakScrollController = ScrollController();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_streakScrollController.hasClients) {
@@ -40,8 +48,25 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     });
   }
 
+  void _onCalendarScroll() {
+    if (!_calendarScrollController.hasClients) return;
+    final offset = _calendarScrollController.offset;
+    final scrolledDays = (offset / 58.0).round();
+    final targetDate = DateTime.now().subtract(Duration(days: scrolledDays.clamp(0, 1000)));
+    final newMonth = DateFormat('MMM').format(targetDate).toUpperCase();
+    final newYear = DateFormat('yyyy').format(targetDate);
+    if (newMonth != _visibleMonthStr || newYear != _visibleYearStr) {
+      setState(() {
+        _visibleMonthStr = newMonth;
+        _visibleYearStr = newYear;
+      });
+    }
+  }
+
   @override
   void dispose() {
+    _calendarScrollController.removeListener(_onCalendarScroll);
+    _calendarScrollController.dispose();
     _streakScrollController.dispose();
     super.dispose();
   }
@@ -770,8 +795,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       motivationQuote = "GREAT ENERGY! You locked in your daily habits and kept the momentum alive. Remember: small daily wins compound into massive transformations. Keep stacking your score! 📈✨";
     } else if (actLevel == 1) {
       statusBadge = "HABIT BUILDER 🌱";
-      badgeBg = const Color(0xFFF87171).withOpacity(0.12);
-      badgeColor = const Color(0xFFF87171);
+      badgeBg = const Color(0xFF4ADE80).withOpacity(0.12);
+      badgeColor = const Color(0xFF4ADE80);
       motivationTitle = "KEEP MOVING FORWARD";
       motivationHeader = "STREAK PRESERVED! ✅🌱";
       motivationQuote = "EVERY SINGLE LOG COUNTS! You showed up for yourself today. Even on busy days, keeping the habit alive is what separates you from the rest. Tomorrow, let's step it up to a new level! 🦁🚀";
@@ -1482,77 +1507,117 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   Widget _buildWeeklyCalendarBar(String selectedDate, bool isDark) {
     final now = DateTime.now();
+    final parsed = DateFormat('yyyy-MM-dd').parse(selectedDate);
+    final String? vMonth = _visibleMonthStr;
+    final String? vYear = _visibleYearStr;
+    final displayMonth = (vMonth != null && vMonth.isNotEmpty) ? vMonth : DateFormat('MMM').format(parsed).toUpperCase();
+    final displayYear = (vYear != null && vYear.isNotEmpty) ? vYear : DateFormat('yyyy').format(parsed);
 
-    return SizedBox(
-      height: 64,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: 1000, // Virtually infinite past days
-        itemBuilder: (context, index) {
-          final date = now.subtract(Duration(days: index));
-          final dateKey = DateFormat('yyyy-MM-dd').format(date);
-          final isSelected = dateKey == selectedDate;
-          final weekdayStr = DateFormat('E').format(date); // e.g. "Sun"
-          final dayNumStr = DateFormat('d').format(date); // e.g. "12"
-          final monthStr = DateFormat('MMM').format(date).toUpperCase(); // e.g. "NOV"
-
-          return GestureDetector(
-            onTap: () {
-              ref.read(selectedDateProvider.notifier).state = dateKey;
-            },
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              width: 48,
-              margin: const EdgeInsets.only(right: 6),
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? AppTheme.accentCyan
-                    : (isDark ? const Color(0xFF121214) : AppTheme.glassBackground),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                  color: isSelected
-                      ? AppTheme.accentCyan
-                      : (isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder),
-                  width: 1.0,
+    return Row(
+      children: [
+        Container(
+          width: 52,
+          height: 52,
+          margin: const EdgeInsets.only(right: 6),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1C1C1E) : const Color(0xFFF2F2F7),
+            borderRadius: BorderRadius.circular(14), // Curvy corners
+            border: Border.all(
+              color: isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder,
+              width: 1.0,
+            ),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                displayMonth,
+                style: const TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1.0,
+                  color: AppTheme.accentCyan,
                 ),
               ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    weekdayStr.toUpperCase(),
-                    style: TextStyle(
-                      fontSize: 8,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 1.0,
-                      color: isSelected ? const Color(0xFF5A6B00) : const Color(0xFFC5C9AC),
-                    ),
-                  ),
-                  const SizedBox(height: 1),
-                  Text(
-                    dayNumStr,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w900,
-                      color: isSelected ? const Color(0xFF5A6B00) : (isDark ? Colors.white : AppTheme.textPrimary),
-                    ),
-                  ),
-                  const SizedBox(height: 1),
-                  Text(
-                    monthStr,
-                    style: TextStyle(
-                      fontSize: 8,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 1.0,
-                      color: isSelected ? const Color(0xFF5A6B00).withOpacity(0.7) : const Color(0xFFC5C9AC).withOpacity(0.7),
-                    ),
-                  ),
-                ],
+              const SizedBox(height: 1),
+              Text(
+                displayYear,
+                style: TextStyle(
+                  fontSize: 8,
+                  fontWeight: FontWeight.w800,
+                  color: isDark ? Colors.white60 : Colors.black54,
+                  letterSpacing: 0.5,
+                ),
               ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: SizedBox(
+            height: 52, // Square height
+            child: ListView.builder(
+              controller: _calendarScrollController,
+              scrollDirection: Axis.horizontal,
+              reverse: true,
+              itemCount: 1000, // Virtually infinite past days
+              itemBuilder: (context, index) {
+                final date = now.subtract(Duration(days: index));
+                final dateKey = DateFormat('yyyy-MM-dd').format(date);
+                final isSelected = dateKey == selectedDate;
+                final weekdayStr = DateFormat('E').format(date); // e.g. "Sun"
+                final dayNumStr = DateFormat('d').format(date); // e.g. "12"
+
+                return GestureDetector(
+                  onTap: () {
+                    ref.read(selectedDateProvider.notifier).state = dateKey;
+                  },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    width: 52,
+                    height: 52,
+                    margin: const EdgeInsets.only(right: 6),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? AppTheme.accentCyan
+                          : (isDark ? const Color(0xFF121214) : AppTheme.glassBackground),
+                      borderRadius: BorderRadius.circular(14), // Curvy corners
+                      border: Border.all(
+                        color: isSelected
+                            ? AppTheme.accentCyan
+                            : (isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder),
+                        width: 1.0,
+                      ),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          weekdayStr.toUpperCase(),
+                          style: TextStyle(
+                            fontSize: 8,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 1.0,
+                            color: isSelected ? const Color(0xFF5A6B00) : const Color(0xFFC5C9AC),
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          dayNumStr,
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w900,
+                            color: isSelected ? const Color(0xFF5A6B00) : (isDark ? Colors.white : AppTheme.textPrimary),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
             ),
-          );
-        },
-      ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -2082,6 +2147,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final textColor = isDark ? Colors.white : AppTheme.textPrimary;
     final textMutedColor = isDark ? const Color(0xFF868685) : AppTheme.textSecondary;
 
+    final parsedDate = DateFormat('yyyy-MM-dd').parse(selectedDate);
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final isDayEnded = parsedDate.isBefore(today);
+
     return GlassCard(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -2102,17 +2172,18 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   color: textColor,
                 ),
               ),
-              GestureDetector(
-                onTap: () => _showEditDailyGoalDialog(context, selectedDate),
-                child: const Text(
-                  'Edit',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.accentCyan,
+              if (!isDayEnded)
+                GestureDetector(
+                  onTap: () => _showEditDailyGoalDialog(context, selectedDate),
+                  child: const Text(
+                    'Edit',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.accentCyan,
+                    ),
                   ),
                 ),
-              ),
             ],
           ),
           const SizedBox(height: 12),
@@ -2245,6 +2316,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         Expanded(
                           child: GestureDetector(
                             onTap: () async {
+                              if (isDayEnded) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text("This day has ended. You cannot log water."),
+                                    behavior: SnackBarBehavior.floating,
+                                  ),
+                                );
+                                return;
+                              }
                               await ref
                                   .read(dailyMetricsProvider(selectedDate).notifier)
                                   .addWater(250);
@@ -2283,6 +2363,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         Expanded(
                           child: GestureDetector(
                             onTap: () async {
+                              if (isDayEnded) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text("This day has ended. You cannot log water."),
+                                    behavior: SnackBarBehavior.floating,
+                                  ),
+                                );
+                                return;
+                              }
                               await ref
                                   .read(dailyMetricsProvider(selectedDate).notifier)
                                   .addWater(500);
@@ -2510,6 +2599,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   Widget _buildQuickActionsRow(String selectedDate) {
+    final parsedDate = DateFormat('yyyy-MM-dd').parse(selectedDate);
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final isDayEnded = parsedDate.isBefore(today);
+
     return SizedBox(
       height: 82,
       child: Row(
@@ -2519,6 +2613,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               label: 'Add Meal',
               icon: Icons.restaurant_rounded,
               onTap: () {
+                if (isDayEnded) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text("This day has ended. You cannot log new meals."),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                  return;
+                }
                 showDialog(
                   context: context,
                   builder: (context) => const FoodLoggerDialog(),
@@ -2778,6 +2881,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   Future<dynamic> _showFoodDetailsDialog(BuildContext context, Map<String, dynamic> item, {bool startInEditMode = false}) {
+    final selectedDate = ref.read(selectedDateProvider);
+    final parsedDate = DateFormat('yyyy-MM-dd').parse(selectedDate);
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final isDayEnded = parsedDate.isBefore(today);
+
     final String initialName = item['name'] ?? 'Logged Meal';
     final String initialMeal = item['meal'] ?? 'MEAL';
     final String time = item['time'] ?? '8:00 AM';
@@ -2809,7 +2918,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     }
 
     String selectedMealKey = initialMealKey;
-    bool isEditing = startInEditMode;
+    bool isEditing = isDayEnded ? false : startInEditMode;
 
     return showDialog(
       context: context,
@@ -3208,7 +3317,34 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         const SizedBox(height: 24),
 
                         // Buttons section
-                        if (!isEditing)
+                        if (isDayEnded)
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                            decoration: BoxDecoration(
+                              color: isDark ? const Color(0xFF1E2124) : const Color(0xFFF5F7F4),
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(
+                                color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFE8EBE6),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.lock_outline_rounded, color: isDark ? const Color(0xFF868685) : AppTheme.textSecondary, size: 16),
+                                const SizedBox(width: 8),
+                                Text(
+                                  "Logs are locked for ended days",
+                                  style: TextStyle(
+                                    color: isDark ? const Color(0xFF868685) : AppTheme.textSecondary,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        else if (!isEditing)
                           Row(
                             children: [
                               Expanded(
@@ -3650,72 +3786,54 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           ),
                           const SizedBox(height: 20),
 
-                          const Text(
-                            'CALORIES BY CATEGORY',
-                            style: TextStyle(
-                              fontSize: 9,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 1.0,
-                              color: AppTheme.textSecondary,
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-
-                          Row(
+                          _buildDialogSectionCard(
+                            title: 'Calories by Category',
+                            isDark: isDark,
                             children: [
-                              Expanded(child: _buildEditField("Breakfast", breakfastController, isDark)),
-                              const SizedBox(width: 12),
-                              Expanded(child: _buildEditField("Lunch", lunchController, isDark)),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          Row(
-                            children: [
-                              Expanded(child: _buildEditField("Dinner", dinnerController, isDark)),
-                              const SizedBox(width: 12),
-                              Expanded(child: _buildEditField("Snacks", snacksController, isDark)),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          _buildEditField("Eating Out", outsideFoodController, isDark),
-
-                          const SizedBox(height: 20),
-                          const Text(
-                            'MACRONUTRIENTS (G)',
-                            style: TextStyle(
-                              fontSize: 9,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 1.0,
-                              color: AppTheme.textSecondary,
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          Row(
-                            children: [
-                              Expanded(child: _buildEditField("Protein", proteinController, isDark)),
-                              const SizedBox(width: 8),
-                              Expanded(child: _buildEditField("Carbs", carbsController, isDark)),
-                              const SizedBox(width: 8),
-                              Expanded(child: _buildEditField("Fat", fatController, isDark)),
+                              Row(
+                                children: [
+                                  Expanded(child: _buildEditField("Breakfast", breakfastController, isDark, Icons.wb_twilight_rounded, "kcal")),
+                                  const SizedBox(width: 12),
+                                  Expanded(child: _buildEditField("Lunch", lunchController, isDark, Icons.wb_sunny_rounded, "kcal")),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              Row(
+                                children: [
+                                  Expanded(child: _buildEditField("Dinner", dinnerController, isDark, Icons.nights_stay_rounded, "kcal")),
+                                  const SizedBox(width: 12),
+                                  Expanded(child: _buildEditField("Snacks", snacksController, isDark, Icons.cookie_rounded, "kcal")),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              _buildEditField("Eating Out", outsideFoodController, isDark, Icons.restaurant_rounded, "kcal"),
                             ],
                           ),
 
-                          const SizedBox(height: 20),
-                          const Text(
-                            'HYDRATION',
-                            style: TextStyle(
-                              fontSize: 9,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 1.0,
-                              color: AppTheme.textSecondary,
-                            ),
+                          _buildDialogSectionCard(
+                            title: 'Macronutrients',
+                            isDark: isDark,
+                            children: [
+                              Row(
+                                children: [
+                                  Expanded(child: _buildEditField("Protein", proteinController, isDark, Icons.bolt_rounded, "g")),
+                                  const SizedBox(width: 8),
+                                  Expanded(child: _buildEditField("Carbs", carbsController, isDark, Icons.grain_rounded, "g")),
+                                  const SizedBox(width: 8),
+                                  Expanded(child: _buildEditField("Fat", fatController, isDark, Icons.opacity_rounded, "g")),
+                                ],
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 10),
-                          _buildEditField("Water Intake (ml)", waterController, isDark),
 
-                          const SizedBox(height: 20),
-                          const Divider(color: Colors.white12, height: 1),
-                          const SizedBox(height: 20),
+                          _buildDialogSectionCard(
+                            title: 'Hydration',
+                            isDark: isDark,
+                            children: [
+                              _buildEditField("Water Intake", waterController, isDark, Icons.water_drop_rounded, "ml"),
+                            ],
+                          ),
+
                           const Text(
                             'LOGGED FOOD HISTORY',
                             style: TextStyle(
@@ -3747,10 +3865,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                 margin: const EdgeInsets.only(bottom: 8),
                                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.02),
+                                  color: isDark ? Colors.white.withOpacity(0.02) : Colors.black.withOpacity(0.02),
                                   borderRadius: BorderRadius.circular(14),
                                   border: Border.all(
-                                    color: Colors.white.withOpacity(0.06),
+                                    color: isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.06),
                                     width: 1.0,
                                   ),
                                 ),
@@ -3764,7 +3882,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                       ),
                                       child: Icon(
                                         getMealIcon(meal),
-                                        color: AppTheme.accentCyan,
+                                        color: isDark ? AppTheme.accentCyan : const Color(0xFF5A6B00),
                                         size: 16,
                                       ),
                                     ),
@@ -3775,10 +3893,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                         children: [
                                           Text(
                                             name,
-                                            style: const TextStyle(
+                                            style: TextStyle(
                                               fontSize: 13,
                                               fontWeight: FontWeight.bold,
-                                              color: Colors.white,
+                                              color: isDark ? Colors.white : AppTheme.textPrimary,
                                             ),
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
@@ -3796,7 +3914,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                       ),
                                     ),
                                     IconButton(
-                                      icon: const Icon(Icons.edit_rounded, color: AppTheme.accentCyan, size: 16),
+                                      icon: Icon(Icons.edit_rounded, color: isDark ? AppTheme.accentCyan : const Color(0xFF5A6B00), size: 16),
                                       padding: EdgeInsets.zero,
                                       constraints: const BoxConstraints(),
                                       onPressed: () async {
@@ -3930,7 +4048,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                             child: Container(
                               height: 48,
                               decoration: BoxDecoration(
-                                gradient: AppTheme.primaryGradient,
+                                color: AppTheme.accentCyan,
                                 borderRadius: BorderRadius.circular(14),
                                 boxShadow: [
                                   BoxShadow(
@@ -3965,7 +4083,39 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Widget _buildEditField(String label, TextEditingController controller, bool isDark) {
+  Widget _buildDialogSectionCard({required String title, required List<Widget> children, required bool isDark}) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF111315) : const Color(0xFFF5F7F4),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: isDark ? const Color(0xFF1E2124) : const Color(0xFFE8EBE6),
+          width: 1.0,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title.toUpperCase(),
+            style: const TextStyle(
+              fontSize: 9.5,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1.0,
+              color: AppTheme.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 12),
+          ...children,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEditField(String label, TextEditingController controller, bool isDark, IconData icon, String suffix) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -3988,18 +4138,25 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ),
           decoration: InputDecoration(
             filled: true,
-            fillColor: isDark ? Colors.white.withOpacity(0.02) : Colors.black.withOpacity(0.02),
+            fillColor: isDark ? const Color(0xFF16181A) : Colors.white,
+            prefixIcon: Icon(icon, color: isDark ? AppTheme.accentCyan : const Color(0xFF5A6B00), size: 16),
+            suffixText: suffix,
+            suffixStyle: const TextStyle(
+              color: AppTheme.textSecondary,
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+            ),
             contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
-                color: isDark ? AppTheme.glassBorder : Colors.black.withOpacity(0.1),
+                color: isDark ? const Color(0xFF2C2C2E) : Colors.black.withOpacity(0.1),
               ),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
-                color: isDark ? AppTheme.glassBorder : Colors.black.withOpacity(0.1),
+                color: isDark ? const Color(0xFF2C2C2E) : Colors.black.withOpacity(0.1),
               ),
             ),
             focusedBorder: OutlineInputBorder(
@@ -5302,6 +5459,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     int waterConsumed,
     double waterGoal,
   ) {
+    final parsedDate = DateFormat('yyyy-MM-dd').parse(dateStr);
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final isDayEnded = parsedDate.isBefore(today);
+
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final dialogBg = isDark ? const Color(0xFF1C1E1B) : Colors.white;
     final dialogBorder = isDark ? const Color(0xFF323530) : const Color(0xFFEADBFF);
@@ -5372,6 +5534,34 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       ),
                     ),
                     const SizedBox(height: 24),
+                    if (isDayEnded)
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                        margin: const EdgeInsets.only(bottom: 16),
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0xFF1E2124) : const Color(0xFFF5F7F4),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFE8EBE6),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.lock_outline_rounded, color: isDark ? const Color(0xFF868685) : AppTheme.textSecondary, size: 14),
+                            const SizedBox(width: 8),
+                            Text(
+                              "Logs are locked for ended days",
+                              style: TextStyle(
+                                color: isDark ? const Color(0xFF868685) : AppTheme.textSecondary,
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     const Text(
                       'RECENT INPUT LOGS',
                       style: TextStyle(
@@ -5437,14 +5627,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                               foregroundColor: AppTheme.accentCoral,
                               elevation: 0,
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                                side: const BorderSide(color: AppTheme.accentCoral, width: 0.5),
+                                  borderRadius: BorderRadius.circular(10),
+                                  side: const BorderSide(color: AppTheme.accentCoral, width: 0.5),
                               ),
                               padding: const EdgeInsets.symmetric(vertical: 8),
                             ),
                             icon: const Icon(Icons.undo_rounded, size: 14),
                             label: const Text('Undo Last Entry', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                            onPressed: rawHistory.isEmpty
+                            onPressed: (isDayEnded || rawHistory.isEmpty)
                                 ? null
                                 : () async {
                                     await ref
@@ -5486,6 +5676,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                             ),
                             child: TextField(
                               controller: controller,
+                              enabled: !isDayEnded,
                               keyboardType: TextInputType.number,
                               style: TextStyle(color: textColor, fontSize: 13, fontWeight: FontWeight.bold),
                               decoration: const InputDecoration(
@@ -5500,27 +5691,29 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         ElevatedButton(
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppTheme.accentPurple,
-                            foregroundColor: Colors.white,
+                            foregroundColor: Colors.black,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10),
                             ),
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                           ),
-                          onPressed: () async {
-                            final val = int.tryParse(controller.text);
-                            if (val != null && val >= 0) {
-                              await ref
-                                  .read(dailyMetricsProvider(dateStr).notifier)
-                                  .setManualWater(val);
-                              Navigator.pop(ctx);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Hydration manually updated!'),
-                                  backgroundColor: AppTheme.accentEmerald,
-                                ),
-                              );
-                            }
-                          },
+                          onPressed: isDayEnded
+                              ? null
+                              : () async {
+                                  final val = int.tryParse(controller.text);
+                                  if (val != null && val >= 0) {
+                                    await ref
+                                        .read(dailyMetricsProvider(dateStr).notifier)
+                                        .setManualWater(val);
+                                    Navigator.pop(ctx);
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Hydration manually updated!'),
+                                        backgroundColor: AppTheme.accentEmerald,
+                                      ),
+                                    );
+                                  }
+                                },
                           child: const Text('Update', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
                         ),
                       ],

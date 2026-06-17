@@ -358,6 +358,11 @@ Future<dynamic> _showFoodDetailsDialog(
   Map<String, dynamic> item, {
   bool startInEditMode = false,
 }) {
+  final parsedDate = DateFormat('yyyy-MM-dd').parse(dateStr);
+  final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
+  final isDayEnded = parsedDate.isBefore(today);
+
   final String initialName = item['name'] ?? 'Logged Meal';
   final String initialMeal = item['meal'] ?? 'MEAL';
   final String time = item['time'] ?? '8:00 AM';
@@ -389,7 +394,7 @@ Future<dynamic> _showFoodDetailsDialog(
   }
 
   String selectedMealKey = initialMealKey;
-  bool isEditing = startInEditMode;
+  bool isEditing = isDayEnded ? false : startInEditMode;
 
   Widget buildMacroCard(String label, String val, Color col, IconData icon) {
     return Container(
@@ -864,7 +869,34 @@ Future<dynamic> _showFoodDetailsDialog(
                       const SizedBox(height: 24),
 
                       // Buttons section
-                      if (!isEditing)
+                      if (isDayEnded)
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                          decoration: BoxDecoration(
+                            color: isDark ? const Color(0xFF1E2124) : const Color(0xFFF5F7F4),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                              color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFE8EBE6),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.lock_outline_rounded, color: isDark ? const Color(0xFF868685) : AppTheme.textSecondary, size: 16),
+                              const SizedBox(width: 8),
+                              Text(
+                                "Logs are locked for ended days",
+                                style: TextStyle(
+                                  color: isDark ? const Color(0xFF868685) : AppTheme.textSecondary,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      else if (!isEditing)
                         Row(
                           children: [
                             Expanded(

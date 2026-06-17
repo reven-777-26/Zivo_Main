@@ -6,6 +6,8 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme.dart';
 import '../../core/logo_widget.dart';
 import '../../services/state_providers.dart';
+import '../../services/firebase_service.dart';
+import '../../services/storage_service.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
@@ -25,12 +27,45 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     await Future.delayed(const Duration(milliseconds: 2000));
     if (!mounted) return;
 
-    // Bypassing authentication to run local-first/offline
-    final profile = ref.read(profileProvider);
-    if (profile != null) {
-      context.go('/home');
+    final isLoggedIn = FirebaseService.isLoggedIn;
+    if (isLoggedIn) {
+      final profile = ref.read(profileProvider);
+      if (profile == null) {
+        // Fetch profile and other data from cloud if missing locally
+        await FirebaseService.syncCloudToLocal();
+        if (mounted) {
+          ref.invalidate(profileProvider);
+          ref.invalidate(workoutHistoryProvider);
+          ref.invalidate(pinnedWidgetsProvider);
+          ref.invalidate(remindersProvider);
+          ref.invalidate(profilePictureProvider);
+          ref.invalidate(customBackgroundProvider);
+        }
+      } else {
+        // Silently sync from cloud in background to keep data fresh
+        FirebaseService.syncCloudToLocal().then((_) {
+          if (mounted) {
+            ref.invalidate(profileProvider);
+            ref.invalidate(workoutHistoryProvider);
+            ref.invalidate(pinnedWidgetsProvider);
+            ref.invalidate(remindersProvider);
+            ref.invalidate(profilePictureProvider);
+            ref.invalidate(customBackgroundProvider);
+          }
+        });
+      }
+
+      // Read updated profile state
+      final updatedProfile = StorageService.getUserProfile();
+      if (!mounted) return;
+      if (updatedProfile != null) {
+        context.go('/home');
+      } else {
+        context.go('/onboarding');
+      }
     } else {
-      context.go('/onboarding');
+      if (!mounted) return;
+      context.go('/auth');
     }
   }
   @override

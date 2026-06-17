@@ -64,7 +64,27 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
           currentWeight,
         ]);
       } else {
-        weightLogs.addAll(List.filled(7, currentWeight));
+        double lastKnownWeight = currentWeight;
+        // Search back up to 30 days to find the baseline logged weight
+        for (int offset = 30; offset >= 7; offset--) {
+          final checkDay = today.subtract(Duration(days: offset));
+          final checkDateStr = DateFormat('yyyy-MM-dd').format(checkDay);
+          final checkStats = StorageService.getDailyMetrics(checkDateStr);
+          final double? w = (checkStats['weight'] as num?)?.toDouble();
+          if (w != null && w > 0) {
+            lastKnownWeight = w;
+            break;
+          }
+        }
+        for (var day in pastDays) {
+          final dateStr = DateFormat('yyyy-MM-dd').format(day);
+          final stats = StorageService.getDailyMetrics(dateStr);
+          final double? dailyWeight = (stats['weight'] as num?)?.toDouble();
+          if (dailyWeight != null && dailyWeight > 0) {
+            lastKnownWeight = dailyWeight;
+          }
+          weightLogs.add(lastKnownWeight);
+        }
       }
       periodWorkouts.addAll(history.where((session) {
         try {
@@ -76,6 +96,18 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
       }));
     } else if (_selectedFilter == 'Weeks') {
       // 4 Weeks
+      double lastKnownWeight = currentWeight;
+      // Search back up to 60 days to find baseline weight
+      for (int offset = 60; offset >= 28; offset--) {
+        final checkDay = today.subtract(Duration(days: offset));
+        final checkDateStr = DateFormat('yyyy-MM-dd').format(checkDay);
+        final checkStats = StorageService.getDailyMetrics(checkDateStr);
+        final double? w = (checkStats['weight'] as num?)?.toDouble();
+        if (w != null && w > 0) {
+          lastKnownWeight = w;
+          break;
+        }
+      }
       for (int i = 3; i >= 0; i--) {
         final weekStart = today.subtract(Duration(days: (i * 7) + 6));
         if (i == 0) {
@@ -101,13 +133,18 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
           final double consumedWaterLtr = ((stats['water'] ?? 0) as num) / 1000.0;
           weekCalSum += consumedCal;
           weekWaterSum += consumedWaterLtr;
+
+          final double? dailyWeight = (stats['weight'] as num?)?.toDouble();
+          if (dailyWeight != null && dailyWeight > 0) {
+            lastKnownWeight = dailyWeight;
+          }
         }
         calorieLogs.add(weekCalSum / 7.0);
         waterLogs.add(weekWaterSum / 7.0);
         if (StorageService.getFakeDataEnabled()) {
           weightLogs.add(currentWeight + (i * 0.4) - 0.1);
         } else {
-          weightLogs.add(currentWeight);
+          weightLogs.add(lastKnownWeight);
         }
       }
       
@@ -121,6 +158,18 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
       }));
     } else if (_selectedFilter == 'Months') {
       // 6 Months
+      double lastKnownWeight = currentWeight;
+      // Search back up to 240 days to find baseline weight
+      for (int offset = 240; offset >= 180; offset--) {
+        final checkDay = today.subtract(Duration(days: offset));
+        final checkDateStr = DateFormat('yyyy-MM-dd').format(checkDay);
+        final checkStats = StorageService.getDailyMetrics(checkDateStr);
+        final double? w = (checkStats['weight'] as num?)?.toDouble();
+        if (w != null && w > 0) {
+          lastKnownWeight = w;
+          break;
+        }
+      }
       for (int i = 5; i >= 0; i--) {
         final targetMonth = DateTime(today.year, today.month - i, 1);
         labels.add(DateFormat('MMM').format(targetMonth));
@@ -145,6 +194,11 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
           monthCalSum += consumedCal;
           monthWaterSum += consumedWaterLtr;
           sampledDays++;
+
+          final double? dailyWeight = (stats['weight'] as num?)?.toDouble();
+          if (dailyWeight != null && dailyWeight > 0) {
+            lastKnownWeight = dailyWeight;
+          }
         }
         
         calorieLogs.add(sampledDays > 0 ? (monthCalSum / sampledDays) : 0.0);
@@ -152,7 +206,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
         if (StorageService.getFakeDataEnabled()) {
           weightLogs.add(currentWeight + (i * 0.6) - 0.2);
         } else {
-          weightLogs.add(currentWeight);
+          weightLogs.add(lastKnownWeight);
         }
       }
       
@@ -166,6 +220,18 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
       }));
     } else {
       // Lifetime (12 Months)
+      double lastKnownWeight = currentWeight;
+      // Search back up to 450 days to find baseline weight
+      for (int offset = 450; offset >= 365; offset--) {
+        final checkDay = today.subtract(Duration(days: offset));
+        final checkDateStr = DateFormat('yyyy-MM-dd').format(checkDay);
+        final checkStats = StorageService.getDailyMetrics(checkDateStr);
+        final double? w = (checkStats['weight'] as num?)?.toDouble();
+        if (w != null && w > 0) {
+          lastKnownWeight = w;
+          break;
+        }
+      }
       for (int i = 11; i >= 0; i--) {
         final targetMonth = DateTime(today.year, today.month - i, 1);
         labels.add(DateFormat('MMM').format(targetMonth));
@@ -190,6 +256,11 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
           monthCalSum += consumedCal;
           monthWaterSum += consumedWaterLtr;
           sampledDays++;
+
+          final double? dailyWeight = (stats['weight'] as num?)?.toDouble();
+          if (dailyWeight != null && dailyWeight > 0) {
+            lastKnownWeight = dailyWeight;
+          }
         }
         
         calorieLogs.add(sampledDays > 0 ? (monthCalSum / sampledDays) : 0.0);
@@ -197,7 +268,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
         if (StorageService.getFakeDataEnabled()) {
           weightLogs.add(currentWeight + (i * 0.8) - 0.4);
         } else {
-          weightLogs.add(currentWeight);
+          weightLogs.add(lastKnownWeight);
         }
       }
       
@@ -923,14 +994,12 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                 barGroups: List.generate(calorieLogs.length, (i) {
                   final double val = calorieLogs[i];
                   // Color bar based on performance against goal
-                  Color barColor = AppTheme.accentPurple;
+                  Color barColor = AppTheme.accentCyan;
                   if (val > 0) {
                     if (val > dailyGoal + 300) {
                       barColor = AppTheme.accentCoral; // Over budget
-                    } else if (val >= dailyGoal - 200) {
-                      barColor = AppTheme.accentEmerald; // Spot on target
                     } else {
-                      barColor = AppTheme.accentCyan; // Under budget
+                      barColor = AppTheme.accentCyan; // Hit target or under target -> keep neon cyan
                     }
                   } else {
                     barColor = AppTheme.glassBorder;
@@ -976,10 +1045,8 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                 if (caloriesVal > 0) {
                   if (caloriesVal > dailyGoal + 300) {
                     textColor = AppTheme.accentCoral;
-                  } else if (caloriesVal >= dailyGoal - 200) {
-                    textColor = AppTheme.accentEmerald;
                   } else {
-                    textColor = AppTheme.accentCyan;
+                    textColor = AppTheme.accentCyan; // Hit target or under target -> keep neon cyan
                   }
                 }
 

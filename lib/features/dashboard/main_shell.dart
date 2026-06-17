@@ -20,6 +20,7 @@ import 'progress_screen.dart';
 import '../../services/ai_backend_service.dart';
 import '../../core/health_math.dart';
 import '../../services/firebase_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class MainShell extends ConsumerStatefulWidget {
   const MainShell({super.key});
@@ -39,6 +40,7 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
 
   StreamSubscription? _notificationSubscription;
   Timer? _reminderTimer;
+  Timer? _autoSyncTimer;
   int _lastCheckedMinute = -1;
 
   @override
@@ -57,6 +59,13 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
     });
 
     _startReminderEngine();
+
+    // Start periodic background auto-sync every 30 seconds to upload offline logs when online
+    _autoSyncTimer = Timer.periodic(const Duration(seconds: 30), (timer) async {
+      if (FirebaseService.isLoggedIn) {
+        await FirebaseService.syncLocalToCloud();
+      }
+    });
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       showWebNotification(
@@ -104,6 +113,15 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
     }
   }
 
+  @override
+  void dispose() {
+    _notificationSubscription?.cancel();
+    _reminderTimer?.cancel();
+    _autoSyncTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
   void _checkWidgetSync() {
     WidgetSyncService.checkAndSyncWidgetLogs((amountSynced) {
       if (mounted) {
@@ -116,14 +134,6 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
       }
     });
     WidgetSyncService.syncToWidget();
-  }
-
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    _notificationSubscription?.cancel();
-    _reminderTimer?.cancel();
-    super.dispose();
   }
 
   void _showInAppNotification(String title, String body) {
@@ -276,33 +286,107 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final navBarBgColor = isDark ? const Color(0xFF131313) : AppTheme.glassBackground;
     final borderColor = isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder;
+    final accentColor = ref.watch(accentColorProvider);
 
     return SafeArea(
-      child: Container(
-        margin: const EdgeInsets.only(left: 16, right: 16, bottom: 24, top: 4),
-        padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 8),
-        decoration: BoxDecoration(
-          color: navBarBgColor,
-          borderRadius: BorderRadius.circular(9999),
-          border: Border.all(color: borderColor, width: 1.0),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.4),
-              blurRadius: 16,
-              offset: const Offset(0, 8),
+      child: Stack(
+        clipBehavior: Clip.none,
+        alignment: Alignment.topCenter,
+        children: [
+          // The main navbar container with custom painted notched curve
+          Container(
+            margin: const EdgeInsets.only(left: 16, right: 16, bottom: 24, top: 16),
+            height: 104, // Increased from 88 to make top and bottom size even larger
+            child: CustomPaint(
+              painter: NotchedNavbarPainter(
+                bgColor: navBarBgColor,
+                borderColor: borderColor,
+                borderWidth: 1.2,
+              ),
+              child: Align(
+                alignment: Alignment.bottomCenter,
+                child: Container(
+                  height: 76, // Taller flat height of the capsule body
+                  padding: const EdgeInsets.symmetric(horizontal: 6),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _buildNavItem(Icons.home_rounded, 'Home', 0, currentIndex),
+                      _buildNavItem(Icons.fitness_center_rounded, 'Workouts', 1, currentIndex),
+                      
+                      // Balanced placeholder space for the middle Scan button
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () {
+                            ref.read(activeTabProvider.notifier).state = 2;
+                          },
+                          behavior: HitTestBehavior.opaque,
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const SizedBox(height: 32), // Perfectly balances text label with adjacent tabs
+                              AnimatedDefaultTextStyle(
+                                duration: const Duration(milliseconds: 250),
+                                curve: Curves.easeOutCubic,
+                                style: TextStyle(
+                                  color: currentIndex == 2
+                                      ? accentColor
+                                      : (isDark ? const Color(0xFF868685) : AppTheme.textSecondary),
+                                  fontSize: currentIndex == 2 ? 10.5 : 9.5,
+                                  fontWeight: currentIndex == 2 ? FontWeight.w900 : FontWeight.w500,
+                                ),
+                                child: const Text('Scan'),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      
+                      _buildNavItem(Icons.bar_chart_rounded, 'Stats', 3, currentIndex),
+                      _buildNavItem(Icons.person_rounded, 'Profile', 4, currentIndex),
+                    ],
+                  ),
+                ),
+              ),
             ),
-          ],
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            _buildNavItem(Icons.home_rounded, 'Home', 0, currentIndex),
-            _buildNavItem(Icons.fitness_center_rounded, 'Workouts', 1, currentIndex),
-            _buildNavItem(Icons.qr_code_scanner_rounded, 'Scan', 2, currentIndex),
-            _buildNavItem(Icons.bar_chart_rounded, 'Stats', 3, currentIndex),
-            _buildNavItem(Icons.person_rounded, 'Profile', 4, currentIndex),
-          ],
-        ),
+          ),
+          
+          Positioned(
+            top: 24, // Positioned slightly lower to sit better in the notched bulge
+            left: 0,
+            right: 0,
+            child: Align(
+              alignment: Alignment.topCenter,
+              child: GestureDetector(
+                onTap: () {
+                  ref.read(activeTabProvider.notifier).state = 2;
+                },
+                child: Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: accentColor,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: accentColor.withOpacity(0.35),
+                        blurRadius: 10,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: const Center(
+                    child: Icon(
+                      Icons.qr_code_scanner_rounded,
+                      color: Color(0xFF0E0F0C),
+                      size: 28, // Reduced for a cleaner look
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -313,55 +397,139 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
     final accentColor = ref.watch(accentColorProvider);
     
     final iconColor = isSelected
-        ? const Color(0xFF0E0F0C) // Black icon inside the neon lime capsule
+        ? const Color(0xFF0E0F0C) // Black icon inside selected capsule
         : (isDark ? const Color(0xFF868685) : AppTheme.textSecondary);
         
     final textColor = isSelected
-        ? accentColor // Accent color for active text
+        ? accentColor
         : (isDark ? const Color(0xFF868685) : AppTheme.textSecondary);
+
+    final double scale = isSelected ? 1.12 : 1.0;
 
     return Expanded(
       child: GestureDetector(
         onTap: () {
           ref.read(activeTabProvider.notifier).state = index;
         },
+        behavior: HitTestBehavior.opaque,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              curve: Curves.easeInOut,
-              padding: const EdgeInsets.symmetric(
-                horizontal: 20.0,
-                vertical: 4.0,
-              ),
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? accentColor // Dynamic active background capsule
-                    : Colors.transparent,
-                borderRadius: BorderRadius.circular(16), // standard pill corner radius
-              ),
-              child: Icon(
-                icon,
-                color: iconColor,
-                size: 22,
+            AnimatedScale(
+              scale: scale,
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeOutCubic,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 250),
+                curve: Curves.easeOutCubic,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16.0,
+                  vertical: 6.0,
+                ),
+                decoration: BoxDecoration(
+                  color: isSelected ? accentColor : Colors.transparent,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Icon(
+                  icon,
+                  color: iconColor,
+                  size: 20,
+                ),
               ),
             ),
-            const SizedBox(height: 5),
-            Text(
-              label,
+            const SizedBox(height: 4),
+            AnimatedDefaultTextStyle(
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeOutCubic,
               style: TextStyle(
                 color: textColor,
-                fontSize: 10,
-                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                fontSize: isSelected ? 10.5 : 9.5,
+                fontWeight: isSelected ? FontWeight.w900 : FontWeight.w500,
               ),
+              child: Text(label),
             ),
           ],
         ),
       ),
     );
   }
+}
+
+class NotchedNavbarPainter extends CustomPainter {
+  final Color bgColor;
+  final Color borderColor;
+  final double borderWidth;
+
+  NotchedNavbarPainter({
+    required this.bgColor,
+    required this.borderColor,
+    this.borderWidth = 1.0,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = bgColor
+      ..style = PaintingStyle.fill;
+
+    final borderPaint = Paint()
+      ..color = borderColor
+      ..strokeWidth = borderWidth
+      ..style = PaintingStyle.stroke;
+
+    final double width = size.width;
+    final double height = size.height;
+    
+    // Layout baseline settings for upward convex bulge
+    final double baselineY = 28.0; // Straight top line starts at y=28 (leaving 28px top padding)
+    final double radius = (height - baselineY) / 2; // Perfect capsule radius for the 76px body
+    final double bulgeHeight = 22.0; // Bulges UP by 22px from baselineY to y=6
+    final double center = width / 2;
+    
+    // Width of the convex bulge
+    final double bulgeWidth = 84.0;
+    final double halfWidth = bulgeWidth / 2;
+
+    final path = Path()
+      ..moveTo(radius, baselineY)
+      // Top-left straight edge
+      ..lineTo(center - halfWidth, baselineY)
+      // Convex curve arching UP and over the button
+      ..cubicTo(
+        center - halfWidth * 0.45, baselineY, // CP1 (flat entry)
+        center - halfWidth * 0.55, baselineY - bulgeHeight, // CP2 (flat top peak)
+        center, baselineY - bulgeHeight, // Peak of bulge (y = 0)
+      )
+      ..cubicTo(
+        center + halfWidth * 0.55, baselineY - bulgeHeight, // CP1 (flat top peak)
+        center + halfWidth * 0.45, baselineY, // CP2 (flat entry)
+        center + halfWidth, baselineY, // End of bulge
+      )
+      // Top-right straight edge
+      ..lineTo(width - radius, baselineY)
+      // Top-right corner
+      ..arcToPoint(Offset(width, baselineY + radius), radius: Radius.circular(radius))
+      // Right edge
+      ..lineTo(width, height - radius)
+      // Bottom-right corner
+      ..arcToPoint(Offset(width - radius, height), radius: Radius.circular(radius))
+      // Bottom edge
+      ..lineTo(radius, height)
+      // Bottom-left corner
+      ..arcToPoint(Offset(0, height - radius), radius: Radius.circular(radius))
+      // Left edge
+      ..lineTo(0, baselineY + radius)
+      // Top-left corner
+      ..arcToPoint(Offset(radius, baselineY), radius: Radius.circular(radius))
+      ..close();
+
+    canvas.drawPath(path, paint);
+    canvas.drawPath(path, borderPaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 // =========================================================================
@@ -385,6 +553,7 @@ class _ProfilePlaceholderScreenState
   final _ageController = TextEditingController();
   final _weightController = TextEditingController();
   final _heightController = TextEditingController();
+  final _nameController = TextEditingController();
   String _selectedSkinType = 'Normal';
   String _selectedGoal = 'maintain';
   String _selectedGender = 'male';
@@ -404,6 +573,23 @@ class _ProfilePlaceholderScreenState
   }
 
   Future<void> _saveProfileDataSilent() async {
+    final nameInput = _nameController.text.trim();
+    final user = FirebaseService.currentUser;
+    if (user != null && nameInput.isNotEmpty && nameInput != user.displayName) {
+      try {
+        await user.updateDisplayName(nameInput);
+        await user.reload();
+        await FirebaseService.firestore.collection('users').doc(user.uid).set({
+          'displayName': nameInput,
+        }, SetOptions(merge: true));
+        if (mounted) {
+          setState(() {});
+        }
+      } catch (e) {
+        debugPrint("Error updating display name: $e");
+      }
+    }
+
     final calorieInput = int.tryParse(_calController.text);
     final proteinInput = int.tryParse(_protController.text);
     final carbsInput = int.tryParse(_carbsController.text);
@@ -498,8 +684,8 @@ class _ProfilePlaceholderScreenState
       _watController.text = formatted;
 
       _ageController.text = profile.age.toString();
-      _weightController.text = profile.weight.toString();
-      _heightController.text = profile.height.toString();
+      _weightController.text = profile.weight.round().toString();
+      _heightController.text = profile.height.round().toString();
       _selectedGoal = profile.goal.toLowerCase();
       _selectedGender = profile.gender.toLowerCase();
       _selectedActivityLevel = profile.activityLevel.toLowerCase();
@@ -507,6 +693,7 @@ class _ProfilePlaceholderScreenState
 
     _carbsController.text = StorageService.getCarbsGoal().toString();
     _fatsController.text = StorageService.getFatsGoal().toString();
+    _nameController.text = FirebaseService.currentUser?.displayName ?? '';
 
     _auraNotificationsEnabled = StorageService.getAuraNotificationsEnabled();
     _systemNotificationsEnabled = StorageService.getSystemNotificationsEnabled();
@@ -526,6 +713,7 @@ class _ProfilePlaceholderScreenState
     _ageController.addListener(_onSettingsChanged);
     _weightController.addListener(_onSettingsChanged);
     _heightController.addListener(_onSettingsChanged);
+    _nameController.addListener(_onSettingsChanged);
   }
 
   @override
@@ -542,6 +730,7 @@ class _ProfilePlaceholderScreenState
     _ageController.removeListener(_onSettingsChanged);
     _weightController.removeListener(_onSettingsChanged);
     _heightController.removeListener(_onSettingsChanged);
+    _nameController.removeListener(_onSettingsChanged);
 
     _calController.dispose();
     _protController.dispose();
@@ -551,6 +740,7 @@ class _ProfilePlaceholderScreenState
     _ageController.dispose();
     _weightController.dispose();
     _heightController.dispose();
+    _nameController.dispose();
 
     _debounceTimer?.cancel();
 
@@ -769,8 +959,8 @@ class _ProfilePlaceholderScreenState
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final accentColor = ref.watch(accentColorProvider);
 
-    final double currentWeight = profile?.weight ?? 78.5;
-    final double currentHeight = profile?.height ?? 182.0;
+    final int currentWeight = (profile?.weight ?? 78.5).round();
+    final int currentHeight = (profile?.height ?? 182.0).round();
     final int currentAge = profile?.age ?? 28;
     final String currentGender = profile?.gender ?? 'Male';
 
@@ -841,13 +1031,40 @@ class _ProfilePlaceholderScreenState
                     ),
                   ),
                   const SizedBox(height: 16),
-                  const Text(
-                    'Alex Morgan',
-                    style: TextStyle(
-                      fontSize: 26,
-                      fontWeight: FontWeight.w900,
-                      color: Colors.white,
-                      letterSpacing: -0.5,
+                  GestureDetector(
+                    onTap: () => _showRenameNameDialog(context),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          () {
+                            final user = FirebaseService.currentUser;
+                            if (user == null) return 'Zivo User';
+                            if (user.displayName != null && user.displayName!.isNotEmpty) {
+                              return user.displayName!;
+                            }
+                            if (user.isAnonymous) return 'Guest User';
+                            final email = user.email ?? '';
+                            if (email.contains('@')) {
+                              return email.split('@').first;
+                            }
+                            return email.isNotEmpty ? email : 'Zivo Member';
+                          }(),
+                          style: const TextStyle(
+                            fontSize: 26,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.white,
+                            letterSpacing: -0.5,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Icon(
+                          Icons.edit_rounded,
+                          color: Colors.white.withOpacity(0.6),
+                          size: 18,
+                        ),
+                      ],
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -917,7 +1134,7 @@ class _ProfilePlaceholderScreenState
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
-                                    '${currentWeight.toStringAsFixed(1)} kg',
+                                    '$currentWeight kg',
                                     style: TextStyle(
                                       color: isDark ? Colors.white : AppTheme.textPrimary,
                                       fontSize: 15,
@@ -962,7 +1179,7 @@ class _ProfilePlaceholderScreenState
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
-                                    '${currentHeight.round()} cm',
+                                    '$currentHeight cm',
                                     style: TextStyle(
                                       color: isDark ? Colors.white : AppTheme.textPrimary,
                                       fontSize: 15,
@@ -1097,6 +1314,15 @@ class _ProfilePlaceholderScreenState
                       onTap: () => _showProfilePicturePicker(context),
                     );
                   }(),
+                  const SizedBox(height: 12),
+                  _buildEditorField(
+                    _nameController,
+                    'Name',
+                    '',
+                    Icons.person_rounded,
+                    accentColor,
+                    keyboardType: TextInputType.name,
+                  ),
                   const SizedBox(height: 12),
                   _buildEditorField(
                     _ageController,
@@ -1785,42 +2011,209 @@ class _ProfilePlaceholderScreenState
             _buildAccordionSection(
               title: '🚪  Account',
               sectionKey: 'account',
-              content: GestureDetector(
-                onTap: () {
-                  _showResetDialog(context, ref);
-                },
-                child: Container(
-                  width: double.infinity,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: AppTheme.accentCoral.withOpacity(0.05),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                      color: AppTheme.accentCoral.withOpacity(0.3),
-                      width: 1.0,
-                    ),
-                  ),
-                  child: const Center(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.logout_rounded,
-                          color: AppTheme.accentCoral,
-                          size: 18,
-                        ),
-                        SizedBox(width: 8),
-                        Text(
-                          'Sign Out & Reset Logs',
-                          style: TextStyle(
-                            color: AppTheme.accentCoral,
-                            fontWeight: FontWeight.bold,
+              content: Column(
+                children: [
+                  // 0. Cloud Sync Button
+                  GestureDetector(
+                    onTap: () async {
+                      if (!FirebaseService.isLoggedIn) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Please sign in or create an account first to sync with cloud.'),
+                            backgroundColor: AppTheme.accentOrange,
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                        return;
+                      }
+                      showDialog(
+                        context: context,
+                        barrierDismissible: false,
+                        builder: (context) => const Center(
+                          child: CircularProgressIndicator(
+                            color: AppTheme.accentCyan,
                           ),
                         ),
-                      ],
+                      );
+                      try {
+                        await FirebaseService.syncLocalToCloud(context: context);
+                        if (mounted) {
+                          Navigator.pop(context); // Dismiss loader
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Cloud Sync completed successfully!'),
+                              backgroundColor: AppTheme.accentEmerald,
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        }
+                      } catch (e) {
+                        if (mounted) {
+                          Navigator.pop(context); // Dismiss loader
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Sync failed: $e'),
+                              backgroundColor: AppTheme.accentCoral,
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        }
+                      }
+                    },
+                    child: Container(
+                      width: double.infinity,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: accentColor.withOpacity(0.05),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: accentColor.withOpacity(0.3),
+                          width: 1.0,
+                        ),
+                      ),
+                      child: Center(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.cloud_sync_rounded,
+                              color: accentColor,
+                              size: 18,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Sync to Cloud',
+                              style: TextStyle(
+                                color: accentColor,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
-                ),
+                  const SizedBox(height: 12),
+
+                  // 1. Sign Out Button
+                  GestureDetector(
+                    onTap: () {
+                      _showSignOutDialog(context, ref);
+                    },
+                    child: Container(
+                      width: double.infinity,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: AppTheme.accentCyan.withOpacity(0.05),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: AppTheme.accentCyan.withOpacity(0.3),
+                          width: 1.0,
+                        ),
+                      ),
+                      child: const Center(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.logout_rounded,
+                              color: AppTheme.accentCyan,
+                              size: 18,
+                            ),
+                            SizedBox(width: 8),
+                            Text(
+                              'Sign Out',
+                              style: TextStyle(
+                                color: AppTheme.accentCyan,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // 2. Wipe Local Logs Button
+                  GestureDetector(
+                    onTap: () {
+                      _showWipeLogsDialog(context, ref);
+                    },
+                    child: Container(
+                      width: double.infinity,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: AppTheme.accentOrange.withOpacity(0.05),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: AppTheme.accentOrange.withOpacity(0.3),
+                          width: 1.0,
+                        ),
+                      ),
+                      child: const Center(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.delete_sweep_rounded,
+                              color: AppTheme.accentOrange,
+                              size: 18,
+                            ),
+                            SizedBox(width: 8),
+                            Text(
+                              'Wipe Local Logs',
+                              style: TextStyle(
+                                color: AppTheme.accentOrange,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // 3. Delete Account Forever Button
+                  GestureDetector(
+                    onTap: () {
+                      _showDeleteAccountDialog(context, ref);
+                    },
+                    child: Container(
+                      width: double.infinity,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: AppTheme.accentCoral.withOpacity(0.05),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: AppTheme.accentCoral.withOpacity(0.3),
+                          width: 1.0,
+                        ),
+                      ),
+                      child: const Center(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.delete_forever_rounded,
+                              color: AppTheme.accentCoral,
+                              size: 18,
+                            ),
+                            SizedBox(width: 8),
+                            Text(
+                              'Delete Account Forever',
+                              style: TextStyle(
+                                color: AppTheme.accentCoral,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 24),
@@ -1842,6 +2235,54 @@ class _ProfilePlaceholderScreenState
   }
 
 
+
+  void _showRenameNameDialog(BuildContext context) {
+    final controller = TextEditingController(text: FirebaseService.currentUser?.displayName ?? '');
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: isDark ? const Color(0xFF1C1E1B) : Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(color: isDark ? const Color(0xFF323530) : AppTheme.glassBorder, width: 1),
+        ),
+        title: Text(
+          'Edit Profile Name',
+          style: TextStyle(color: isDark ? Colors.white : AppTheme.textPrimary, fontWeight: FontWeight.bold, fontSize: 16),
+        ),
+        content: TextField(
+          controller: controller,
+          style: TextStyle(color: isDark ? Colors.white : AppTheme.textPrimary),
+          decoration: InputDecoration(
+            hintText: 'Enter name...',
+            focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: ref.read(accentColorProvider))),
+          ),
+        ),
+        actions: [
+          TextButton(
+            child: const Text('Cancel', style: TextStyle(color: AppTheme.textSecondary)),
+            onPressed: () => Navigator.pop(ctx),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: ref.read(accentColorProvider),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text('Save', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+            onPressed: () async {
+              final newName = controller.text.trim();
+              if (newName.isNotEmpty) {
+                _nameController.text = newName;
+                _saveProfileDataSilent();
+              }
+              Navigator.pop(ctx);
+            },
+          ),
+        ],
+      ),
+    );
+  }
 
   String _formatTimeOfDay(TimeOfDay tod) {
     final hour = tod.hourOfPeriod == 0 ? 12 : tod.hourOfPeriod;
@@ -2173,8 +2614,9 @@ class _ProfilePlaceholderScreenState
     String label,
     String suffix,
     IconData icon,
-    Color color,
-  ) {
+    Color color, {
+    TextInputType keyboardType = TextInputType.number,
+  }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final fieldBg = isDark
         ? const Color(0xFF1C1E1B)
@@ -2191,7 +2633,7 @@ class _ProfilePlaceholderScreenState
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 1),
       child: TextField(
         controller: ctrl,
-        keyboardType: TextInputType.number,
+        keyboardType: keyboardType,
         style: TextStyle(
           color: textColor,
           fontWeight: FontWeight.bold,
@@ -2490,7 +2932,7 @@ class _ProfilePlaceholderScreenState
   }
 
 
-  void _showResetDialog(BuildContext context, WidgetRef ref) {
+  void _showSignOutDialog(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final dialogBg = isDark ? const Color(0xFF1C1E1B) : Colors.white;
     final dialogBorder = isDark ? const Color(0xFF323530) : const Color(0xFFEADBFF);
@@ -2505,7 +2947,7 @@ class _ProfilePlaceholderScreenState
           side: BorderSide(color: dialogBorder, width: 1.0),
         ),
         title: Text(
-          'Wipe Stored Health Logs?',
+          'Sign Out?',
           style: TextStyle(
             color: textColor,
             fontWeight: FontWeight.bold,
@@ -2513,7 +2955,151 @@ class _ProfilePlaceholderScreenState
           ),
         ),
         content: const Text(
-          'This will permanently delete your stored user profile settings, daily nutrition logs, water counts, and logged gym history. You will return to the setup guide.',
+          'You will be signed out of your account. Your health logs are saved in the cloud and will be restored when you sign in again.',
+          style: TextStyle(
+            color: AppTheme.textSecondary,
+            fontSize: 13,
+            height: 1.4,
+          ),
+        ),
+        actions: [
+          TextButton(
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: AppTheme.textSecondary),
+            ),
+            onPressed: () => Navigator.of(ctx).pop(),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.accentCyan,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: const Text(
+              'Sign Out',
+              style: TextStyle(
+                color: Color(0xFF0E0F0C),
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            onPressed: () async {
+              Navigator.of(ctx).pop();
+              if (ctx.mounted) {
+                ctx.go('/auth');
+              }
+              await ref.read(profileProvider.notifier).clearProfile();
+              _calController.clear();
+              _protController.clear();
+              _watController.clear();
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showWipeLogsDialog(BuildContext context, WidgetRef ref) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final dialogBg = isDark ? const Color(0xFF1C1E1B) : Colors.white;
+    final dialogBorder = isDark ? const Color(0xFF323530) : const Color(0xFFEADBFF);
+    final textColor = isDark ? Colors.white : AppTheme.textPrimary;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: dialogBg,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(color: dialogBorder, width: 1.0),
+        ),
+        title: Text(
+          'Wipe Local Logs?',
+          style: TextStyle(
+            color: textColor,
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+          ),
+        ),
+        content: const Text(
+          'This will permanently delete your locally stored user profile, daily metrics, and workouts cache. It will not delete your cloud account.',
+          style: TextStyle(
+            color: AppTheme.textSecondary,
+            fontSize: 13,
+            height: 1.4,
+          ),
+        ),
+        actions: [
+          TextButton(
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: AppTheme.textSecondary),
+            ),
+            onPressed: () => Navigator.of(ctx).pop(),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.accentOrange,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: const Text(
+              'Wipe Logs',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            onPressed: () async {
+              Navigator.of(ctx).pop();
+              if (ctx.mounted) {
+                ctx.go('/auth');
+              }
+              // Wipe local data without signing out of Firebase
+              await StorageService.clearAllData();
+              ref.invalidate(profileProvider);
+              ref.invalidate(workoutHistoryProvider);
+              ref.invalidate(pinnedWidgetsProvider);
+              ref.invalidate(remindersProvider);
+              ref.invalidate(profilePictureProvider);
+              ref.invalidate(customBackgroundProvider);
+
+              _calController.clear();
+              _protController.clear();
+              _watController.clear();
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteAccountDialog(BuildContext context, WidgetRef ref) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final dialogBg = isDark ? const Color(0xFF1C1E1B) : Colors.white;
+    final dialogBorder = isDark ? const Color(0xFF323530) : const Color(0xFFEADBFF);
+    final textColor = isDark ? Colors.white : AppTheme.textPrimary;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: dialogBg,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(color: dialogBorder, width: 1.0),
+        ),
+        title: Text(
+          'Delete Account Forever?',
+          style: TextStyle(
+            color: textColor,
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+          ),
+        ),
+        content: const Text(
+          'WARNING: This action is permanent and cannot be undone. All your profile settings, workout history, and cloud logs will be deleted forever.',
           style: TextStyle(
             color: AppTheme.textSecondary,
             fontSize: 13,
@@ -2536,7 +3122,7 @@ class _ProfilePlaceholderScreenState
               ),
             ),
             child: const Text(
-              'Wipe Stored Logs',
+              'Delete Forever',
               style: TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
@@ -2544,12 +3130,27 @@ class _ProfilePlaceholderScreenState
             ),
             onPressed: () async {
               Navigator.of(ctx).pop();
-              await ref.read(profileProvider.notifier).clearProfile();
-              _calController.clear();
-              _protController.clear();
-              _watController.clear();
               if (ctx.mounted) {
-                ctx.go('/');
+                ctx.go('/auth');
+              }
+              try {
+                await FirebaseService.deleteUserAccountForever();
+                ref.invalidate(profileProvider);
+                ref.invalidate(workoutHistoryProvider);
+                ref.invalidate(pinnedWidgetsProvider);
+                ref.invalidate(remindersProvider);
+                ref.invalidate(profilePictureProvider);
+                ref.invalidate(customBackgroundProvider);
+
+                _calController.clear();
+                _protController.clear();
+                _watController.clear();
+              } catch (e) {
+                if (ctx.mounted) {
+                  ScaffoldMessenger.of(ctx).showSnackBar(
+                    SnackBar(content: Text('Failed to delete account: $e')),
+                  );
+                }
               }
             },
           ),

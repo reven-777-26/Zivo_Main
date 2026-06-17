@@ -11,6 +11,7 @@ import 'storage_service.dart';
 import 'firebase_service.dart';
 import 'widget_sync_service.dart';
 import 'workout_notification_service.dart';
+import 'scanner/ai_analysis_service.dart';
 
 class NotificationManager {
   static final StreamController<Map<String, String>> controller =
@@ -266,11 +267,12 @@ final customBackgroundProvider = StateProvider<String?>((ref) {
 final profileProvider = StateNotifierProvider<ProfileNotifier, UserProfile?>((
   ref,
 ) {
-  return ProfileNotifier();
+  return ProfileNotifier(ref);
 });
 
 class ProfileNotifier extends StateNotifier<UserProfile?> {
-  ProfileNotifier() : super(StorageService.getUserProfile());
+  final Ref ref;
+  ProfileNotifier(this.ref) : super(StorageService.getUserProfile());
 
   Future<void> saveProfile(UserProfile profile) async {
     await StorageService.saveUserProfile(profile);
@@ -282,6 +284,11 @@ class ProfileNotifier extends StateNotifier<UserProfile?> {
   Future<void> clearProfile() async {
     await FirebaseService.signOut();
     state = null;
+    ref.invalidate(workoutHistoryProvider);
+    ref.invalidate(pinnedWidgetsProvider);
+    ref.invalidate(remindersProvider);
+    ref.invalidate(profilePictureProvider);
+    ref.invalidate(customBackgroundProvider);
   }
 }
 
@@ -318,6 +325,31 @@ class DailyMetricsNotifier extends StateNotifier<Map<String, dynamic>> {
     metrics['carbs'] = (metrics['carbs'] ?? 0) + carbs;
     metrics['fat'] = (metrics['fat'] ?? 0) + fat;
 
+    String? finalImageUrl = imageUrl;
+    if (imageUrl != null && !imageUrl.startsWith('http')) {
+      // 1. Optimize the image locally first to keep base64 stored in Hive as small as possible
+      final compressedBase64 = AiAnalysisService.optimizeImage(imageUrl);
+      finalImageUrl = compressedBase64;
+
+      // 2. Upload to Storage if logged in
+      if (FirebaseService.isLoggedIn) {
+        try {
+          final timestamp = DateTime.now().millisecondsSinceEpoch.toString();
+          final url = await FirebaseService.uploadFoodPhoto(
+            uid: FirebaseService.currentUser!.uid,
+            dateStr: dateStr,
+            fileName: '${mealKey}_$timestamp',
+            base64Content: compressedBase64,
+          );
+          if (url != null) {
+            finalImageUrl = url;
+          }
+        } catch (e) {
+          debugPrint("Failed to upload food photo to Storage (offline fallback): $e");
+        }
+      }
+    }
+
     if (foodName != null && foodName.trim().isNotEmpty) {
       final items = List<Map<String, dynamic>>.from(
         (metrics['logged_items'] as List?)?.map(
@@ -337,7 +369,7 @@ class DailyMetricsNotifier extends StateNotifier<Map<String, dynamic>> {
         'fat': fat,
         'meal': mealLabel,
         'time': timestamp,
-        if (imageUrl != null) 'imageUrl': imageUrl,
+        if (finalImageUrl != null) 'imageUrl': finalImageUrl,
       });
       metrics['logged_items'] = items;
     }

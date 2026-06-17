@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme.dart';
 import '../../core/logo_widget.dart';
 import '../../services/firebase_service.dart';
+import '../../services/state_providers.dart';
+import '../../services/storage_service.dart';
 
 class AuthScreen extends ConsumerStatefulWidget {
   const AuthScreen({super.key});
@@ -17,6 +19,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _reenterPasswordController = TextEditingController();
 
   bool _isSignUp = false;
   bool _isLoading = false;
@@ -26,6 +29,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _reenterPasswordController.dispose();
     super.dispose();
   }
 
@@ -50,7 +54,19 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
         );
       }
       if (mounted) {
-        context.go('/home');
+        ref.invalidate(profileProvider);
+        ref.invalidate(workoutHistoryProvider);
+        ref.invalidate(pinnedWidgetsProvider);
+        ref.invalidate(remindersProvider);
+        ref.invalidate(profilePictureProvider);
+        ref.invalidate(customBackgroundProvider);
+
+        final profile = StorageService.getUserProfile();
+        if (profile != null) {
+          context.go('/home');
+        } else {
+          context.go('/onboarding');
+        }
       }
     } catch (e) {
       setState(() {
@@ -74,7 +90,19 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     try {
       final cred = await FirebaseService.signInWithGoogle();
       if (cred != null && mounted) {
-        context.go('/home');
+        ref.invalidate(profileProvider);
+        ref.invalidate(workoutHistoryProvider);
+        ref.invalidate(pinnedWidgetsProvider);
+        ref.invalidate(remindersProvider);
+        ref.invalidate(profilePictureProvider);
+        ref.invalidate(customBackgroundProvider);
+
+        final profile = StorageService.getUserProfile();
+        if (profile != null) {
+          context.go('/home');
+        } else {
+          context.go('/onboarding');
+        }
       }
     } catch (e) {
       setState(() {
@@ -98,7 +126,59 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     try {
       await FirebaseService.signInAnonymously();
       if (mounted) {
-        context.go('/home');
+        ref.invalidate(profileProvider);
+        ref.invalidate(workoutHistoryProvider);
+        ref.invalidate(pinnedWidgetsProvider);
+        ref.invalidate(remindersProvider);
+        ref.invalidate(profilePictureProvider);
+        ref.invalidate(customBackgroundProvider);
+
+        final profile = StorageService.getUserProfile();
+        if (profile != null) {
+          context.go('/home');
+        } else {
+          context.go('/onboarding');
+        }
+      }
+    } catch (e) {
+      setState(() {
+        _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _resetPassword() async {
+    final email = _emailController.text.trim();
+    if (email.isEmpty || !email.contains('@')) {
+      setState(() {
+        _errorMessage = 'Please enter a valid email address first to reset your password.';
+      });
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      await FirebaseService.sendPasswordResetEmail(email);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Password reset link sent to $email',
+              style: const TextStyle(color: Color(0xFF0E0F0C)),
+            ),
+            backgroundColor: AppTheme.accentCyan,
+          ),
+        );
       }
     } catch (e) {
       setState(() {
@@ -247,6 +327,63 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                               return null;
                             },
                           ),
+                          if (_isSignUp) ...[
+                            const SizedBox(height: 16),
+                            TextFormField(
+                              controller: _reenterPasswordController,
+                              obscureText: true,
+                              style: TextStyle(color: isDark ? Colors.white : AppTheme.textPrimary),
+                              decoration: InputDecoration(
+                                hintText: 'Re-enter Password',
+                                hintStyle: TextStyle(color: isDark ? AppTheme.textSecondary : AppTheme.textTertiary),
+                                prefixIcon: Icon(Icons.lock_outline, color: isDark ? AppTheme.textSecondary : AppTheme.textTertiary),
+                                filled: true,
+                                fillColor: isDark ? Colors.black.withOpacity(0.4) : const Color(0xFFF0F2EE),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(color: isDark ? const Color(0xFF323530) : AppTheme.glassBorder, width: 1.0),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(color: isDark ? const Color(0xFF323530) : AppTheme.glassBorder, width: 1.0),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: const BorderSide(color: AppTheme.accentCyan, width: 1.5),
+                                ),
+                              ),
+                              validator: (val) {
+                                if (val == null || val.isEmpty) {
+                                  return 'Please re-enter your password';
+                                }
+                                if (val != _passwordController.text) {
+                                  return 'Passwords do not match';
+                                }
+                                return null;
+                              },
+                            ),
+                          ],
+                          const SizedBox(height: 8),
+                          if (!_isSignUp)
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: TextButton(
+                                style: TextButton.styleFrom(
+                                  padding: EdgeInsets.zero,
+                                  minimumSize: const Size(0, 0),
+                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                ),
+                                onPressed: _isLoading ? null : _resetPassword,
+                                child: Text(
+                                  'Forgot Password?',
+                                  style: TextStyle(
+                                    color: isDark ? AppTheme.accentCyan : const Color(0xFF163300),
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ),
                           const SizedBox(height: 24),
                           ElevatedButton(
                             style: ElevatedButton.styleFrom(
@@ -310,17 +447,25 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                       Expanded(
                         child: OutlinedButton.icon(
                           style: OutlinedButton.styleFrom(
-                            side: BorderSide(color: isDark ? const Color(0xFF323530) : AppTheme.glassBorder, width: 1.0),
+                            backgroundColor: Colors.white,
+                            side: const BorderSide(color: Color(0xFFDCDCDC), width: 1.0),
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(24), // rounded.xl (24px)
                             ),
                           ),
                           onPressed: _isLoading ? null : _signInWithGoogle,
-                          icon: Icon(Icons.g_mobiledata, size: 28, color: isDark ? AppTheme.accentCyan : const Color(0xFF163300)),
-                          label: Text(
+                          icon: Image.network(
+                            'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/120px-Google_%22G%22_logo.png',
+                            height: 18,
+                            width: 18,
+                            errorBuilder: (context, error, stackTrace) {
+                              return const Icon(Icons.g_mobiledata, size: 28, color: Color(0xFF4285F4));
+                            },
+                          ),
+                          label: const Text(
                             'Google',
-                            style: TextStyle(color: isDark ? Colors.white : AppTheme.textPrimary, fontWeight: FontWeight.w600),
+                            style: TextStyle(color: Color(0xFF1F1F1F), fontWeight: FontWeight.w600),
                           ),
                         ),
                       ),
@@ -354,6 +499,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                       setState(() {
                         _isSignUp = !_isSignUp;
                         _errorMessage = null;
+                        _reenterPasswordController.clear();
                       });
                     },
                     child: Text(

@@ -4050,6 +4050,8 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
   void _showFinishWorkoutSheet(BuildContext context) {
     bool saveAsTemplate = false;
     final templateNameController = TextEditingController(text: 'My Workout Preset');
+    final currentProfile = ref.read(profileProvider);
+    final weightController = TextEditingController(text: currentProfile?.weight?.toString() ?? '70.0');
     String? selfieBase64;
 
     showModalBottomSheet(
@@ -4115,6 +4117,36 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
                       decoration: InputDecoration(
                         hintText:
                             'Add workout notes (e.g. felt strong on Squat)...',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide(color: isDark ? const Color(0xFF323530) : AppTheme.glassBorder),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide(color: accentColor),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Body Weight logging section
+                    Text(
+                      '⚖️ CURRENT BODY WEIGHT (KG)',
+                      style: TextStyle(
+                        color: isDark ? const Color(0xFF868685) : AppTheme.textSecondary,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.0,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: weightController,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      style: TextStyle(color: textColor, fontSize: 14),
+                      decoration: InputDecoration(
+                        hintText: 'Enter your body weight in kg...',
+                        prefixIcon: Icon(Icons.scale_rounded, color: isDark ? const Color(0xFF868685) : AppTheme.textSecondary, size: 18),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(14),
                           borderSide: BorderSide(color: isDark ? const Color(0xFF323530) : AppTheme.glassBorder),
@@ -4275,6 +4307,20 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
                     GestureDetector(
                       onTap: () async {
                         final notes = _notesController.text.trim();
+
+                        // Save body weight if entered
+                        final double? parsedWeight = double.tryParse(weightController.text.trim());
+                        if (parsedWeight != null && parsedWeight > 0) {
+                          final currentProfile = ref.read(profileProvider);
+                          if (currentProfile != null) {
+                            final updatedProfile = currentProfile.copyWith(weight: parsedWeight);
+                            await ref.read(profileProvider.notifier).saveProfile(updatedProfile);
+                          }
+                          final dateStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
+                          final metrics = StorageService.getDailyMetrics(dateStr);
+                          metrics['weight'] = parsedWeight;
+                          await ref.read(dailyMetricsProvider(dateStr).notifier).saveMetrics(metrics);
+                        }
 
                         if (saveAsTemplate &&
                             templateNameController.text.trim().isNotEmpty) {
