@@ -627,6 +627,7 @@ class _ProfilePlaceholderScreenState
 
     await StorageService.saveCarbsGoal(carbsInput);
     await StorageService.saveFatsGoal(fatsInput);
+    FirebaseService.saveSettingsCloud();
 
     await ref.read(profileProvider.notifier).saveProfile(updatedProfile);
     ref.invalidate(profileProvider); // force invalidate to refresh dashboard targets
@@ -777,6 +778,7 @@ class _ProfilePlaceholderScreenState
                   ImagePickerHelper.pickImage((base64, name, filePath) {
                     ref.read(profilePictureProvider.notifier).state = base64;
                     StorageService.saveProfilePicture(base64);
+                    FirebaseService.saveProfilePictureCloud(base64);
                   });
                 },
               ),
@@ -790,10 +792,11 @@ class _ProfilePlaceholderScreenState
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  onTap: () {
+                   onTap: () {
                     Navigator.pop(context);
                     ref.read(profilePictureProvider.notifier).state = null;
                     StorageService.saveProfilePicture(null);
+                    FirebaseService.saveProfilePictureCloud(null);
                   },
                 ),
               ListTile(
@@ -1568,6 +1571,7 @@ class _ProfilePlaceholderScreenState
                             _auraNotificationsEnabled = val;
                           });
                           StorageService.setAuraNotificationsEnabled(val);
+                          FirebaseService.saveSettingsCloud();
                         },
                       ),
                     ],
@@ -1704,6 +1708,7 @@ class _ProfilePlaceholderScreenState
                                         ImagePickerHelper.pickImage((base64, name, filePath) {
                                           ref.read(customBackgroundProvider.notifier).state = base64;
                                           StorageService.saveCustomBackground(base64);
+                                          FirebaseService.saveCustomBackgroundCloud(base64);
                                         });
                                       },
                                     ),
@@ -1720,6 +1725,7 @@ class _ProfilePlaceholderScreenState
                                         Navigator.pop(context);
                                         ref.read(customBackgroundProvider.notifier).state = null;
                                         StorageService.saveCustomBackground(null);
+                                        FirebaseService.saveCustomBackgroundCloud(null);
                                       },
                                     ),
                                     ListTile(
@@ -1741,6 +1747,7 @@ class _ProfilePlaceholderScreenState
                           ImagePickerHelper.pickImage((base64, name, filePath) {
                             ref.read(customBackgroundProvider.notifier).state = base64;
                             StorageService.saveCustomBackground(base64);
+                            FirebaseService.saveCustomBackgroundCloud(base64);
                           });
                         }
                       },
@@ -2867,6 +2874,7 @@ class _ProfilePlaceholderScreenState
             onTap: () {
               ref.read(accentColorIndexProvider.notifier).state = index;
               StorageService.saveAccentColorIndex(index);
+              FirebaseService.saveSettingsCloud();
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text('Accent color changed to ${colorNames[index]} (Preview)'),

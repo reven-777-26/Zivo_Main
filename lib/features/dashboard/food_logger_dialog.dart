@@ -102,10 +102,17 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
   late TextEditingController _reviewCarbsController;
   late TextEditingController _reviewFatController;
 
+  // Manual flow controllers
+  final TextEditingController _manualNameController = TextEditingController();
+  final TextEditingController _manualCalController = TextEditingController();
+  final TextEditingController _manualProteinController = TextEditingController();
+  final TextEditingController _manualCarbsController = TextEditingController();
+  final TextEditingController _manualFatController = TextEditingController();
+
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 5, vsync: this);
     _tabController.addListener(_handleTabSelection);
     _initSpeech();
     _initializeCamera();
@@ -129,6 +136,11 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
     _tabController.dispose();
     _barcodeController.dispose();
     _textDescriptionController.dispose();
+    _manualNameController.dispose();
+    _manualCalController.dispose();
+    _manualProteinController.dispose();
+    _manualCarbsController.dispose();
+    _manualFatController.dispose();
     _disposeCamera();
     super.dispose();
   }
@@ -184,7 +196,7 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
 
     if (kIsWeb) {
       _webFrameTimer = Timer.periodic(const Duration(milliseconds: 600), (timer) async {
-        if (_isLoading || _isProcessingFrame || !mounted || _tabController.index != 0 || _showReview || _cameraController == null || !_isCameraInitialized || !_cameraController!.value.isInitialized) return;
+        if (_isLoading || _isProcessingFrame || !mounted || _tabController.index != 1 || _showReview || _cameraController == null || !_isCameraInitialized || !_cameraController!.value.isInitialized) return;
         _isProcessingFrame = true;
         try {
           final XFile file = await _cameraController!.takePicture();
@@ -214,7 +226,7 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
       });
     } else {
       _cameraController!.startImageStream((CameraImage image) async {
-        if (_isLoading || _isProcessingFrame || !mounted || _tabController.index != 0 || _showReview) return;
+        if (_isLoading || _isProcessingFrame || !mounted || _tabController.index != 1 || _showReview) return;
         _isProcessingFrame = true;
         try {
           final barcode = await NativeBarcodeScanner.scanCameraImage(image, _cameraController!.description);
@@ -250,7 +262,7 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
   }
 
   void _handleTabSelection() {
-    if (_tabController.index == 0) {
+    if (_tabController.index == 1) {
       if (_cameraController == null) {
         _initializeCamera();
       }
@@ -929,10 +941,11 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
             indicatorSize: TabBarIndicatorSize.tab,
             dividerColor: Colors.transparent,
             tabs: const [
-              Tab(icon: Icon(Icons.qr_code_scanner_rounded, size: 18)),
               Tab(icon: Icon(Icons.camera_alt_rounded, size: 18)),
+              Tab(icon: Icon(Icons.qr_code_scanner_rounded, size: 18)),
               Tab(icon: Icon(Icons.mic_rounded, size: 18)),
               Tab(icon: Icon(Icons.edit_note_rounded, size: 18)),
+              Tab(icon: Icon(Icons.post_add_rounded, size: 18)),
             ],
           ),
         ),
@@ -1010,10 +1023,11 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
                 controller: _tabController,
                 physics: const NeverScrollableScrollPhysics(),
                 children: [
-                  _buildBarcodeFlow(isDark),
                   _buildPhotoFlow(isDark),
+                  _buildBarcodeFlow(isDark),
                   _buildVoiceFlow(isDark),
                   _buildTextFlow(isDark),
+                  _buildManualFlow(isDark),
                 ],
               ),
             ),
@@ -1708,6 +1722,200 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
     ),
   );
 }
+
+  Widget _buildManualFlow(bool isDark) {
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            "MANUAL ENTRY",
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1.0,
+              color: AppTheme.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _manualNameController,
+            style: TextStyle(color: isDark ? Colors.white : Colors.black),
+            decoration: InputDecoration(
+              hintText: "Meal Name (e.g. Rice and Chicken)...",
+              hintStyle: const TextStyle(color: AppTheme.textSecondary),
+              filled: true,
+              fillColor: isDark ? Colors.white.withOpacity(0.02) : Colors.black.withOpacity(0.02),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: isDark ? const Color(0xFF323530) : AppTheme.glassBorder),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: isDark ? const Color(0xFF323530) : AppTheme.glassBorder),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: AppTheme.accentCyan),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _manualCalController,
+            keyboardType: TextInputType.number,
+            style: TextStyle(color: isDark ? Colors.white : Colors.black),
+            decoration: InputDecoration(
+              hintText: "Calories (kcal)...",
+              hintStyle: const TextStyle(color: AppTheme.textSecondary),
+              filled: true,
+              fillColor: isDark ? Colors.white.withOpacity(0.02) : Colors.black.withOpacity(0.02),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: isDark ? const Color(0xFF323530) : AppTheme.glassBorder),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: isDark ? const Color(0xFF323530) : AppTheme.glassBorder),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: AppTheme.accentCyan),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _manualProteinController,
+                  keyboardType: TextInputType.number,
+                  style: TextStyle(color: isDark ? Colors.white : Colors.black),
+                  decoration: InputDecoration(
+                    hintText: "Protein (g)",
+                    hintStyle: const TextStyle(color: AppTheme.textSecondary, fontSize: 12),
+                    filled: true,
+                    fillColor: isDark ? Colors.white.withOpacity(0.02) : Colors.black.withOpacity(0.02),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: isDark ? const Color(0xFF323530) : AppTheme.glassBorder),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: TextField(
+                  controller: _manualCarbsController,
+                  keyboardType: TextInputType.number,
+                  style: TextStyle(color: isDark ? Colors.white : Colors.black),
+                  decoration: InputDecoration(
+                    hintText: "Carbs (g)",
+                    hintStyle: const TextStyle(color: AppTheme.textSecondary, fontSize: 12),
+                    filled: true,
+                    fillColor: isDark ? Colors.white.withOpacity(0.02) : Colors.black.withOpacity(0.02),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: isDark ? const Color(0xFF323530) : AppTheme.glassBorder),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: TextField(
+                  controller: _manualFatController,
+                  keyboardType: TextInputType.number,
+                  style: TextStyle(color: isDark ? Colors.white : Colors.black),
+                  decoration: InputDecoration(
+                    hintText: "Fat (g)",
+                    hintStyle: const TextStyle(color: AppTheme.textSecondary, fontSize: 12),
+                    filled: true,
+                    fillColor: isDark ? Colors.white.withOpacity(0.02) : Colors.black.withOpacity(0.02),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: isDark ? const Color(0xFF323530) : AppTheme.glassBorder),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          _buildCategorySelector(isDark),
+          const SizedBox(height: 20),
+          GestureDetector(
+            onTap: () {
+              final String name = _manualNameController.text.trim().isNotEmpty ? _manualNameController.text.trim() : "Manual Meal";
+              final int cal = int.tryParse(_manualCalController.text) ?? 0;
+              final int prot = int.tryParse(_manualProteinController.text) ?? 0;
+              final int carb = int.tryParse(_manualCarbsController.text) ?? 0;
+              final int fat = int.tryParse(_manualFatController.text) ?? 0;
+
+              final selectedDate = ref.read(selectedDateProvider);
+              ref.read(dailyMetricsProvider(selectedDate).notifier).logMeal(
+                    mealKey: _selectedMealKey,
+                    calories: cal,
+                    protein: prot,
+                    carbs: carb,
+                    fat: fat,
+                    foodName: name,
+                  );
+
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  backgroundColor: AppTheme.accentEmerald,
+                  content: Row(
+                    children: [
+                      const Icon(Icons.check_circle_rounded, color: Colors.black),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          "Successfully Logged: $name!",
+                          style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+
+              _manualNameController.clear();
+              _manualCalController.clear();
+              _manualProteinController.clear();
+              _manualCarbsController.clear();
+              _manualFatController.clear();
+
+              Navigator.of(context).pop();
+            },
+            child: Container(
+              height: 52,
+              decoration: BoxDecoration(
+                color: AppTheme.accentCyan,
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: const Center(
+                child: Text(
+                  "Log Meal",
+                  style: TextStyle(
+                    color: AppTheme.textPrimary,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _buildCategorySelector(bool isDark) {
     final categories = [

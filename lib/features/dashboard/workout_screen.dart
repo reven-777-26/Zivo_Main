@@ -521,6 +521,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
                                                         ),
                                                         onPressed: () async {
                                                           await StorageService.deleteWorkoutTemplate(name);
+                                                          FirebaseService.deleteWorkoutTemplateCloud(name);
                                                           setSheetState(() {});
                                                           setState(() {});
                                                         },
@@ -1026,6 +1027,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
                                           GestureDetector(
                                             onTap: () async {
                                               await StorageService.deleteWorkoutTemplate(name);
+                                              FirebaseService.deleteWorkoutTemplateCloud(name);
                                               setState(() {});
                                             },
                                             child: const Icon(
@@ -4333,6 +4335,10 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
                             'name': templateNameController.text.trim(),
                             'exercises': exData,
                           });
+                          FirebaseService.saveWorkoutTemplateCloud({
+                            'name': templateNameController.text.trim(),
+                            'exercises': exData,
+                          });
                         }
 
                         // Save selfie base64 to daily metrics key 'gym_pic'
@@ -4645,6 +4651,10 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
                           return;
                         }
                         await StorageService.saveWorkoutTemplate({
+                          'name': name,
+                          'exercises': selectedExercises,
+                        });
+                        FirebaseService.saveWorkoutTemplateCloud({
                           'name': name,
                           'exercises': selectedExercises,
                         });

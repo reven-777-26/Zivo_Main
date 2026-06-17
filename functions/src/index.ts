@@ -414,13 +414,7 @@ function buildFoodPrompt(payloadStr: string): string {
     "2. grade: A/B/C/D/E",
     "3. verdict: max 12 words",
     "4. insights: 3-5, start with ❌, ⚠, ✅",
-    "5. decodedIngredients: Decode ONLY ingredients of concern " +
-      "(safety: Caution or Avoid, sneaky sugars, palm oil, warning items, " +
-      "artificial sweeteners, or harmful chemical additives). Do not " +
-      "create detailed decodedIngredients entries for standard safe " +
-      "ingredients (like water, oats, salt, wheat flour); these can " +
-      "be completely omitted from the decoded list to keep the " +
-      "response concise. Max 12-word description for each entry.",
+    "5. decodedIngredients: Decode ALL ingredients present in the product, providing their safety status (Safe, Caution, or Avoid), standard meaning/category, and a short 1-sentence description (max 12 words) for each. Do not omit any ingredients; the user needs to see the complete individual ingredient breakdown.",
     "6. allergyWarnings: list allergen warnings (e.g. " +
       "nuts, dairy, soy, gluten, wheat, egg).",
     "7. alternatives: 3 real Indian products (e.g. " +
@@ -443,11 +437,7 @@ function buildSupplementPrompt(
     "2. grade: A/B/C/D/E",
     "3. verdict: max 12 words",
     "4. insights: 3-5, start with ❌, ⚠, ✅",
-    "5. decodedIngredients: Decode ONLY ingredients of concern " +
-      "(safety: Caution or Avoid, artificial sweeteners, fillers, " +
-      "binders, artificial colors, or heavy preservatives). Omit basic " +
-      "harmless ingredients from the decoded list to keep the response " +
-      "concise. Max 12-word description for each entry.",
+    "5. decodedIngredients: Decode ALL ingredients present in the product, providing their safety status (Safe, Caution, or Avoid), standard meaning/category, and a short 1-sentence description (max 12 words) for each. Do not omit any ingredients; the user needs to see the complete individual ingredient breakdown.",
     "6. allergyWarnings: list allergen warnings (nuts, " +
       "dairy, soy, gluten, etc).",
     "7. alternatives: 3 real Indian products (Nutrabay, " +
@@ -470,12 +460,7 @@ function buildSkincarePrompt(
     "2. grade: A/B/C/D/E",
     "3. verdict: max 12 words",
     "4. insights: 3-5, start with ❌, ⚠, ✅",
-    "5. decodedIngredients: Decode ONLY ingredients of concern " +
-      "(safety: Caution or Avoid, acne triggers, drying alcohols, " +
-      "parabens, sulfates, silicones, synthetic fragrances, or " +
-      "contact allergens). Omit basic harmless skin-identical " +
-      "ingredients or water from the decoded list to keep the " +
-      "response concise. Max 12-word description for each entry.",
+    "5. decodedIngredients: Decode ALL ingredients present in the product, providing their safety status (Safe, Caution, or Avoid), standard meaning/category, and a short 1-sentence description (max 12 words) for each. Do not omit any ingredients; the user needs to see the complete individual ingredient breakdown.",
     "6. allergyWarnings: list contact allergens or " +
       "irritants warnings (e.g. linalool, limonene, essential oils).",
     "7. alternatives: 3 real Indian products (Minimalist, " +

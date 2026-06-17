@@ -5,6 +5,7 @@ import '../../../../utils/image_picker_helper.dart';
 import '../services/vision_storage_service.dart';
 import '../services/unified_vision_service.dart';
 import '../../../../services/scanner/ai_analysis_service.dart';
+import '../../../../services/firebase_service.dart';
 
 class UnifiedVisionState {
   final AsyncValue<UnifiedProductReport?> currentReport;
@@ -140,6 +141,7 @@ class UnifiedVisionNotifier extends StateNotifier<UnifiedVisionState> {
         );
 
         await VisionStorageService.cacheProduct(report.category, cleanBarcode, report.toJson());
+        FirebaseService.saveVisionHistoryCloud(report.category, cleanBarcode, report.toJson());
         state = state.copyWith(
           isScanning: false,
           currentReport: AsyncValue.data(report),
@@ -175,6 +177,7 @@ class UnifiedVisionNotifier extends StateNotifier<UnifiedVisionState> {
       );
 
       await VisionStorageService.cacheProduct(category, cleanBarcode, report.toJson());
+      FirebaseService.saveVisionHistoryCloud(category, cleanBarcode, report.toJson());
       state = state.copyWith(
         isScanning: false,
         currentReport: AsyncValue.data(report),
@@ -195,6 +198,7 @@ class UnifiedVisionNotifier extends StateNotifier<UnifiedVisionState> {
         );
 
         await VisionStorageService.cacheProduct(category, cleanBarcode, report.toJson());
+        FirebaseService.saveVisionHistoryCloud(category, cleanBarcode, report.toJson());
         state = state.copyWith(
           isScanning: false,
           currentReport: AsyncValue.data(report),
@@ -372,6 +376,7 @@ class UnifiedVisionNotifier extends StateNotifier<UnifiedVisionState> {
       // Cache the result under the image hash AND the slug key
       await VisionStorageService.cacheProduct(report.category, imgHashKey, report.toJson());
       await VisionStorageService.cacheProduct(report.category, finalSlugKey, report.toJson());
+      FirebaseService.saveVisionHistoryCloud(report.category, imgHashKey, report.toJson());
 
       state = state.copyWith(
         isScanning: false,
@@ -409,6 +414,7 @@ class UnifiedVisionNotifier extends StateNotifier<UnifiedVisionState> {
       );
 
       await VisionStorageService.cacheProduct(report.category, currentVal.barcode, report.toJson());
+      FirebaseService.saveVisionHistoryCloud(report.category, currentVal.barcode, report.toJson());
 
       state = state.copyWith(
         isScanning: false,

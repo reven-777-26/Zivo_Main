@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:image/image.dart' as img;
 import '../models/user_profile.dart';
 import 'storage_service.dart';
+import '../features/vision_lens/shared/services/vision_storage_service.dart';
 
 class FirebaseService {
   static FirebaseAuth get auth => FirebaseAuth.instance;
@@ -339,6 +340,84 @@ class FirebaseService {
       }
       await scansBatch.commit();
 
+      // 8. Workout Templates Sync
+      final templates = StorageService.getWorkoutTemplates();
+      final templatesBatch = firestore.batch();
+      for (final t in templates) {
+        final name = t['name'] ?? 'template_${DateTime.now().millisecondsSinceEpoch}';
+        final safeId = name.toString().replaceAll('/', '_').replaceAll(' ', '_');
+        final docRef = userDoc.collection('workout_templates').doc(safeId);
+        templatesBatch.set(docRef, t);
+      }
+      await templatesBatch.commit();
+
+      // 9. App Settings Sync (accent color, macro goals, notification prefs)
+      await userDoc.set({
+        'settings': {
+          'accentColorIndex': StorageService.getAccentColorIndex(),
+          'carbsGoal': StorageService.getCarbsGoal(),
+          'fatsGoal': StorageService.getFatsGoal(),
+          'auraNotificationsEnabled': StorageService.getAuraNotificationsEnabled(),
+          'systemNotificationsEnabled': StorageService.getSystemNotificationsEnabled(),
+        }
+      }, SetOptions(merge: true));
+
+      // 10. Profile Picture Sync (upload base64 to Storage, store URL)
+      final profilePicBase64 = StorageService.getProfilePicture();
+      if (profilePicBase64 != null && profilePicBase64.isNotEmpty && !profilePicBase64.startsWith('http')) {
+        final url = await _uploadBase64Image(
+          uid: uid,
+          storagePath: 'users/$uid/profile_picture.jpg',
+          base64Content: profilePicBase64,
+        );
+        if (url != null) {
+          await userDoc.set({'profilePictureUrl': url}, SetOptions(merge: true));
+          // Persist URL locally so we don't re-upload
+          await StorageService.saveProfilePicture(url);
+        }
+      } else if (profilePicBase64 != null && profilePicBase64.startsWith('http')) {
+        // Already a URL, just ensure it's in Firestore
+        await userDoc.set({'profilePictureUrl': profilePicBase64}, SetOptions(merge: true));
+      }
+
+      // 11. Custom Background Sync (upload base64 to Storage, store URL)
+      final bgBase64 = StorageService.getCustomBackground();
+      if (bgBase64 != null && bgBase64.isNotEmpty && !bgBase64.startsWith('http')) {
+        final url = await _uploadBase64Image(
+          uid: uid,
+          storagePath: 'users/$uid/custom_background.jpg',
+          base64Content: bgBase64,
+        );
+        if (url != null) {
+          await userDoc.set({'customBackgroundUrl': url}, SetOptions(merge: true));
+          await StorageService.saveCustomBackground(url);
+        }
+      } else if (bgBase64 != null && bgBase64.startsWith('http')) {
+        await userDoc.set({'customBackgroundUrl': bgBase64}, SetOptions(merge: true));
+      }
+
+      // 12. Vision Scan History Sync (user's personal scan analysis results)
+      for (final category in ['food', 'supplement', 'skincare']) {
+        try {
+          final history = await VisionStorageService.getHistory(category);
+          if (history.isNotEmpty) {
+            final visionBatch = firestore.batch();
+            for (final item in history) {
+              final barcode = item['barcode']?.toString() ?? item['productName']?.toString() ?? DateTime.now().millisecondsSinceEpoch.toString();
+              final safeId = barcode.replaceAll('/', '_').replaceAll(' ', '_');
+              final docRef = userDoc.collection('vision_${category}_history').doc(safeId);
+              // Remove non-serializable fields and ensure clean data
+              final cleanItem = Map<String, dynamic>.from(item);
+              cleanItem.remove('barcode'); // barcode is the doc ID
+              visionBatch.set(docRef, cleanItem);
+            }
+            await visionBatch.commit();
+          }
+        } catch (e) {
+          debugPrint("Error syncing vision $category history: $e");
+        }
+      }
+
       debugPrint("Firebase cloud sync completed successfully.");
     } catch (e) {
       debugPrint("Error syncing local to cloud: $e");
@@ -435,6 +514,60 @@ class FirebaseService {
         scansList.add(doc.data());
       }
       await StorageService.saveRecentScansList(scansList);
+
+      // 5. Fetch Workout Templates from subcollection
+      final templatesSnap = await userDoc.collection('workout_templates').get();
+      if (templatesSnap.docs.isNotEmpty) {
+        for (final doc in templatesSnap.docs) {
+          await StorageService.saveWorkoutTemplate(doc.data());
+        }
+      }
+
+      // 6. Fetch App Settings
+      if (doc.exists) {
+        final data = doc.data();
+        if (data != null) {
+          final settingsMap = data['settings'] as Map?;
+          if (settingsMap != null) {
+            final accentIdx = (settingsMap['accentColorIndex'] as num?)?.toInt();
+            if (accentIdx != null) await StorageService.saveAccentColorIndex(accentIdx);
+            final carbsG = (settingsMap['carbsGoal'] as num?)?.toInt();
+            if (carbsG != null) await StorageService.saveCarbsGoal(carbsG);
+            final fatsG = (settingsMap['fatsGoal'] as num?)?.toInt();
+            if (fatsG != null) await StorageService.saveFatsGoal(fatsG);
+            final auraNotif = settingsMap['auraNotificationsEnabled'] as bool?;
+            if (auraNotif != null) await StorageService.setAuraNotificationsEnabled(auraNotif);
+            final sysNotif = settingsMap['systemNotificationsEnabled'] as bool?;
+            if (sysNotif != null) await StorageService.setSystemNotificationsEnabled(sysNotif);
+          }
+
+          // 6.1 Profile Picture URL
+          final profilePicUrl = data['profilePictureUrl'] as String?;
+          if (profilePicUrl != null && profilePicUrl.isNotEmpty) {
+            await StorageService.saveProfilePicture(profilePicUrl);
+          }
+
+          // 6.2 Custom Background URL
+          final bgUrl = data['customBackgroundUrl'] as String?;
+          if (bgUrl != null && bgUrl.isNotEmpty) {
+            await StorageService.saveCustomBackground(bgUrl);
+          }
+        }
+      }
+
+      // 7. Fetch Vision Scan History (user's personal analysis results)
+      for (final category in ['food', 'supplement', 'skincare']) {
+        try {
+          final visionSnap = await userDoc.collection('vision_${category}_history').get();
+          for (final vDoc in visionSnap.docs) {
+            final data = vDoc.data();
+            data['barcode'] = vDoc.id;
+            await VisionStorageService.cacheProduct(category, vDoc.id, data);
+          }
+        } catch (e) {
+          debugPrint("Error syncing vision $category history down: $e");
+        }
+      }
 
       debugPrint("Firebase cloud down-sync completed successfully.");
     } catch (e) {
@@ -538,6 +671,153 @@ class FirebaseService {
       }, SetOptions(merge: true));
     } catch (e) {
       debugPrint("Error syncing reminders: $e");
+    }
+  }
+
+  /// Sync a workout template to cloud
+  static Future<void> saveWorkoutTemplateCloud(Map<String, dynamic> template) async {
+    if (!isLoggedIn) return;
+    try {
+      final name = template['name'] ?? 'template_${DateTime.now().millisecondsSinceEpoch}';
+      final safeId = name.toString().replaceAll('/', '_').replaceAll(' ', '_');
+      await firestore
+          .collection('users')
+          .doc(currentUser!.uid)
+          .collection('workout_templates')
+          .doc(safeId)
+          .set(template);
+    } catch (e) {
+      debugPrint("Error syncing workout template: $e");
+    }
+  }
+
+  /// Delete a workout template from cloud
+  static Future<void> deleteWorkoutTemplateCloud(String templateName) async {
+    if (!isLoggedIn) return;
+    try {
+      final safeId = templateName.replaceAll('/', '_').replaceAll(' ', '_');
+      await firestore
+          .collection('users')
+          .doc(currentUser!.uid)
+          .collection('workout_templates')
+          .doc(safeId)
+          .delete();
+    } catch (e) {
+      debugPrint("Error deleting workout template from cloud: $e");
+    }
+  }
+
+  /// Sync app settings (accent color, macro goals, notification prefs) to cloud
+  static Future<void> saveSettingsCloud() async {
+    if (!isLoggedIn) return;
+    try {
+      await firestore.collection('users').doc(currentUser!.uid).set({
+        'settings': {
+          'accentColorIndex': StorageService.getAccentColorIndex(),
+          'carbsGoal': StorageService.getCarbsGoal(),
+          'fatsGoal': StorageService.getFatsGoal(),
+          'auraNotificationsEnabled': StorageService.getAuraNotificationsEnabled(),
+          'systemNotificationsEnabled': StorageService.getSystemNotificationsEnabled(),
+        }
+      }, SetOptions(merge: true));
+    } catch (e) {
+      debugPrint("Error syncing settings: $e");
+    }
+  }
+
+  /// Sync a vision scan history item to the user's personal cloud history
+  static Future<void> saveVisionHistoryCloud(String category, String barcode, Map<String, dynamic> data) async {
+    if (!isLoggedIn) return;
+    try {
+      final safeId = barcode.replaceAll('/', '_').replaceAll(' ', '_');
+      final cleanData = Map<String, dynamic>.from(data);
+      cleanData.remove('barcode');
+      await firestore
+          .collection('users')
+          .doc(currentUser!.uid)
+          .collection('vision_${category.toLowerCase()}_history')
+          .doc(safeId)
+          .set(cleanData);
+    } catch (e) {
+      debugPrint("Error syncing vision history item: $e");
+    }
+  }
+
+  /// Sync profile picture to cloud (upload base64 or persist existing URL)
+  static Future<void> saveProfilePictureCloud(String? base64OrUrl) async {
+    if (!isLoggedIn || base64OrUrl == null || base64OrUrl.isEmpty) return;
+    try {
+      final uid = currentUser!.uid;
+      if (!base64OrUrl.startsWith('http')) {
+        final url = await _uploadBase64Image(
+          uid: uid,
+          storagePath: 'users/$uid/profile_picture.jpg',
+          base64Content: base64OrUrl,
+        );
+        if (url != null) {
+          await firestore.collection('users').doc(uid).set(
+            {'profilePictureUrl': url}, SetOptions(merge: true),
+          );
+          await StorageService.saveProfilePicture(url);
+        }
+      } else {
+        await firestore.collection('users').doc(uid).set(
+          {'profilePictureUrl': base64OrUrl}, SetOptions(merge: true),
+        );
+      }
+    } catch (e) {
+      debugPrint("Error syncing profile picture: $e");
+    }
+  }
+
+  /// Sync custom background to cloud (upload base64 or persist existing URL)
+  static Future<void> saveCustomBackgroundCloud(String? base64OrUrl) async {
+    if (!isLoggedIn || base64OrUrl == null || base64OrUrl.isEmpty) return;
+    try {
+      final uid = currentUser!.uid;
+      if (!base64OrUrl.startsWith('http')) {
+        final url = await _uploadBase64Image(
+          uid: uid,
+          storagePath: 'users/$uid/custom_background.jpg',
+          base64Content: base64OrUrl,
+        );
+        if (url != null) {
+          await firestore.collection('users').doc(uid).set(
+            {'customBackgroundUrl': url}, SetOptions(merge: true),
+          );
+          await StorageService.saveCustomBackground(url);
+        }
+      } else {
+        await firestore.collection('users').doc(uid).set(
+          {'customBackgroundUrl': base64OrUrl}, SetOptions(merge: true),
+        );
+      }
+    } catch (e) {
+      debugPrint("Error syncing custom background: $e");
+    }
+  }
+
+  /// Helper: Upload a base64 image to Firebase Storage and return the download URL
+  static Future<String?> _uploadBase64Image({
+    required String uid,
+    required String storagePath,
+    required String base64Content,
+  }) async {
+    if (Firebase.apps.isEmpty) return null;
+    try {
+      final ref = FirebaseStorage.instance.ref().child(storagePath);
+      String cleanBase64 = base64Content;
+      if (cleanBase64.contains(',')) {
+        cleanBase64 = cleanBase64.split(',').last;
+      }
+      final bytes = base64Decode(cleanBase64.replaceAll(RegExp(r'\s+'), ''));
+      final compressedBytes = _compressImageBytes(bytes) ?? bytes;
+      final task = ref.putData(compressedBytes, SettableMetadata(contentType: 'image/jpeg'));
+      final snap = await task;
+      return await snap.ref.getDownloadURL();
+    } catch (e) {
+      debugPrint("Firebase Storage base64 upload error: $e");
+      return null;
     }
   }
 
