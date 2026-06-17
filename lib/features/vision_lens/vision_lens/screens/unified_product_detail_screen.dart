@@ -1227,8 +1227,6 @@ class _UnifiedProductDetailScreenState extends ConsumerState<UnifiedProductDetai
                   ),
                   const SizedBox(height: 32),
                 ],
-
-,
               ],
             ),
           ),
