@@ -10,5 +10,17 @@ service cloud.firestore {
         allow read, write: if request.auth != null && request.auth.uid == userId;
       }
     }
+
+    // Allow authenticated users to read and write shared global product scan records (cache)
+    match /{collectionName}/{barcode} {
+      allow read, write: if request.auth != null && (
+        collectionName == 'global_food_scans' ||
+        collectionName == 'global_supplement_scans' ||
+        collectionName == 'global_skincare_scans' ||
+        collectionName == 'global_vision_food_scans' ||
+        collectionName == 'global_vision_supplement_scans' ||
+        collectionName == 'global_vision_skincare_scans'
+      );
+    }
   }
 }

@@ -3,15 +3,14 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 class VisionFirebaseService {
   static String _getCollectionPath(String category) {
-    final uid = FirebaseAuth.instance.currentUser?.uid ?? 'guest_user';
     switch (category.toLowerCase()) {
       case 'food':
-        return 'users/$uid/vision_food_scans';
+        return 'global_vision_food_scans';
       case 'supplement':
       case 'supplements':
-        return 'users/$uid/vision_supplement_scans';
+        return 'global_vision_supplement_scans';
       case 'skincare':
-        return 'users/$uid/vision_skincare_scans';
+        return 'global_vision_skincare_scans';
       default:
         throw ArgumentError('Invalid category for Firebase Vision sync: $category');
     }

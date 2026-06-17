@@ -545,13 +545,11 @@ class FirebaseService {
   static Future<Map<String, dynamic>?> getScanFromCloud(String barcode, String category) async {
     if (!isLoggedIn) return null;
     try {
-      final subcollection = category == 'Food'
-          ? 'food_scans'
-          : (category == 'Supplement' ? 'supplement_scans' : 'skincare_scans');
+      final collectionName = category == 'Food'
+          ? 'global_food_scans'
+          : (category == 'Supplement' ? 'global_supplement_scans' : 'global_skincare_scans');
       final doc = await firestore
-          .collection('users')
-          .doc(currentUser!.uid)
-          .collection(subcollection)
+          .collection(collectionName)
           .doc(barcode)
           .get();
       if (doc.exists) {
@@ -567,13 +565,11 @@ class FirebaseService {
   static Future<void> saveScanToCloud(String barcode, String category, Map<String, dynamic> scanData) async {
     if (!isLoggedIn) return;
     try {
-      final subcollection = category == 'Food'
-          ? 'food_scans'
-          : (category == 'Supplement' ? 'supplement_scans' : 'skincare_scans');
+      final collectionName = category == 'Food'
+          ? 'global_food_scans'
+          : (category == 'Supplement' ? 'global_supplement_scans' : 'global_skincare_scans');
       await firestore
-          .collection('users')
-          .doc(currentUser!.uid)
-          .collection(subcollection)
+          .collection(collectionName)
           .doc(barcode)
           .set(scanData);
     } catch (e) {
