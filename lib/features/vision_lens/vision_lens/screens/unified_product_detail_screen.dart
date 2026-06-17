@@ -681,7 +681,274 @@ class _UnifiedProductDetailScreenState extends ConsumerState<UnifiedProductDetai
                   const SizedBox(height: 28),
                 ],
 
-                // SECTION 3: Healthier Alternatives (Top 3 large cards)
+                // SECTION 3: Detailed Product Analysis (uncollapsed)
+                Row(
+                  children: [
+                    Container(
+                      width: 4,
+                      height: 12,
+                      decoration: BoxDecoration(
+                        color: accentColor,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'PRODUCT ANALYSIS',
+                      style: TextStyle(
+                        color: AppTheme.textSecondary,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 1.5,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+
+                // Bento Metrics for food/supplement
+                if (report.category.toLowerCase() != 'skincare') ...[
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final isMobile = constraints.maxWidth < 450;
+                      if (isMobile) {
+                        return Column(
+                          children: [
+                            _buildBentoCard(
+                              title: 'Added Sugars',
+                              status: report.sugarAnalysis.impact,
+                              description: report.sugarAnalysis.amount,
+                              accentColor: _getStatusColor(report.sugarAnalysis.impact, isDark),
+                              icon: Icons.cookie_outlined,
+                              isDark: isDark,
+                            ),
+                            const SizedBox(height: 12),
+                            _buildBentoCard(
+                              title: 'Palm Oil',
+                              status: report.palmOilAnalysis.present ? 'Present' : 'Clean',
+                              description: report.palmOilAnalysis.present ? '❌ Avoid palm oil usage' : '✅ Safe (No palm oil)',
+                              accentColor: _getStatusColor(report.palmOilAnalysis.present ? 'present' : 'clean', isDark),
+                              icon: Icons.eco_outlined,
+                              isDark: isDark,
+                            ),
+                            const SizedBox(height: 12),
+                            _buildBentoCard(
+                              title: 'Carbohydrate Level',
+                              status: report.carbsAnalysis.impact,
+                              description: report.carbsAnalysis.verdict,
+                              accentColor: _getStatusColor(report.carbsAnalysis.impact, isDark),
+                              icon: Icons.donut_large_rounded,
+                              isDark: isDark,
+                            ),
+                          ],
+                        );
+                      } else {
+                        return Column(
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _buildBentoCard(
+                                    title: 'Added Sugars',
+                                    status: report.sugarAnalysis.impact,
+                                    description: report.sugarAnalysis.amount,
+                                    accentColor: _getStatusColor(report.sugarAnalysis.impact, isDark),
+                                    icon: Icons.cookie_outlined,
+                                    isDark: isDark,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: _buildBentoCard(
+                                    title: 'Palm Oil',
+                                    status: report.palmOilAnalysis.present ? 'Present' : 'Clean',
+                                    description: report.palmOilAnalysis.present ? '❌ Avoid palm oil usage' : '✅ Safe (No palm oil)',
+                                    accentColor: _getStatusColor(report.palmOilAnalysis.present ? 'present' : 'clean', isDark),
+                                    icon: Icons.eco_outlined,
+                                    isDark: isDark,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            _buildBentoCard(
+                              title: 'Carbohydrate Level',
+                              status: report.carbsAnalysis.impact,
+                              description: report.carbsAnalysis.verdict,
+                              accentColor: _getStatusColor(report.carbsAnalysis.impact, isDark),
+                              icon: Icons.donut_large_rounded,
+                              isDark: isDark,
+                            ),
+                          ],
+                        );
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 24),
+                ],
+
+                // Decoded Ingredient List Header
+                Row(
+                  children: [
+                    Container(
+                      width: 4,
+                      height: 10,
+                      decoration: BoxDecoration(
+                        color: isDark ? accentColor : const Color(0xFF054D28),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'DECODED INGREDIENTS',
+                      style: TextStyle(
+                        color: AppTheme.textSecondary,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.0,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+
+                if (report.decodedIngredients.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 16.0),
+                    child: Text(
+                      'No ingredients list found in database.',
+                      style: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
+                    ),
+                  )
+                else
+                  Column(
+                    children: report.decodedIngredients.map((ing) {
+                      final safetyColor = _getSafetyColor(ing.safety, isDark);
+                      final isExpanded = _expandedIngredients.contains(ing.name);
+
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 10),
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0xFF16181A) : Colors.black.withOpacity(0.015),
+                          borderRadius: BorderRadius.circular(22),
+                          border: Border.all(
+                            color: isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder,
+                            width: 1.0,
+                          ),
+                        ),
+                        child: Theme(
+                          data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                          child: ExpansionTile(
+                            key: PageStorageKey(ing.name),
+                            initiallyExpanded: isExpanded,
+                            onExpansionChanged: (expanded) {
+                              setState(() {
+                                if (expanded) {
+                                  _expandedIngredients.add(ing.name);
+                                } else {
+                                  _expandedIngredients.remove(ing.name);
+                                }
+                              });
+                            },
+                            leading: Container(
+                              width: 6,
+                              height: 22,
+                              decoration: BoxDecoration(
+                                color: safetyColor,
+                                borderRadius: BorderRadius.circular(3),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: safetyColor.withOpacity(0.4),
+                                    blurRadius: 6,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            title: Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    ing.name,
+                                    style: TextStyle(
+                                      color: isDark ? Colors.white : AppTheme.textPrimary,
+                                      fontSize: 13.5,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                ),
+                                if (ing.sneakyNameFor != 'None')
+                                  Container(
+                                    margin: const EdgeInsets.only(left: 6),
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: AppTheme.accentCoral.withOpacity(0.08),
+                                      borderRadius: BorderRadius.circular(9999),
+                                      border: Border.all(
+                                        color: AppTheme.accentCoral.withOpacity(0.2),
+                                        width: 1.0,
+                                      ),
+                                    ),
+                                    child: Text(
+                                      'Sneaky ${ing.sneakyNameFor}',
+                                      style: const TextStyle(
+                                        color: AppTheme.accentCoral,
+                                        fontSize: 8,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                            subtitle: Text(
+                              ing.meaning,
+                              style: const TextStyle(
+                                color: AppTheme.textSecondary,
+                                fontSize: 11,
+                              ),
+                            ),
+                            trailing: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: safetyColor.withOpacity(0.08),
+                                borderRadius: BorderRadius.circular(9999),
+                                border: Border.all(
+                                  color: safetyColor.withOpacity(0.25),
+                                  width: 1.0,
+                                ),
+                              ),
+                              child: Text(
+                                ing.safety.toUpperCase(),
+                                style: TextStyle(
+                                  color: safetyColor,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                            ),
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+                                child: Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: Text(
+                                    ing.description,
+                                    style: TextStyle(
+                                      color: isDark ? Colors.white70 : AppTheme.textSecondary,
+                                      fontSize: 12,
+                                      height: 1.4,
+                                    ),
+                                  ),
+                                ),
+                              )
+                            ],
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                const SizedBox(height: 32),
+
+                // SECTION 4: Healthier Alternatives (Top 3 large cards)
                 Row(
                   children: [
                     Container(
@@ -961,301 +1228,7 @@ class _UnifiedProductDetailScreenState extends ConsumerState<UnifiedProductDetai
                   const SizedBox(height: 32),
                 ],
 
-                // SECTION 5: Collapsed Accordion (View Full Analysis)
-                Theme(
-                  data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-                  child: Container(
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: isDark ? AppTheme.glassBackground.withOpacity(0.04) : AppTheme.glassBackground,
-                      borderRadius: BorderRadius.circular(28),
-                      border: Border.all(
-                        color: isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder,
-                        width: 1.2,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.02),
-                          blurRadius: 16,
-                          offset: const Offset(0, 8),
-                        ),
-                      ],
-                    ),
-                    child: ExpansionTile(
-                      title: Row(
-                        children: [
-                          Icon(
-                            Icons.analytics_outlined,
-                            color: isDark ? Colors.white70 : AppTheme.textPrimary,
-                            size: 18,
-                          ),
-                          const SizedBox(width: 10),
-                          Text(
-                            'View Full Analysis',
-                            style: TextStyle(
-                              color: isDark ? Colors.white : AppTheme.textPrimary,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 0.2,
-                            ),
-                          ),
-                        ],
-                      ),
-                      iconColor: isDark ? Colors.white70 : AppTheme.textPrimary,
-                      collapsedIconColor: isDark ? Colors.white70 : AppTheme.textPrimary,
-                      childrenPadding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-                      children: [
-                        Container(
-                          margin: const EdgeInsets.only(bottom: 20),
-                          height: 1,
-                          color: isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder,
-                        ),
-
-                        // Bento Metrics for food/supplement
-                        if (report.category.toLowerCase() != 'skincare') ...[
-                          LayoutBuilder(
-                            builder: (context, constraints) {
-                              final isMobile = constraints.maxWidth < 450;
-                              if (isMobile) {
-                                return Column(
-                                  children: [
-                                    _buildBentoCard(
-                                      title: 'Added Sugars',
-                                      status: report.sugarAnalysis.impact,
-                                      description: report.sugarAnalysis.amount,
-                                      accentColor: _getStatusColor(report.sugarAnalysis.impact, isDark),
-                                      icon: Icons.cookie_outlined,
-                                      isDark: isDark,
-                                    ),
-                                    const SizedBox(height: 12),
-                                    _buildBentoCard(
-                                      title: 'Palm Oil',
-                                      status: report.palmOilAnalysis.present ? 'Present' : 'Clean',
-                                      description: report.palmOilAnalysis.present ? '❌ Avoid palm oil usage' : '✅ Safe (No palm oil)',
-                                      accentColor: _getStatusColor(report.palmOilAnalysis.present ? 'present' : 'clean', isDark),
-                                      icon: Icons.eco_outlined,
-                                      isDark: isDark,
-                                    ),
-                                    const SizedBox(height: 12),
-                                    _buildBentoCard(
-                                      title: 'Carbohydrate Level',
-                                      status: report.carbsAnalysis.impact,
-                                      description: report.carbsAnalysis.verdict,
-                                      accentColor: _getStatusColor(report.carbsAnalysis.impact, isDark),
-                                      icon: Icons.donut_large_rounded,
-                                      isDark: isDark,
-                                    ),
-                                  ],
-                                );
-                              } else {
-                                return Column(
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Expanded(
-                                          child: _buildBentoCard(
-                                            title: 'Added Sugars',
-                                            status: report.sugarAnalysis.impact,
-                                            description: report.sugarAnalysis.amount,
-                                            accentColor: _getStatusColor(report.sugarAnalysis.impact, isDark),
-                                            icon: Icons.cookie_outlined,
-                                            isDark: isDark,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 12),
-                                        Expanded(
-                                          child: _buildBentoCard(
-                                            title: 'Palm Oil',
-                                            status: report.palmOilAnalysis.present ? 'Present' : 'Clean',
-                                            description: report.palmOilAnalysis.present ? '❌ Avoid palm oil usage' : '✅ Safe (No palm oil)',
-                                            accentColor: _getStatusColor(report.palmOilAnalysis.present ? 'present' : 'clean', isDark),
-                                            icon: Icons.eco_outlined,
-                                            isDark: isDark,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 12),
-                                    _buildBentoCard(
-                                      title: 'Carbohydrate Level',
-                                      status: report.carbsAnalysis.impact,
-                                      description: report.carbsAnalysis.verdict,
-                                      accentColor: _getStatusColor(report.carbsAnalysis.impact, isDark),
-                                      icon: Icons.donut_large_rounded,
-                                      isDark: isDark,
-                                    ),
-                                  ],
-                                );
-                              }
-                            },
-                          ),
-                          const SizedBox(height: 24),
-                        ],
-
-                        // Decoded Ingredient List
-                        Row(
-                          children: [
-                            Container(
-                              width: 4,
-                              height: 10,
-                              decoration: BoxDecoration(
-                                color: isDark ? accentColor : const Color(0xFF054D28),
-                                borderRadius: BorderRadius.circular(2),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            const Text(
-                              'DECODED INGREDIENTS',
-                              style: TextStyle(
-                                color: AppTheme.textSecondary,
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 1.0,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-
-                        if (report.decodedIngredients.isEmpty)
-                          const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 16.0),
-                            child: Text(
-                              'No ingredients list found in database.',
-                              style: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
-                            ),
-                          )
-                        else
-                          Column(
-                            children: report.decodedIngredients.map((ing) {
-                              final safetyColor = _getSafetyColor(ing.safety, isDark);
-                              final isExpanded = _expandedIngredients.contains(ing.name);
-
-                              return Container(
-                                margin: const EdgeInsets.only(bottom: 10),
-                                decoration: BoxDecoration(
-                                  color: isDark ? const Color(0xFF16181A) : Colors.black.withOpacity(0.015),
-                                  borderRadius: BorderRadius.circular(22),
-                                  border: Border.all(
-                                    color: isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder,
-                                    width: 1.0,
-                                  ),
-                                ),
-                                child: Theme(
-                                  data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-                                  child: ExpansionTile(
-                                    key: PageStorageKey(ing.name),
-                                    initiallyExpanded: isExpanded,
-                                    onExpansionChanged: (expanded) {
-                                      setState(() {
-                                        if (expanded) {
-                                          _expandedIngredients.add(ing.name);
-                                        } else {
-                                          _expandedIngredients.remove(ing.name);
-                                        }
-                                      });
-                                    },
-                                    leading: Container(
-                                      width: 6,
-                                      height: 22,
-                                      decoration: BoxDecoration(
-                                        color: safetyColor,
-                                        borderRadius: BorderRadius.circular(3),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: safetyColor.withOpacity(0.4),
-                                            blurRadius: 6,
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    title: Row(
-                                      children: [
-                                        Expanded(
-                                          child: Text(
-                                            ing.name,
-                                            style: TextStyle(
-                                              color: isDark ? Colors.white : AppTheme.textPrimary,
-                                              fontSize: 13.5,
-                                              fontWeight: FontWeight.w800,
-                                            ),
-                                          ),
-                                        ),
-                                        if (ing.sneakyNameFor != 'None')
-                                          Container(
-                                            margin: const EdgeInsets.only(left: 6),
-                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                            decoration: BoxDecoration(
-                                              color: AppTheme.accentCoral.withOpacity(0.08),
-                                              borderRadius: BorderRadius.circular(9999),
-                                              border: Border.all(
-                                                color: AppTheme.accentCoral.withOpacity(0.2),
-                                                width: 1.0,
-                                              ),
-                                            ),
-                                            child: Text(
-                                              'Sneaky ${ing.sneakyNameFor}',
-                                              style: const TextStyle(
-                                                color: AppTheme.accentCoral,
-                                                fontSize: 8,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                          ),
-                                      ],
-                                    ),
-                                    subtitle: Text(
-                                      ing.meaning,
-                                      style: const TextStyle(
-                                        color: AppTheme.textSecondary,
-                                        fontSize: 11,
-                                      ),
-                                    ),
-                                    trailing: Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                      decoration: BoxDecoration(
-                                        color: safetyColor.withOpacity(0.08),
-                                        borderRadius: BorderRadius.circular(9999),
-                                        border: Border.all(
-                                          color: safetyColor.withOpacity(0.25),
-                                          width: 1.0,
-                                        ),
-                                      ),
-                                      child: Text(
-                                        ing.safety.toUpperCase(),
-                                        style: TextStyle(
-                                          color: safetyColor,
-                                          fontSize: 9,
-                                          fontWeight: FontWeight.w900,
-                                        ),
-                                      ),
-                                    ),
-                                    children: [
-                                      Padding(
-                                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
-                                        child: Align(
-                                          alignment: Alignment.centerLeft,
-                                          child: Text(
-                                            ing.description,
-                                            style: TextStyle(
-                                              color: isDark ? Colors.white70 : AppTheme.textSecondary,
-                                              fontSize: 12,
-                                              height: 1.4,
-                                            ),
-                                          ),
-                                        ),
-                                      )
-                                    ],
-                                  ),
-                                ),
-                              );
-                            }).toList(),
-                          ),
-                        const SizedBox(height: 8),
-                      ],
-                    ),
-                  ),
-                ),
+,
               ],
             ),
           ),
