@@ -336,7 +336,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      '${_calculateStreak(workouts)} Day Streak',
+                      '${_calculateStreak(workouts)} ${_calculateStreak(workouts) == 1 ? "Day" : "Days"} Streak',
                       style: TextStyle(
                         color: isDark ? Colors.white : const Color(0xFF5A6B00),
                         fontWeight: FontWeight.w900,
@@ -608,7 +608,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               const SizedBox(height: 16),
 
               Text(
-                '$streak Day Streak!',
+                '$streak ${streak == 1 ? "Day" : "Days"} Streak!',
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.w900,

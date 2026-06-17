@@ -372,12 +372,12 @@ class _UnifiedProductDetailScreenState extends ConsumerState<UnifiedProductDetai
                                 height: 78,
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
-                                  color: gradeColor.withOpacity(0.06),
+                                  color: gradeColor.withOpacity(0.08),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: gradeColor.withOpacity(0.2),
-                                      blurRadius: 24,
-                                      spreadRadius: 2,
+                                      color: gradeColor.withOpacity(0.35),
+                                      blurRadius: 36,
+                                      spreadRadius: 3,
                                     ),
                                   ],
                                 ),
@@ -396,7 +396,7 @@ class _UnifiedProductDetailScreenState extends ConsumerState<UnifiedProductDetai
                                       default: return 0.0;
                                     }
                                   }(),
-                                  strokeWidth: 4,
+                                  strokeWidth: 5,
                                   backgroundColor: isDark ? const Color(0xFF1C1C1E) : Colors.black.withOpacity(0.05),
                                   valueColor: AlwaysStoppedAnimation<Color>(gradeColor),
                                 ),
@@ -409,8 +409,8 @@ class _UnifiedProductDetailScreenState extends ConsumerState<UnifiedProductDetai
                                   fontWeight: FontWeight.w900,
                                   shadows: [
                                     Shadow(
-                                      color: gradeColor.withOpacity(0.4),
-                                      blurRadius: 8,
+                                      color: gradeColor.withOpacity(0.6),
+                                      blurRadius: 12,
                                     ),
                                   ],
                                 ),
@@ -713,7 +713,7 @@ class _UnifiedProductDetailScreenState extends ConsumerState<UnifiedProductDetai
                       final isMobile = constraints.maxWidth < 450;
                       if (isMobile) {
                         return Column(
-                          children: [
+                           children: [
                             _buildBentoCard(
                               title: 'Added Sugars',
                               status: report.sugarAnalysis.impact,
@@ -825,15 +825,26 @@ class _UnifiedProductDetailScreenState extends ConsumerState<UnifiedProductDetai
                     children: report.decodedIngredients.map((ing) {
                       final safetyColor = _getSafetyColor(ing.safety, isDark);
                       final isExpanded = _expandedIngredients.contains(ing.name);
+                      final Color cardBgColor = isDark 
+                          ? (isExpanded 
+                              ? safetyColor.withOpacity(0.04) 
+                              : const Color(0xFF141618))
+                          : (isExpanded 
+                              ? safetyColor.withOpacity(0.015) 
+                              : Colors.black.withOpacity(0.012));
+                      final Color cardBorderColor = isExpanded 
+                          ? safetyColor 
+                          : (isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder);
 
-                      return Container(
+                      return AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
                         margin: const EdgeInsets.only(bottom: 10),
                         decoration: BoxDecoration(
-                          color: isDark ? const Color(0xFF16181A) : Colors.black.withOpacity(0.015),
+                          color: cardBgColor,
                           borderRadius: BorderRadius.circular(22),
                           border: Border.all(
-                            color: isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder,
-                            width: 1.0,
+                            color: cardBorderColor,
+                            width: isExpanded ? 1.5 : 1.0,
                           ),
                         ),
                         child: Theme(
@@ -906,24 +917,35 @@ class _UnifiedProductDetailScreenState extends ConsumerState<UnifiedProductDetai
                                 fontSize: 11,
                               ),
                             ),
-                            trailing: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: safetyColor.withOpacity(0.08),
-                                borderRadius: BorderRadius.circular(9999),
-                                border: Border.all(
-                                  color: safetyColor.withOpacity(0.25),
-                                  width: 1.0,
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: safetyColor.withOpacity(0.08),
+                                    borderRadius: BorderRadius.circular(9999),
+                                    border: Border.all(
+                                      color: safetyColor.withOpacity(0.25),
+                                      width: 1.0,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    ing.safety.toUpperCase(),
+                                    style: TextStyle(
+                                      color: safetyColor,
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.w900,
+                                    ),
+                                  ),
                                 ),
-                              ),
-                              child: Text(
-                                ing.safety.toUpperCase(),
-                                style: TextStyle(
-                                  color: safetyColor,
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.w900,
+                                const SizedBox(width: 6),
+                                Icon(
+                                  isExpanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
+                                  color: isExpanded ? safetyColor : AppTheme.textSecondary.withOpacity(0.6),
+                                  size: 18,
                                 ),
-                              ),
+                              ],
                             ),
                             children: [
                               Padding(

@@ -472,7 +472,7 @@ class _VisionLensHomeScreenState extends ConsumerState<VisionLensHomeScreen> wit
                   const SizedBox(width: 8),
                   const Expanded(
                     child: Text(
-                      'AI auto-detects Food, Supplements & Skincare',
+                      'Zivo can analyzes your meals, food, supplements, and skincare products.',
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 11,

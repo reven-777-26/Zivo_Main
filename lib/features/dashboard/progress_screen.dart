@@ -304,7 +304,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const Text(
-                    'Metrics Trends',
+                    'Stats',
                     style: TextStyle(
                       fontSize: 26,
                       fontWeight: FontWeight.w900,
@@ -366,9 +366,9 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            '5-DAY CONSISTENCY STREAK',
-                            style: TextStyle(
+                          Text(
+                            '${_calculateActiveStreak()}-${_calculateActiveStreak() == 1 ? "DAY" : "DAYS"} CONSISTENCY STREAK',
+                            style: const TextStyle(
                               color: AppTheme.accentCyan,
                               fontSize: 10,
                               fontWeight: FontWeight.w600,
@@ -377,7 +377,11 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            "You are crushing it, Alex! You're in the top 3% of active athletes this week. Keep the fire burning!",
+                            _calculateActiveStreak() == 0 
+                                 ? "Start your streak today by logging a workout, water, or calorie entry! 🚀"
+                                 : _calculateActiveStreak() == 1
+                                     ? "You started your streak today! Keep the momentum going! 🚀"
+                                     : "You are crushing it, Alex! You've maintained a ${_calculateActiveStreak()}-day consistency streak. Keep it burning!",
                             style: TextStyle(
                               color: isDark ? Colors.white : AppTheme.textPrimary,
                               fontSize: 12,
@@ -1657,6 +1661,67 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
         ],
       ),
     );
+  }
+
+  bool _isDayActive(DateTime date, List<dynamic> workouts) {
+    final dateStr = DateFormat('yyyy-MM-dd').format(date);
+    final metrics = StorageService.getDailyMetrics(dateStr);
+
+    final profile = ref.read(profileProvider);
+    final double goal = (profile?.calorieGoal ?? 2200).toDouble();
+
+    final int consumedCal =
+        ((metrics['breakfast_cal'] ?? 0) as num).toInt() +
+        ((metrics['lunch_cal'] ?? 0) as num).toInt() +
+        ((metrics['dinner_cal'] ?? 0) as num).toInt() +
+        ((metrics['snacks_cal'] ?? 0) as num).toInt() +
+        ((metrics['outside_food_cal'] ?? 0) as num).toInt();
+
+    if (goal > 0 && consumedCal >= goal * 0.70) {
+      return true;
+    }
+
+    final List loggedItems = metrics['logged_items'] ?? [];
+    if (loggedItems.isNotEmpty) {
+      return true;
+    }
+
+    final hasWorkout = workouts.any((w) => w.date == dateStr);
+    if (hasWorkout) {
+      return true;
+    }
+
+    try {
+      final recentScans = StorageService.getRecentScans();
+      final hasScan = recentScans.any((scan) {
+        final timestamp = scan['timestamp'] as int?;
+        if (timestamp == null) return false;
+        final scanDate = DateTime.fromMillisecondsSinceEpoch(timestamp);
+        return DateFormat('yyyy-MM-dd').format(scanDate) == dateStr;
+      });
+      if (hasScan) {
+        return true;
+      }
+    } catch (_) {}
+
+    return false;
+  }
+
+  int _calculateActiveStreak() {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final history = ref.read(workoutHistoryProvider);
+    int streak = 0;
+
+    bool todayActive = _isDayActive(today, history);
+    DateTime checkDate = todayActive ? today : today.subtract(const Duration(days: 1));
+
+    while (_isDayActive(checkDate, history)) {
+      streak++;
+      checkDate = checkDate.subtract(const Duration(days: 1));
+      if (streak > 365) break;
+    }
+    return streak;
   }
 }
 

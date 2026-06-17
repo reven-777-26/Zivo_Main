@@ -121,7 +121,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                 
                 // App Subtitle
                 Text(
-                  'HEALTH & PHYSIQUE COCKPIT',
+                  'Track Smarter. Live Better.',
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
