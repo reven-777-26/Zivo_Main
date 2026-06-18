@@ -267,7 +267,7 @@ main {
     margin-bottom: 24px;
 }
 
-.highlight-text {
+.highlight-text, .highlight {
     color: var(--primary);
     text-shadow: 0 0 16px rgba(205, 242, 0, 0.2);
 }
