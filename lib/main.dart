@@ -5,6 +5,7 @@ import 'core/theme.dart';
 import 'services/storage_service.dart';
 import 'services/router_service.dart';
 import 'services/state_providers.dart';
+import 'services/premium_service.dart';
 import 'firebase_options.dart';
 
 void main() async {
@@ -22,6 +23,9 @@ void main() async {
 
   // Initialize local Hive database box storage
   await StorageService.init();
+
+  // Initialize Premium subscription client
+  await PremiumService.initialize();
 
   runApp(const ProviderScope(child: MyApp()));
 }

@@ -4,6 +4,7 @@ import '../features/onboarding/onboarding_screen.dart';
 import '../features/dashboard/main_shell.dart';
 import '../features/auth/auth_screen.dart';
 import '../features/vision_lens/vision_lens/screens/vision_lens_home_screen.dart';
+import '../features/premium/premium_paywall_screen.dart';
 
 final GoRouter appRouter = GoRouter(
   initialLocation: '/',
@@ -18,6 +19,10 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/vision_lens',
       builder: (context, state) => const VisionLensHomeScreen(),
+    ),
+    GoRoute(
+      path: '/premium',
+      builder: (context, state) => const PremiumPaywallScreen(),
     ),
   ],
 );
