@@ -26,45 +26,6 @@ document.addEventListener('DOMContentLoaded', () => {
         setInterval(nextSlide, slideInterval);
     }
 
-    // 2. Countdown Timer Logic (Dynamic target set to 28 days from current local load time)
-    const targetDate = new Date();
-    targetDate.setDate(targetDate.getDate() + 28); // 28 days from now
-    
-    const daysEl = document.getElementById('days');
-    const hoursEl = document.getElementById('hours');
-    const minutesEl = document.getElementById('minutes');
-    const secondsEl = document.getElementById('seconds');
-
-    function updateCountdown() {
-        const now = new Date().getTime();
-        const difference = targetDate.getTime() - now;
-
-        if (difference <= 0) {
-            // Fallback reset in case it ticks under
-            daysEl.textContent = '00';
-            hoursEl.textContent = '00';
-            minutesEl.textContent = '00';
-            secondsEl.textContent = '00';
-            return;
-        }
-
-        // Calculate days, hours, minutes, seconds
-        const days = Math.floor(difference / (1000 * 60 * 60 * 24));
-        const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-        const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
-        const seconds = Math.floor((difference % (1000 * 60)) / 1000);
-
-        // Format numbers to 2 digits
-        daysEl.textContent = days.toString().padStart(2, '0');
-        hoursEl.textContent = hours.toString().padStart(2, '0');
-        minutesEl.textContent = minutes.toString().padStart(2, '0');
-        secondsEl.textContent = seconds.toString().padStart(2, '0');
-    }
-
-    // Initial update and register tick
-    updateCountdown();
-    setInterval(updateCountdown, 1000);
-
     // 3. Email Form Validation and Modal Success Flows
     const signupForm = document.getElementById('signup-form');
     const emailInput = document.getElementById('email-input');
