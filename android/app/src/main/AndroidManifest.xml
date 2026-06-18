@@ -1,8 +1,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <application
-        android:label="codemvp"
+        android:label="Zivofit"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
@@ -42,7 +43,7 @@
             android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="com.healthtrack.mvp.codemvp.ACTION_ADD_WATER" />
+                <action android:name="com.zivofit.app.ACTION_ADD_WATER" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"

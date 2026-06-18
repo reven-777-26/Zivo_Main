@@ -33,6 +33,35 @@
           ]
         }
       }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:319560280591:android:bcfd35db82bb66b931d17a",
+        "android_client_info": {
+          "package_name": "com.zivofit.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "319560280591-qp2ish9qgq3c47osbk3ooguinhc89rdf.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAFCjgIYAUwUf9Hv4tEaMBi1Wvfn3kVAOI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "319560280591-qp2ish9qgq3c47osbk3ooguinhc89rdf.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
     }
   ],
   "configuration_version": "1"

@@ -1,4 +1,4 @@
-package com.healthtrack.mvp.codemvp
+package com.zivofit.app
 
 import android.Manifest
 import android.app.NotificationChannel

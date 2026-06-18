@@ -1,4 +1,4 @@
-package com.healthtrack.mvp.codemvp
+package com.zivofit.app
 
 import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
@@ -22,7 +22,7 @@ class ZivoWidgetProvider : AppWidgetProvider() {
 
     override fun onReceive(context: Context, intent: Intent) {
         super.onReceive(context, intent)
-        if (intent.action == "com.healthtrack.mvp.codemvp.ACTION_ADD_WATER") {
+        if (intent.action == "com.zivofit.app.ACTION_ADD_WATER") {
             // Read from Shared Preferences
             val prefs = context.getSharedPreferences("HomeWidgetPreferences", Context.MODE_PRIVATE)
             val currentWater = prefs.getInt("water_logged", 0)
@@ -86,7 +86,7 @@ class ZivoWidgetProvider : AppWidgetProvider() {
 
             // 1. Setup "+250ml Water" background receiver click
             val waterIntent = Intent(context, ZivoWidgetProvider::class.java).apply {
-                action = "com.healthtrack.mvp.codemvp.ACTION_ADD_WATER"
+                action = "com.zivofit.app.ACTION_ADD_WATER"
             }
             val pendingWater = PendingIntent.getBroadcast(
                 context,
