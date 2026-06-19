@@ -12,6 +12,8 @@ import 'firebase_service.dart';
 import 'widget_sync_service.dart';
 import 'workout_notification_service.dart';
 import 'scanner/ai_analysis_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_core/firebase_core.dart';
 
 class NotificationManager {
   static final StreamController<Map<String, String>> controller =
@@ -930,3 +932,17 @@ class PinnedWidgetsNotifier extends StateNotifier<List<String>> {
     await StorageService.savePinnedWidgets(list);
   }
 }
+
+final systemStatusProvider = StreamProvider<Map<String, dynamic>?>((ref) {
+  if (Firebase.apps.isEmpty) {
+    return Stream.value(null);
+  }
+  return FirebaseFirestore.instance
+      .collection('system')
+      .doc('status')
+      .snapshots()
+      .map((snapshot) {
+        if (!snapshot.exists) return null;
+        return Map<String, dynamic>.from(snapshot.data() as Map);
+      });
+});

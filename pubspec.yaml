@@ -80,6 +80,9 @@ flutter:
 
   assets:
     - assets/test_barcode.png
+    - assets/add_meal.png
+    - assets/product_analyser.png
+    - assets/workout_log.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

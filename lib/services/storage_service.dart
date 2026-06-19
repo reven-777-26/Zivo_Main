@@ -75,6 +75,7 @@ class StorageService {
     _recentScansBox = await openSecureBox<Map>(_recentScansBoxName);
 
     // Do not seed dummy data automatically on startup per user request
+    await Hive.openBox('insight_tracking');
   }
 
   /// Retrieves the saved user profile from Hive.

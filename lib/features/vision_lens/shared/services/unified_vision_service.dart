@@ -453,25 +453,50 @@ class UnifiedVisionService {
 
   /// STEP 1: Identify product from image using Gemini Vision (via cloud function)
   static Future<Map<String, dynamic>?> identifyProductFromImage(String base64Content) async {
-    try {
-      // Strip data URI prefix if present
-      String cleanBase64 = base64Content;
-      if (cleanBase64.contains(',')) {
-        cleanBase64 = cleanBase64.split(',').last;
-      }
+    int retries = 0;
+    while (retries < 3) {
+      try {
+        // Strip data URI prefix if present
+        String cleanBase64 = base64Content;
+        if (cleanBase64.contains(',')) {
+          cleanBase64 = cleanBase64.split(',').last;
+        }
 
-      final HttpsCallable callable = FirebaseFunctions.instance.httpsCallable('identifyProduct');
-      final HttpsCallableResult result = await callable.call({
-        'imageBase64': cleanBase64,
-      });
+        final HttpsCallable callable = FirebaseFunctions.instance.httpsCallable('identifyProduct');
+        final HttpsCallableResult result = await callable.call({
+          'imageBase64': cleanBase64,
+        });
 
-      if (result.data != null) {
-        final data = Map<String, dynamic>.from(result.data as Map);
-        debugPrint("identifyProduct cloud function returned: $data");
-        return data;
+        if (result.data != null) {
+          final data = Map<String, dynamic>.from(result.data as Map);
+          debugPrint("identifyProduct cloud function returned: $data");
+          return data;
+        }
+        break;
+      } catch (e) {
+        retries++;
+        debugPrint("identifyProduct cloud function failed (Attempt $retries/3): $e");
+        
+        final errorString = e.toString().toLowerCase();
+        final isBusy = errorString.contains('busy') || 
+                       errorString.contains('resource_exhausted') || 
+                       errorString.contains('429') || 
+                       errorString.contains('503') ||
+                       errorString.contains('overloaded') ||
+                       errorString.contains('rate limit') ||
+                       errorString.contains('unavailable');
+                       
+        if (isBusy && retries < 3) {
+          debugPrint("identifyProduct server busy. Retrying in 2 seconds...");
+          await Future.delayed(const Duration(seconds: 2));
+          continue;
+        }
+        
+        if (retries >= 3 && isBusy) {
+          throw Exception("Gemini AI server is currently busy. Please try again in a moment.");
+        }
+        break;
       }
-    } catch (e) {
-      debugPrint("identifyProduct cloud function failed: $e");
     }
     return null;
   }
@@ -488,47 +513,71 @@ class UnifiedVisionService {
     String? imageBase64,
   }) async {
     final cleanCategory = category.toLowerCase().trim();
+    int retries = 0;
+    
+    while (retries < 3) {
+      try {
+        final HttpsCallable callable = FirebaseFunctions.instance.httpsCallable('analyzeVisionProduct');
+        final String categoryKey = cleanCategory == 'skincare'
+            ? 'Skincare'
+            : (cleanCategory == 'supplement' ? 'Supplement' : 'Food');
 
-    // Try Cloud Function analyzeVisionProduct
-    try {
-      final HttpsCallable callable = FirebaseFunctions.instance.httpsCallable('analyzeVisionProduct');
-      final String categoryKey = cleanCategory == 'skincare'
-          ? 'Skincare'
-          : (cleanCategory == 'supplement' ? 'Supplement' : 'Food');
+        // Strip data URI prefix from image if present
+        // Optimization: Only send image base64 if we don't have ingredients text yet (saves input tokens)
+        String? cleanImageBase64 = ingredients.isNotEmpty ? null : imageBase64;
+        if (cleanImageBase64 != null && cleanImageBase64.contains(',')) {
+          cleanImageBase64 = cleanImageBase64.split(',').last;
+        }
 
-      // Strip data URI prefix from image if present
-      // Optimization: Only send image base64 if we don't have ingredients text yet (saves input tokens)
-      String? cleanImageBase64 = ingredients.isNotEmpty ? null : imageBase64;
-      if (cleanImageBase64 != null && cleanImageBase64.contains(',')) {
-        cleanImageBase64 = cleanImageBase64.split(',').last;
+        final HttpsCallableResult result = await callable.call({
+          'category': categoryKey,
+          'payload': {
+            'product_name': productName,
+            'brands': brand,
+            'ingredients_text': ingredients.join(', '),
+            'image_url': imageUrl,
+          },
+          'imageBase64': cleanImageBase64,
+        });
+
+        if (result.data != null) {
+          final Map<String, dynamic> data = Map<String, dynamic>.from(result.data as Map);
+          return _buildReportFromAiResponse(
+            data: data,
+            barcode: barcode,
+            fallbackName: productName,
+            fallbackBrand: brand,
+            fallbackCategory: cleanCategory,
+            fallbackImageUrl: imageUrl,
+            fallbackIngredients: ingredients,
+            userImageBase64: imageBase64,
+          );
+        }
+        break;
+      } catch (e) {
+        retries++;
+        debugPrint("Firebase Functions analyzeVisionProduct failed (Attempt $retries/3): $e");
+        
+        final errorString = e.toString().toLowerCase();
+        final isBusy = errorString.contains('busy') || 
+                       errorString.contains('resource_exhausted') || 
+                       errorString.contains('429') || 
+                       errorString.contains('503') ||
+                       errorString.contains('overloaded') ||
+                       errorString.contains('rate limit') ||
+                       errorString.contains('unavailable');
+                       
+        if (isBusy && retries < 3) {
+          debugPrint("Gemini server busy. Retrying in 2 seconds...");
+          await Future.delayed(const Duration(seconds: 2));
+          continue;
+        }
+        
+        if (retries >= 3 && isBusy) {
+          throw Exception("Gemini AI server is currently busy. Please try again in a moment.");
+        }
+        break;
       }
-
-      final HttpsCallableResult result = await callable.call({
-        'category': categoryKey,
-        'payload': {
-          'product_name': productName,
-          'brands': brand,
-          'ingredients_text': ingredients.join(', '),
-          'image_url': imageUrl,
-        },
-        'imageBase64': cleanImageBase64,
-      });
-
-      if (result.data != null) {
-        final Map<String, dynamic> data = Map<String, dynamic>.from(result.data as Map);
-        return _buildReportFromAiResponse(
-          data: data,
-          barcode: barcode,
-          fallbackName: productName,
-          fallbackBrand: brand,
-          fallbackCategory: cleanCategory,
-          fallbackImageUrl: imageUrl,
-          fallbackIngredients: ingredients,
-          userImageBase64: imageBase64,
-        );
-      }
-    } catch (e) {
-      debugPrint("Firebase Functions analyzeVisionProduct failed: $e");
     }
 
     // Fallback: If cloud function fails, run Local Rule Engine
@@ -545,7 +594,7 @@ class UnifiedVisionService {
     }
 
     // If no ingredients and AI failed, throw error
-    throw Exception('Unable to analyze $productName. Please try again.');
+    throw Exception('Unable to analyze $productName. Gemini AI is currently busy or unavailable. Please try again.');
   }
 
   /// Build a UnifiedProductReport from Gemini AI cloud function response

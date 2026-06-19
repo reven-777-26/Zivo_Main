@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:camera/camera.dart';
 import 'package:flutter/foundation.dart';
 import '../../../../core/theme.dart';
+import '../../../../core/widgets/zivo_loader.dart';
 import '../../../../services/scanner/camera_barcode_scanner.dart';
 import '../../../../services/scanner/native_barcode_scanner.dart';
 import '../../../../utils/image_picker_helper.dart';
@@ -322,13 +323,9 @@ class _UnifiedVisionScannerDialogState extends ConsumerState<UnifiedVisionScanne
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         const SizedBox(height: 32),
-        const SizedBox(
-          width: 52,
-          height: 52,
-          child: CircularProgressIndicator(
-            color: AppTheme.accentCyan,
-            strokeWidth: 4,
-          ),
+        const ZivoLoader(
+          size: 52,
+          strokeWidth: 4,
         ),
         const SizedBox(height: 24),
         Text(

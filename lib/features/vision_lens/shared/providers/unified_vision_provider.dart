@@ -227,14 +227,24 @@ class UnifiedVisionNotifier extends StateNotifier<UnifiedVisionState> {
   }) async {
     state = state.copyWith(
       isScanning: true,
-      progressMessage: isIngredientLabel
-          ? 'Analyzing ingredients label...'
-          : 'Scanning image for barcode...',
+      progressMessage: 'Compressing image...',
       currentReport: const AsyncValue.loading(),
     );
 
-    // Optimize visual image size immediately to reduce tokens and bandwidth
-    final String optimizedBase64 = AiAnalysisService.optimizeImage(base64Content);
+    // Yield control to let the UI update and render the 'Compressing image...' state
+    await Future.delayed(const Duration(milliseconds: 100));
+
+    // Optimize visual image size immediately in a background isolate to keep UI completely smooth
+    final String optimizedBase64 = await compute(AiAnalysisService.optimizeImage, base64Content);
+
+    state = state.copyWith(
+      progressMessage: isIngredientLabel
+          ? 'Analyzing ingredients label...'
+          : 'Scanning image for barcode...',
+    );
+
+    // Yield control briefly to let the UI show the new progress message
+    await Future.delayed(const Duration(milliseconds: 50));
 
     // 1. Try to extract EAN barcode from image locally (only if not scanning ingredient label directly)
     if (!isIngredientLabel) {

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import 'package:home_widget/home_widget.dart';
 import 'storage_service.dart';
@@ -6,6 +7,7 @@ import '../models/workout_log.dart';
 class WidgetSyncService {
   /// Syncs current stats to Android home widget SharedPreferences
   static Future<void> syncToWidget() async {
+    if (kIsWeb) return;
     try {
       final todayStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
       final metrics = StorageService.getDailyMetrics(todayStr);
@@ -45,6 +47,7 @@ class WidgetSyncService {
 
   /// Checks if any water was logged on the widget and imports it to Hive daily metrics
   static Future<void> checkAndSyncWidgetLogs(Function(int amountSynced) onSyncComplete) async {
+    if (kIsWeb) return;
     try {
       final int? waterToSync = await HomeWidget.getWidgetData<int>('water_to_sync');
       if (waterToSync != null && waterToSync > 0) {
@@ -135,6 +138,7 @@ class WidgetSyncService {
 
   /// Syncs active workout timer details to Android widget SharedPreferences
   static Future<void> syncWorkoutTimer(bool isActive, String timerStr) async {
+    if (kIsWeb) return;
     try {
       await HomeWidget.saveWidgetData<bool>('workout_active', isActive);
       await HomeWidget.saveWidgetData<String>('workout_timer', timerStr);

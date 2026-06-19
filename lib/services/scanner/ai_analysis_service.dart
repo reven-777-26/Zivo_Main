@@ -58,40 +58,65 @@ class AiAnalysisService {
     required String prompt,
     String? imageBase64,
   }) async {
-    // 1. Production Secure Path: Try querying Firebase Cloud Function Proxy first
-    try {
-      if (Firebase.apps.isNotEmpty) {
-        final user = FirebaseAuth.instance.currentUser;
-        if (user != null) {
-          final idToken = await user.getIdToken();
-          final proxyUrl = Uri.parse(
-            'https://us-central1-fitnotes-prod.cloudfunctions.net/geminiProxy'
-          );
+    int retries = 0;
+    while (retries < 3) {
+      try {
+        if (Firebase.apps.isNotEmpty) {
+          final user = FirebaseAuth.instance.currentUser;
+          if (user != null) {
+            final idToken = await user.getIdToken();
+            final proxyUrl = Uri.parse(
+              'https://us-central1-fitnotes-prod.cloudfunctions.net/geminiProxy'
+            );
 
-          final response = await http.post(
-            proxyUrl,
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer $idToken',
-            },
-            body: json.encode({
-              'prompt': prompt,
-              'image': imageBase64,
-            }),
-          ).timeout(const Duration(seconds: 8));
+            final response = await http.post(
+              proxyUrl,
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer $idToken',
+              },
+              body: json.encode({
+                'prompt': prompt,
+                'image': imageBase64,
+              }),
+            ).timeout(const Duration(seconds: 8));
 
-          if (response.statusCode == 200) {
-            final data = json.decode(response.body);
-            return data;
+            if (response.statusCode == 200) {
+              final data = json.decode(response.body);
+              return data;
+            } else if (response.statusCode == 429 || response.statusCode == 503) {
+              retries++;
+              debugPrint("Gemini proxy busy (status ${response.statusCode}). Attempt $retries/3. Retrying in 2 seconds...");
+              if (retries < 3) {
+                await Future.delayed(const Duration(seconds: 2));
+                continue;
+              }
+            } else {
+              break;
+            }
           }
         }
+      } catch (e) {
+        retries++;
+        debugPrint("Secure proxy failed (Attempt $retries/3): $e");
+        final errStr = e.toString().toLowerCase();
+        final isBusy = errStr.contains('busy') || 
+                       errStr.contains('resource_exhausted') || 
+                       errStr.contains('429') || 
+                       errStr.contains('503') ||
+                       errStr.contains('timeout') ||
+                       errStr.contains('overloaded') ||
+                       errStr.contains('unavailable');
+                       
+        if (isBusy && retries < 3) {
+          await Future.delayed(const Duration(seconds: 2));
+          continue;
+        }
+        break;
       }
-    } catch (e) {
-      debugPrint("Secure proxy failed (expected if backend function is not deployed yet): $e");
-      debugPrint("Falling back to local rotated key mode...");
     }
 
-    debugPrint("Gemini Service Error: No API keys configured or allowed.");
+    debugPrint("Gemini Service Error: No API keys configured, allowed, or server remains busy after 3 retries.");
     return null;
   }
 

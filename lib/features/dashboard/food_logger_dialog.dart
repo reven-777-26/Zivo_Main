@@ -9,6 +9,7 @@ import 'package:http/http.dart' as http;
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:camera/camera.dart';
 import '../../core/theme.dart';
+import '../../core/widgets/zivo_loader.dart';
 import '../../services/ai_backend_service.dart';
 import '../../services/state_providers.dart';
 import '../../utils/image_picker_helper.dart';
@@ -40,7 +41,15 @@ class StandardFood {
 }
 
 class FoodLoggerDialog extends ConsumerStatefulWidget {
-  const FoodLoggerDialog({super.key});
+  final int initialTab;
+  final String? initialImageBase64;
+  final bool autoStartVoice;
+  const FoodLoggerDialog({
+    super.key,
+    this.initialTab = 0,
+    this.initialImageBase64,
+    this.autoStartVoice = false,
+  });
 
   @override
   ConsumerState<FoodLoggerDialog> createState() => _FoodLoggerDialogState();
@@ -57,6 +66,10 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
   StandardFood? _selectedFood;
   bool _showReview = false;
   String _selectedMealKey = 'breakfast_cal';
+
+  // Focus nodes for keyboard auto-opening
+  final FocusNode _describeFocusNode = FocusNode();
+  final FocusNode _manualFocusNode = FocusNode();
 
   // Barcode flow controllers
   final TextEditingController _barcodeController = TextEditingController();
@@ -101,6 +114,8 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
   late TextEditingController _reviewProteinController;
   late TextEditingController _reviewCarbsController;
   late TextEditingController _reviewFatController;
+  final TextEditingController _reviewServingSizeController = TextEditingController(text: "1");
+  String _reviewSelectedServingUnit = 'serving';
 
   // Manual flow controllers
   final TextEditingController _manualNameController = TextEditingController();
@@ -108,11 +123,14 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
   final TextEditingController _manualProteinController = TextEditingController();
   final TextEditingController _manualCarbsController = TextEditingController();
   final TextEditingController _manualFatController = TextEditingController();
+  final TextEditingController _manualServingSizeController = TextEditingController(text: "1");
+  String _selectedServingUnit = 'serving';
+  final List<String> _servingUnits = ['grams', 'ml', 'serving', 'piece', 'bowl', 'cup', 'scoop'];
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 5, vsync: this);
+    _tabController = TabController(length: 5, vsync: this, initialIndex: widget.initialTab);
     _tabController.addListener(_handleTabSelection);
     _initSpeech();
     _initializeCamera();
@@ -128,12 +146,43 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
     } else {
       _selectedMealKey = 'snacks_cal';
     }
+
+    if (widget.initialImageBase64 != null) {
+      _selectedImageBase64 = widget.initialImageBase64;
+      Future.microtask(() {
+        _runGeminiAnalysis('image', widget.initialImageBase64!);
+      });
+    }
+
+    if (widget.autoStartVoice) {
+      Future.delayed(const Duration(milliseconds: 600), () {
+        if (mounted) {
+          _startListening();
+        }
+      });
+    }
+
+    if (widget.initialTab == 3) {
+      Future.delayed(const Duration(milliseconds: 400), () {
+        if (mounted) {
+          _describeFocusNode.requestFocus();
+        }
+      });
+    } else if (widget.initialTab == 4) {
+      Future.delayed(const Duration(milliseconds: 400), () {
+        if (mounted) {
+          _manualFocusNode.requestFocus();
+        }
+      });
+    }
   }
 
   @override
   void dispose() {
     _tabController.removeListener(_handleTabSelection);
     _tabController.dispose();
+    _describeFocusNode.dispose();
+    _manualFocusNode.dispose();
     _barcodeController.dispose();
     _textDescriptionController.dispose();
     _manualNameController.dispose();
@@ -141,6 +190,7 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
     _manualProteinController.dispose();
     _manualCarbsController.dispose();
     _manualFatController.dispose();
+    _reviewServingSizeController.dispose();
     _disposeCamera();
     super.dispose();
   }
@@ -269,6 +319,19 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
     } else {
       _disposeCamera();
     }
+    if (_tabController.index == 3) {
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (mounted && _tabController.index == 3) {
+          _describeFocusNode.requestFocus();
+        }
+      });
+    } else if (_tabController.index == 4) {
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (mounted && _tabController.index == 4) {
+          _manualFocusNode.requestFocus();
+        }
+      });
+    }
   }
 
   Future<void> _initSpeech() async {
@@ -329,6 +392,8 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
           TextEditingController(text: _selectedFood!.carbs.toString());
       _reviewFatController =
           TextEditingController(text: _selectedFood!.fat.toString());
+      _reviewServingSizeController.text = "1";
+      _reviewSelectedServingUnit = 'serving';
     }
   }
 
@@ -506,8 +571,16 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
   Future<void> _runGeminiAnalysis(String type, String content) async {
     String optimizedContent = content;
     if (type == 'image') {
+      setState(() {
+        _isLoading = true;
+        _loadingText = "Compressing image...";
+        _errorMessage = null;
+      });
+      // Yield to let UI update and show "Compressing image..."
+      await Future.delayed(const Duration(milliseconds: 100));
       try {
-        optimizedContent = AiAnalysisService.optimizeImage(content);
+        // Run CPU-intensive visual compression in background isolate
+        optimizedContent = await compute(AiAnalysisService.optimizeImage, content);
       } catch (e) {
         debugPrint("Food Log visual compression failed: $e");
       }
@@ -547,9 +620,17 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
         _showReview = true;
       });
     } catch (e) {
+      final errStr = e.toString();
       setState(() {
         _isLoading = false;
-        _errorMessage = "AI Analysis failed: ${e.toString()}";
+        if (errStr.contains('UNAVAILABLE') ||
+            errStr.contains('503') ||
+            errStr.contains('high demand') ||
+            errStr.contains('firebase_functions/internal')) {
+          _errorMessage = "We're experiencing high demand right now. Please try again in a few moments.";
+        } else {
+          _errorMessage = "AI Analysis failed: ${e.toString()}";
+        }
       });
     }
   }
@@ -786,13 +867,9 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         const SizedBox(height: 40),
-        SizedBox(
-          width: 60,
-          height: 60,
-          child: CircularProgressIndicator(
-            color: AppTheme.accentCyan,
-            strokeWidth: 4,
-          ),
+        const ZivoLoader(
+          size: 60,
+          strokeWidth: 4,
         ),
         const SizedBox(height: 24),
         Text(
@@ -1139,8 +1216,9 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const CircularProgressIndicator(
-                                color: AppTheme.accentCyan,
+                              const ZivoLoader(
+                                size: 40,
+                                strokeWidth: 3.5,
                               ),
                               const SizedBox(height: 8),
                               Text(
@@ -1617,6 +1695,7 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
         const SizedBox(height: 12),
         TextField(
           controller: _textDescriptionController,
+          focusNode: _describeFocusNode,
           maxLines: 2,
           onChanged: (_) => setState(() {}),
           style: TextStyle(color: isDark ? Colors.white : Colors.black),
@@ -1737,112 +1816,384 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
               color: AppTheme.textSecondary,
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
+
+          // Meal Name
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Padding(
+                padding: EdgeInsets.only(left: 4, bottom: 6),
+                child: Text(
+                  "Meal Name",
+                  style: TextStyle(color: AppTheme.textSecondary, fontSize: 12, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
           TextField(
             controller: _manualNameController,
-            style: TextStyle(color: isDark ? Colors.white : Colors.black),
+            focusNode: _manualFocusNode,
+            style: TextStyle(color: isDark ? Colors.white : Colors.black, fontWeight: FontWeight.w600, fontSize: 14),
             decoration: InputDecoration(
               hintText: "Meal Name (e.g. Rice and Chicken)...",
-              hintStyle: const TextStyle(color: AppTheme.textSecondary),
+              hintStyle: TextStyle(color: isDark ? Colors.white24 : Colors.black26, fontSize: 13),
+              prefixIcon: const Icon(Icons.restaurant_menu_rounded, color: AppTheme.accentCyan, size: 20),
               filled: true,
-              fillColor: isDark ? Colors.white.withOpacity(0.02) : Colors.black.withOpacity(0.02),
+              fillColor: isDark ? const Color(0xFF121214) : Colors.black.withOpacity(0.02),
               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: isDark ? const Color(0xFF323530) : AppTheme.glassBorder),
+                borderSide: BorderSide(color: isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: isDark ? const Color(0xFF323530) : AppTheme.glassBorder),
+                borderSide: BorderSide(color: isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppTheme.accentCyan),
+                borderSide: const BorderSide(color: AppTheme.accentCyan, width: 1.5),
               ),
             ),
           ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _manualCalController,
-            keyboardType: TextInputType.number,
-            style: TextStyle(color: isDark ? Colors.white : Colors.black),
-            decoration: InputDecoration(
-              hintText: "Calories (kcal)...",
-              hintStyle: const TextStyle(color: AppTheme.textSecondary),
-              filled: true,
-              fillColor: isDark ? Colors.white.withOpacity(0.02) : Colors.black.withOpacity(0.02),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: isDark ? const Color(0xFF323530) : AppTheme.glassBorder),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: isDark ? const Color(0xFF323530) : AppTheme.glassBorder),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppTheme.accentCyan),
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
+
+          // Serving Size & Unit Row
           Row(
             children: [
               Expanded(
-                child: TextField(
-                  controller: _manualProteinController,
-                  keyboardType: TextInputType.number,
-                  style: TextStyle(color: isDark ? Colors.white : Colors.black),
-                  decoration: InputDecoration(
-                    hintText: "Protein (g)",
-                    hintStyle: const TextStyle(color: AppTheme.textSecondary, fontSize: 12),
-                    filled: true,
-                    fillColor: isDark ? Colors.white.withOpacity(0.02) : Colors.black.withOpacity(0.02),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: isDark ? const Color(0xFF323530) : AppTheme.glassBorder),
+                flex: 2,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.only(left: 4, bottom: 6),
+                      child: Text(
+                        "Serving Size",
+                        style: TextStyle(color: AppTheme.textSecondary, fontSize: 12, fontWeight: FontWeight.bold),
+                      ),
                     ),
+                    TextField(
+                      controller: _manualServingSizeController,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      style: TextStyle(color: isDark ? Colors.white : Colors.black, fontWeight: FontWeight.w600, fontSize: 14),
+                      decoration: InputDecoration(
+                        hintText: "1.0",
+                        hintStyle: TextStyle(color: isDark ? Colors.white24 : Colors.black26, fontSize: 13),
+                        filled: true,
+                        fillColor: isDark ? const Color(0xFF121214) : Colors.black.withOpacity(0.02),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: AppTheme.accentCyan, width: 1.5),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                flex: 3,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.only(left: 4, bottom: 6),
+                      child: Text(
+                        "Serving Unit",
+                        style: TextStyle(color: AppTheme.textSecondary, fontSize: 12, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    Container(
+                      height: 52,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF121214) : Colors.black.withOpacity(0.02),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder,
+                          width: 1.0,
+                        ),
+                      ),
+                      child: Center(
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: _selectedServingUnit,
+                            dropdownColor: isDark ? const Color(0xFF1C1E1B) : Colors.white,
+                            style: TextStyle(
+                              color: isDark ? Colors.white : Colors.black,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                            ),
+                            icon: const Icon(Icons.keyboard_arrow_down_rounded, color: AppTheme.accentCyan),
+                            isExpanded: true,
+                            items: _servingUnits.map((String unit) {
+                              return DropdownMenuItem<String>(
+                                value: unit,
+                                child: Text(unit),
+                              );
+                            }).toList(),
+                            onChanged: (String? val) {
+                              if (val != null) {
+                                setState(() {
+                                  _selectedServingUnit = val;
+                                });
+                              }
+                            },
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+
+          // Calories
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Padding(
+                padding: EdgeInsets.only(left: 4, bottom: 6),
+                child: Text(
+                  "Calories",
+                  style: TextStyle(color: AppTheme.textSecondary, fontSize: 12, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+          TextField(
+            controller: _manualCalController,
+            keyboardType: TextInputType.number,
+            style: TextStyle(color: isDark ? Colors.white : Colors.black, fontWeight: FontWeight.w600, fontSize: 14),
+            decoration: InputDecoration(
+              hintText: "0",
+              hintStyle: TextStyle(color: isDark ? Colors.white24 : Colors.black26, fontSize: 13),
+              prefixIcon: const Padding(
+                padding: EdgeInsets.only(left: 12, right: 8),
+                child: Center(
+                  widthFactor: 1.0,
+                  child: Text('🔥', style: TextStyle(fontSize: 20)),
+                ),
+              ),
+              suffixIcon: Padding(
+                padding: const EdgeInsets.only(right: 16),
+                child: Center(
+                  widthFactor: 1,
+                  child: Text(
+                    "kcal",
+                    style: TextStyle(color: isDark ? const Color(0xFF868685) : AppTheme.textSecondary, fontWeight: FontWeight.bold, fontSize: 13),
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
+              filled: true,
+              fillColor: isDark ? const Color(0xFF121214) : Colors.black.withOpacity(0.02),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: AppTheme.accentCyan, width: 1.5),
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
+
+          // Macronutrients Title
+          const Padding(
+            padding: EdgeInsets.only(left: 4, bottom: 8),
+            child: Text(
+              "MACRONUTRIENTS",
+              style: TextStyle(color: AppTheme.textSecondary, fontSize: 9, fontWeight: FontWeight.bold, letterSpacing: 1.0),
+            ),
+          ),
+          Row(
+            children: [
+              // Protein
               Expanded(
-                child: TextField(
-                  controller: _manualCarbsController,
-                  keyboardType: TextInputType.number,
-                  style: TextStyle(color: isDark ? Colors.white : Colors.black),
-                  decoration: InputDecoration(
-                    hintText: "Carbs (g)",
-                    hintStyle: const TextStyle(color: AppTheme.textSecondary, fontSize: 12),
-                    filled: true,
-                    fillColor: isDark ? Colors.white.withOpacity(0.02) : Colors.black.withOpacity(0.02),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: isDark ? const Color(0xFF323530) : AppTheme.glassBorder),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.only(left: 4, bottom: 6),
+                      child: Text(
+                        "Protein",
+                        style: TextStyle(color: AppTheme.textSecondary, fontSize: 11, fontWeight: FontWeight.bold),
+                      ),
                     ),
-                  ),
+                    TextField(
+                      controller: _manualProteinController,
+                      keyboardType: TextInputType.number,
+                      style: TextStyle(color: isDark ? Colors.white : Colors.black, fontWeight: FontWeight.w600, fontSize: 13),
+                      decoration: InputDecoration(
+                        hintText: "0",
+                        hintStyle: TextStyle(color: isDark ? Colors.white24 : Colors.black26, fontSize: 12),
+                        prefixIcon: const Padding(
+                          padding: EdgeInsets.only(left: 10, right: 6),
+                          child: Center(
+                            widthFactor: 1.0,
+                            child: Text('🍗', style: TextStyle(fontSize: 16)),
+                          ),
+                        ),
+                        suffixIcon: Padding(
+                          padding: const EdgeInsets.only(right: 12),
+                          child: Center(
+                            widthFactor: 1,
+                            child: Text(
+                              "g",
+                              style: TextStyle(color: isDark ? const Color(0xFF868685) : AppTheme.textSecondary, fontWeight: FontWeight.bold, fontSize: 12),
+                            ),
+                          ),
+                        ),
+                        filled: true,
+                        fillColor: isDark ? const Color(0xFF121214) : Colors.black.withOpacity(0.02),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: AppTheme.accentCyan, width: 1.5),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(width: 8),
+              // Carbs
               Expanded(
-                child: TextField(
-                  controller: _manualFatController,
-                  keyboardType: TextInputType.number,
-                  style: TextStyle(color: isDark ? Colors.white : Colors.black),
-                  decoration: InputDecoration(
-                    hintText: "Fat (g)",
-                    hintStyle: const TextStyle(color: AppTheme.textSecondary, fontSize: 12),
-                    filled: true,
-                    fillColor: isDark ? Colors.white.withOpacity(0.02) : Colors.black.withOpacity(0.02),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: isDark ? const Color(0xFF323530) : AppTheme.glassBorder),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.only(left: 4, bottom: 6),
+                      child: Text(
+                        "Carbs",
+                        style: TextStyle(color: AppTheme.textSecondary, fontSize: 11, fontWeight: FontWeight.bold),
+                      ),
                     ),
-                  ),
+                    TextField(
+                      controller: _manualCarbsController,
+                      keyboardType: TextInputType.number,
+                      style: TextStyle(color: isDark ? Colors.white : Colors.black, fontWeight: FontWeight.w600, fontSize: 13),
+                      decoration: InputDecoration(
+                        hintText: "0",
+                        hintStyle: TextStyle(color: isDark ? Colors.white24 : Colors.black26, fontSize: 12),
+                        prefixIcon: const Padding(
+                          padding: EdgeInsets.only(left: 10, right: 6),
+                          child: Center(
+                            widthFactor: 1.0,
+                            child: Text('🍚', style: TextStyle(fontSize: 16)),
+                          ),
+                        ),
+                        suffixIcon: Padding(
+                          padding: const EdgeInsets.only(right: 12),
+                          child: Center(
+                            widthFactor: 1,
+                            child: Text(
+                              "g",
+                              style: TextStyle(color: isDark ? const Color(0xFF868685) : AppTheme.textSecondary, fontWeight: FontWeight.bold, fontSize: 12),
+                            ),
+                          ),
+                        ),
+                        filled: true,
+                        fillColor: isDark ? const Color(0xFF121214) : Colors.black.withOpacity(0.02),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: AppTheme.accentCyan, width: 1.5),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              // Fat
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.only(left: 4, bottom: 6),
+                      child: Text(
+                        "Fat",
+                        style: TextStyle(color: AppTheme.textSecondary, fontSize: 11, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    TextField(
+                      controller: _manualFatController,
+                      keyboardType: TextInputType.number,
+                      style: TextStyle(color: isDark ? Colors.white : Colors.black, fontWeight: FontWeight.w600, fontSize: 13),
+                      decoration: InputDecoration(
+                        hintText: "0",
+                        hintStyle: TextStyle(color: isDark ? Colors.white24 : Colors.black26, fontSize: 12),
+                        prefixIcon: const Padding(
+                          padding: EdgeInsets.only(left: 10, right: 6),
+                          child: Center(
+                            widthFactor: 1.0,
+                            child: Text('🥑', style: TextStyle(fontSize: 16)),
+                          ),
+                        ),
+                        suffixIcon: Padding(
+                          padding: const EdgeInsets.only(right: 12),
+                          child: Center(
+                            widthFactor: 1,
+                            child: Text(
+                              "g",
+                              style: TextStyle(color: isDark ? const Color(0xFF868685) : AppTheme.textSecondary, fontWeight: FontWeight.bold, fontSize: 12),
+                            ),
+                          ),
+                        ),
+                        filled: true,
+                        fillColor: isDark ? const Color(0xFF121214) : Colors.black.withOpacity(0.02),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: AppTheme.accentCyan, width: 1.5),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -1857,6 +2208,11 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
               final int prot = int.tryParse(_manualProteinController.text) ?? 0;
               final int carb = int.tryParse(_manualCarbsController.text) ?? 0;
               final int fat = int.tryParse(_manualFatController.text) ?? 0;
+              
+              final String sizeText = _manualServingSizeController.text.trim();
+              final String finalName = sizeText.isNotEmpty 
+                  ? "$name ($sizeText $_selectedServingUnit)"
+                  : name;
 
               final selectedDate = ref.read(selectedDateProvider);
               ref.read(dailyMetricsProvider(selectedDate).notifier).logMeal(
@@ -1865,7 +2221,7 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
                     protein: prot,
                     carbs: carb,
                     fat: fat,
-                    foodName: name,
+                    foodName: finalName,
                   );
 
               ScaffoldMessenger.of(context).showSnackBar(
@@ -1877,7 +2233,7 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          "Successfully Logged: $name!",
+                          "Successfully Logged: $finalName!",
                           style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
                         ),
                       ),
@@ -1891,6 +2247,8 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
               _manualProteinController.clear();
               _manualCarbsController.clear();
               _manualFatController.clear();
+              _manualServingSizeController.text = "1";
+              _selectedServingUnit = 'serving';
 
               Navigator.of(context).pop();
             },
@@ -2158,6 +2516,108 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
               ),
             ),
           ),
+          const SizedBox(height: 14),
+
+          // Serving Size & Unit Row
+          Row(
+            children: [
+              Expanded(
+                flex: 2,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.only(left: 4, bottom: 6),
+                      child: Text(
+                        "Serving Size",
+                        style: TextStyle(color: AppTheme.textSecondary, fontSize: 12, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    TextField(
+                      controller: _reviewServingSizeController,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      style: TextStyle(color: isDark ? Colors.white : Colors.black, fontWeight: FontWeight.w600, fontSize: 14),
+                      decoration: InputDecoration(
+                        hintText: "1.0",
+                        hintStyle: TextStyle(color: isDark ? Colors.white24 : Colors.black26, fontSize: 13),
+                        filled: true,
+                        fillColor: isDark ? const Color(0xFF121214) : Colors.black.withOpacity(0.02),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: AppTheme.accentCyan, width: 1.5),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                flex: 3,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.only(left: 4, bottom: 6),
+                      child: Text(
+                        "Serving Unit",
+                        style: TextStyle(color: AppTheme.textSecondary, fontSize: 12, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    Container(
+                      height: 52,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF121214) : Colors.black.withOpacity(0.02),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder,
+                          width: 1.0,
+                        ),
+                      ),
+                      child: Center(
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: _reviewSelectedServingUnit,
+                            dropdownColor: isDark ? const Color(0xFF1C1E1B) : Colors.white,
+                            style: TextStyle(
+                              color: isDark ? Colors.white : Colors.black,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                            ),
+                            icon: const Icon(Icons.keyboard_arrow_down_rounded, color: AppTheme.accentCyan),
+                            isExpanded: true,
+                            items: _servingUnits.map((String unit) {
+                              return DropdownMenuItem<String>(
+                                value: unit,
+                                child: Text(unit),
+                              );
+                            }).toList(),
+                            onChanged: (String? val) {
+                              if (val != null) {
+                                setState(() {
+                                  _reviewSelectedServingUnit = val;
+                                });
+                              }
+                            },
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
           if (_selectedImageBase64 != null && _selectedImageBase64!.isNotEmpty) ...[
             const SizedBox(height: 16),
             ClipRRect(
@@ -2192,297 +2652,262 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
               ),
             ),
           ],
-          const SizedBox(height: 20),
-          _buildCategorySelector(isDark),
-          const SizedBox(height: 20),
-
-          // Calories detail Bento Box
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 18),
-            decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF121214) : const Color(0xFFE2F6D5),
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(
-                color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFC5EDAB),
-                width: 1.2,
-              ),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: isDark ? AppTheme.accentCyan.withOpacity(0.12) : const Color(0xFFC5EDAB),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Icon(
-                        Icons.local_fire_department_rounded,
-                        color: isDark ? AppTheme.accentCyan : const Color(0xFF054D28),
-                        size: 20,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'CALORIES',
-                          style: TextStyle(
-                            color: isDark ? AppTheme.accentCyan : const Color(0xFF054D28),
-                            fontSize: 9,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 0.8,
-                          ),
-                        ),
-                        Text(
-                          'Energy Intake',
-                          style: TextStyle(
-                            color: isDark ? const Color(0xFF868685) : const Color(0xFF054D28),
-                            fontSize: 10,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-                SizedBox(
-                  width: 90,
-                  child: TextField(
-                    controller: _reviewCalController,
-                    keyboardType: TextInputType.number,
-                    textAlign: TextAlign.end,
-                    style: TextStyle(
-                      color: isDark ? Colors.white : AppTheme.textPrimary,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w900,
-                    ),
-                    decoration: const InputDecoration(
-                      border: InputBorder.none,
-                      suffixText: ' kcal',
-                      suffixStyle: TextStyle(
-                        fontSize: 12,
-                        color: AppTheme.textSecondary,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // Macros Grid Row
+          // Calories
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Protein Item
-              Expanded(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
-                  decoration: BoxDecoration(
-                    color: AppTheme.accentOrange.withOpacity(0.06),
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(
-                      color: AppTheme.accentOrange.withOpacity(0.2),
-                      width: 1.2,
-                    ),
-                  ),
-                  child: Column(
-                    children: [
-                      const Icon(Icons.egg_rounded,
-                          color: AppTheme.accentOrange, size: 16),
-                      const SizedBox(height: 6),
-                      const Text(
-                        'PROTEIN',
-                        style: TextStyle(
-                          color: AppTheme.textSecondary,
-                          fontSize: 8,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          SizedBox(
-                            width: 32,
-                            child: TextField(
-                              controller: _reviewProteinController,
-                              keyboardType: TextInputType.number,
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: isDark ? Colors.white : AppTheme.textPrimary,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w900,
-                              ),
-                              decoration: const InputDecoration(
-                                border: InputBorder.none,
-                                isDense: true,
-                                contentPadding: EdgeInsets.zero,
-                              ),
-                            ),
-                          ),
-                          const Text(
-                            'g',
-                            style: TextStyle(
-                              color: AppTheme.textSecondary,
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-
-              // Carbs Item
-              Expanded(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
-                  decoration: BoxDecoration(
-                    color: AppTheme.accentCyan.withOpacity(0.06),
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(
-                      color: AppTheme.accentCyan.withOpacity(0.2),
-                      width: 1.2,
-                    ),
-                  ),
-                  child: Column(
-                    children: [
-                      const Icon(Icons.bakery_dining_rounded,
-                          color: AppTheme.accentCyan, size: 16),
-                      const SizedBox(height: 6),
-                      const Text(
-                        'CARBS',
-                        style: TextStyle(
-                          color: AppTheme.textSecondary,
-                          fontSize: 8,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          SizedBox(
-                            width: 32,
-                            child: TextField(
-                              controller: _reviewCarbsController,
-                              keyboardType: TextInputType.number,
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: isDark ? Colors.white : AppTheme.textPrimary,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w900,
-                              ),
-                              decoration: const InputDecoration(
-                                border: InputBorder.none,
-                                isDense: true,
-                                contentPadding: EdgeInsets.zero,
-                              ),
-                            ),
-                          ),
-                          const Text(
-                            'g',
-                            style: TextStyle(
-                              color: AppTheme.textSecondary,
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-
-              // Fat Item
-              Expanded(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
-                  decoration: BoxDecoration(
-                    color: AppTheme.accentCoral.withOpacity(0.06),
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(
-                      color: AppTheme.accentCoral.withOpacity(0.2),
-                      width: 1.2,
-                    ),
-                  ),
-                  child: Column(
-                    children: [
-                      const Icon(Icons.water_drop_rounded,
-                          color: AppTheme.accentCoral, size: 16),
-                      const SizedBox(height: 6),
-                      const Text(
-                        'FAT',
-                        style: TextStyle(
-                          color: AppTheme.textSecondary,
-                          fontSize: 8,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          SizedBox(
-                            width: 32,
-                            child: TextField(
-                              controller: _reviewFatController,
-                              keyboardType: TextInputType.number,
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: isDark ? Colors.white : AppTheme.textPrimary,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w900,
-                              ),
-                              decoration: const InputDecoration(
-                                border: InputBorder.none,
-                                isDense: true,
-                                contentPadding: EdgeInsets.zero,
-                              ),
-                            ),
-                          ),
-                          const Text(
-                            'g',
-                            style: TextStyle(
-                              color: AppTheme.textSecondary,
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+              const Padding(
+                padding: EdgeInsets.only(left: 4, bottom: 6),
+                child: Text(
+                  "Calories",
+                  style: TextStyle(color: AppTheme.textSecondary, fontSize: 12, fontWeight: FontWeight.bold),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 32),
+          TextField(
+            controller: _reviewCalController,
+            keyboardType: TextInputType.number,
+            style: TextStyle(color: isDark ? Colors.white : Colors.black, fontWeight: FontWeight.w600, fontSize: 14),
+            decoration: InputDecoration(
+              hintText: "0",
+              hintStyle: TextStyle(color: isDark ? Colors.white24 : Colors.black26, fontSize: 13),
+              prefixIcon: const Padding(
+                padding: EdgeInsets.only(left: 12, right: 8),
+                child: Center(
+                  widthFactor: 1.0,
+                  child: Text('🔥', style: TextStyle(fontSize: 20)),
+                ),
+              ),
+              suffixIcon: Padding(
+                padding: const EdgeInsets.only(right: 16),
+                child: Center(
+                  widthFactor: 1,
+                  child: Text(
+                    "kcal",
+                    style: TextStyle(color: isDark ? const Color(0xFF868685) : AppTheme.textSecondary, fontWeight: FontWeight.bold, fontSize: 13),
+                  ),
+                ),
+              ),
+              filled: true,
+              fillColor: isDark ? const Color(0xFF121214) : Colors.black.withOpacity(0.02),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: AppTheme.accentCyan, width: 1.5),
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
+
+          // Macronutrients Title
+          const Padding(
+            padding: EdgeInsets.only(left: 4, bottom: 8),
+            child: Text(
+              "MACRONUTRIENTS",
+              style: TextStyle(color: AppTheme.textSecondary, fontSize: 9, fontWeight: FontWeight.bold, letterSpacing: 1.0),
+            ),
+          ),
+          Row(
+            children: [
+              // Protein
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.only(left: 4, bottom: 6),
+                      child: Text(
+                        "Protein",
+                        style: TextStyle(color: AppTheme.textSecondary, fontSize: 11, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    TextField(
+                      controller: _reviewProteinController,
+                      keyboardType: TextInputType.number,
+                      style: TextStyle(color: isDark ? Colors.white : Colors.black, fontWeight: FontWeight.w600, fontSize: 13),
+                      decoration: InputDecoration(
+                        hintText: "0",
+                        hintStyle: TextStyle(color: isDark ? Colors.white24 : Colors.black26, fontSize: 12),
+                        prefixIcon: const Padding(
+                          padding: EdgeInsets.only(left: 10, right: 6),
+                          child: Center(
+                            widthFactor: 1.0,
+                            child: Text('🍗', style: TextStyle(fontSize: 16)),
+                          ),
+                        ),
+                        suffixIcon: Padding(
+                          padding: const EdgeInsets.only(right: 12),
+                          child: Center(
+                            widthFactor: 1,
+                            child: Text(
+                              "g",
+                              style: TextStyle(color: isDark ? const Color(0xFF868685) : AppTheme.textSecondary, fontWeight: FontWeight.bold, fontSize: 12),
+                            ),
+                          ),
+                        ),
+                        filled: true,
+                        fillColor: isDark ? const Color(0xFF121214) : Colors.black.withOpacity(0.02),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: AppTheme.accentCyan, width: 1.5),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              // Carbs
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.only(left: 4, bottom: 6),
+                      child: Text(
+                        "Carbs",
+                        style: TextStyle(color: AppTheme.textSecondary, fontSize: 11, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    TextField(
+                      controller: _reviewCarbsController,
+                      keyboardType: TextInputType.number,
+                      style: TextStyle(color: isDark ? Colors.white : Colors.black, fontWeight: FontWeight.w600, fontSize: 13),
+                      decoration: InputDecoration(
+                        hintText: "0",
+                        hintStyle: TextStyle(color: isDark ? Colors.white24 : Colors.black26, fontSize: 12),
+                        prefixIcon: const Padding(
+                          padding: EdgeInsets.only(left: 10, right: 6),
+                          child: Center(
+                            widthFactor: 1.0,
+                            child: Text('🍚', style: TextStyle(fontSize: 16)),
+                          ),
+                        ),
+                        suffixIcon: Padding(
+                          padding: const EdgeInsets.only(right: 12),
+                          child: Center(
+                            widthFactor: 1,
+                            child: Text(
+                              "g",
+                              style: TextStyle(color: isDark ? const Color(0xFF868685) : AppTheme.textSecondary, fontWeight: FontWeight.bold, fontSize: 12),
+                            ),
+                          ),
+                        ),
+                        filled: true,
+                        fillColor: isDark ? const Color(0xFF121214) : Colors.black.withOpacity(0.02),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: AppTheme.accentCyan, width: 1.5),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              // Fat
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.only(left: 4, bottom: 6),
+                      child: Text(
+                        "Fat",
+                        style: TextStyle(color: AppTheme.textSecondary, fontSize: 11, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    TextField(
+                      controller: _reviewFatController,
+                      keyboardType: TextInputType.number,
+                      style: TextStyle(color: isDark ? Colors.white : Colors.black, fontWeight: FontWeight.w600, fontSize: 13),
+                      decoration: InputDecoration(
+                        hintText: "0",
+                        hintStyle: TextStyle(color: isDark ? Colors.white24 : Colors.black26, fontSize: 12),
+                        prefixIcon: const Padding(
+                          padding: EdgeInsets.only(left: 10, right: 6),
+                          child: Center(
+                            widthFactor: 1.0,
+                            child: Text('🥑', style: TextStyle(fontSize: 16)),
+                          ),
+                        ),
+                        suffixIcon: Padding(
+                          padding: const EdgeInsets.only(right: 12),
+                          child: Center(
+                            widthFactor: 1,
+                            child: Text(
+                              "g",
+                              style: TextStyle(color: isDark ? const Color(0xFF868685) : AppTheme.textSecondary, fontWeight: FontWeight.bold, fontSize: 12),
+                            ),
+                          ),
+                        ),
+                        filled: true,
+                        fillColor: isDark ? const Color(0xFF121214) : Colors.black.withOpacity(0.02),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: AppTheme.accentCyan, width: 1.5),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          _buildCategorySelector(isDark),
+          const SizedBox(height: 24),
 
           // Log Action button
           GestureDetector(
             onTap: () {
               // Assemble the updated Standard Food Object from review TextFields
+              final String name = _reviewNameController.text.trim().isNotEmpty
+                  ? _reviewNameController.text.trim()
+                  : "Unknown Meal";
+              final String sizeText = _reviewServingSizeController.text.trim();
+              final String finalName = sizeText.isNotEmpty
+                  ? "$name ($sizeText $_reviewSelectedServingUnit)"
+                  : name;
+
               final finalFood = StandardFood(
-                foodName: _reviewNameController.text.trim().isNotEmpty
-                    ? _reviewNameController.text.trim()
-                    : "Unknown Meal",
+                foodName: finalName,
                 calories: int.tryParse(_reviewCalController.text) ?? 0,
                 protein: int.tryParse(_reviewProteinController.text) ?? 0,
                 carbs: int.tryParse(_reviewCarbsController.text) ?? 0,

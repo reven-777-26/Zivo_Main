@@ -5,6 +5,8 @@ import 'package:intl/intl.dart';
 import '../../core/theme.dart';
 import '../../services/state_providers.dart';
 import '../../services/storage_service.dart';
+import '../../providers/insight_provider.dart';
+import '../../services/insight_engine.dart';
 
 class ProgressScreen extends ConsumerStatefulWidget {
   const ProgressScreen({super.key});
@@ -671,14 +673,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
               ),
               const SizedBox(height: 12),
 
-              _buildInsightsPanel(
-                avgCalories: avgCalories,
-                avgWater: avgWater,
-                workoutsCount: workoutsThisPeriodCount,
-                currentWeight: currentWeight,
-                calorieGoal: (profile?.calorieGoal ?? 2000).toDouble(),
-                waterGoal: (profile?.waterGoal ?? 2500) / 1000.0,
-              ),
+              _buildInsightsPanel(),
               const SizedBox(height: 20),
           ],
         ),
@@ -1365,78 +1360,53 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     );
   }
 
-  Widget _buildInsightsPanel({
-    required double avgCalories,
-    required double avgWater,
-    required int workoutsCount,
-    required double currentWeight,
-    required double calorieGoal,
-    required double waterGoal,
-  }) {
-    String calorieFeedback =
-        'Caloric intake is average. Update targets in profile as needed.';
-    Color calColor = AppTheme.accentCyan;
+  Widget _buildInsightsPanel() {
+    final insights = ref.watch(insightCardsProvider);
 
-    if (avgCalories > 0) {
-      if (avgCalories > calorieGoal + 200) {
-        calorieFeedback =
-            'You are exceeding your daily target goal of ${calorieGoal.round()} kcal. Watch calorie density!';
-        calColor = AppTheme.accentCoral;
-      } else if (avgCalories >= calorieGoal - 200) {
-        calorieFeedback =
-            'Incredible! You are perfectly hitting your metabolic target. Maintain this consistency!';
-        calColor = AppTheme.accentEmerald;
-      } else {
-        calorieFeedback =
-            'Calorie budget is under target. Ensure you ingest ample proteins to retain muscle mass.';
-        calColor = AppTheme.accentCyan;
-      }
-    }
-
-    String hydrationFeedback =
-        'Log water throughout the day to calibrate cellular retention.';
-    if (avgWater > 0) {
-      if (avgWater >= waterGoal) {
-        hydrationFeedback =
-            'Superb water levels logged! Your body is fully hydrated, helping flush metabolites.';
-        hasCompleted = true;
-      } else {
-        hydrationFeedback =
-            'Hydration is below goal of ${waterGoal.toStringAsFixed(1)}L. Try adding 250ml every 2 hours.';
-      }
-    }
-
-    String gymFeedback =
-        'Workouts build physical fitness. Complete sets in the gym tab!';
-    if (workoutsCount >= 4) {
-      gymFeedback =
-          'Outstanding gym consistency! 4+ weekly sessions recorded. Remember to schedule recovery days.';
-    } else if (workoutsCount > 0) {
-      gymFeedback =
-          '$workoutsCount active gym training sessions logged. Keep stacking physical progression!';
+    if (insights.isEmpty) {
+      return const SizedBox.shrink();
     }
 
     return Column(
-      children: [
-        _buildInsightCard(
-          title: 'Metabolic Balance',
-          subtitle: calorieFeedback,
-          icon: Icons.bolt_rounded,
-          color: calColor,
-        ),
-        _buildInsightCard(
-          title: 'Hydration Consistency',
-          subtitle: hydrationFeedback,
-          icon: Icons.water_drop_rounded,
-          color: AppTheme.accentCyan,
-        ),
-        _buildInsightCard(
-          title: 'Active Recovery optimized',
-          subtitle: gymFeedback,
-          icon: Icons.lightbulb_rounded,
-          color: AppTheme.accentOrange,
-        ),
-      ],
+      children: insights.map((card) {
+        IconData icon;
+        switch (card.iconType) {
+          case 'calorie':
+            icon = Icons.bolt_rounded;
+            break;
+          case 'hydration':
+            icon = Icons.water_drop_rounded;
+            break;
+          case 'workout':
+            icon = Icons.lightbulb_rounded;
+            break;
+          case 'correlation':
+          default:
+            icon = Icons.insights_rounded;
+            break;
+        }
+
+        Color severityColor;
+        switch (card.severity) {
+          case InsightSeverity.good:
+            severityColor = const Color(0xFFD9FF00); // Lime Green
+            break;
+          case InsightSeverity.warning:
+            severityColor = const Color(0xFFFFD600); // Yellow
+            break;
+          case InsightSeverity.alert:
+          default:
+            severityColor = const Color(0xFFFF8F00); // Orange
+            break;
+        }
+
+        return _buildInsightCard(
+          title: card.title,
+          subtitle: card.body,
+          icon: icon,
+          color: severityColor,
+        );
+      }).toList(),
     );
   }
 
@@ -1449,6 +1419,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     required Color color,
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final displayColor = color;
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
@@ -1470,7 +1441,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
               bottom: 0,
               child: Container(
                 width: 4,
-                color: color,
+                color: displayColor,
               ),
             ),
             Padding(
@@ -1482,11 +1453,11 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                     width: 40,
                     height: 40,
                     decoration: BoxDecoration(
-                      color: color.withOpacity(0.1),
+                      color: displayColor.withOpacity(0.1),
                       shape: BoxShape.circle,
                     ),
                     child: Center(
-                      child: Icon(icon, color: color, size: 20),
+                      child: Icon(icon, color: displayColor, size: 20),
                     ),
                   ),
                   const SizedBox(width: 16),

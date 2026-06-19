@@ -79,6 +79,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final dailyStats = ref.watch(dailyMetricsProvider(selectedDate));
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final workouts = ref.watch(workoutHistoryProvider);
+    final systemStatus = ref.watch(systemStatusProvider).value;
 
     // Parsed date formatting
     final parsedDate = DateFormat('yyyy-MM-dd').parse(selectedDate);
@@ -133,6 +134,70 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // System Status / Maintenance Banner
+                  if (systemStatus != null && systemStatus['active'] == true) ...[
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      margin: const EdgeInsets.only(bottom: 12),
+                      decoration: BoxDecoration(
+                        color: (systemStatus['type'] == 'critical'
+                            ? const Color(0xFFEF4444)
+                            : const Color(0xFFF59E0B)).withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: (systemStatus['type'] == 'critical'
+                              ? const Color(0xFFEF4444)
+                              : const Color(0xFFF59E0B)).withOpacity(0.3),
+                          width: 1.0,
+                        ),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            systemStatus['type'] == 'critical' ? '🚨' : '⚠️',
+                            style: const TextStyle(fontSize: 16),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  systemStatus['message'] ?? 'We are experiencing technical issues.',
+                                  style: TextStyle(
+                                    color: systemStatus['type'] == 'critical'
+                                        ? const Color(0xFFFCA5A5)
+                                        : const Color(0xFFFDE68A),
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: -0.2,
+                                    decoration: TextDecoration.none,
+                                  ),
+                                ),
+                                if (systemStatus['eta'] != null && systemStatus['eta'].toString().isNotEmpty) ...[
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Resolution ETA: ${systemStatus['eta']}',
+                                    style: TextStyle(
+                                      color: (systemStatus['type'] == 'critical'
+                                          ? const Color(0xFFFCA5A5)
+                                          : const Color(0xFFFDE68A)).withOpacity(0.7),
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      decoration: TextDecoration.none,
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+
                   // Top App Bar Greeting
                   _buildTopAppBar(context, workouts),
                   const SizedBox(height: 12),
@@ -241,6 +306,21 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 child: () {
                   final profilePic = ref.watch(profilePictureProvider);
                   if (profilePic != null && profilePic.isNotEmpty) {
+                    if (profilePic.startsWith('http')) {
+                      return ClipOval(
+                        child: Image.network(
+                          profilePic,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Icon(
+                              Icons.person_rounded,
+                              color: isDark ? const Color(0xFF868685) : AppTheme.textSecondary,
+                              size: 22,
+                            );
+                          },
+                        ),
+                      );
+                    }
                     try {
                       String cleaned = profilePic;
                       final commaIndex = cleaned.indexOf(',');
@@ -1890,7 +1970,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       style: TextStyle(fontSize: 12),
                     ),
                     Text(
-                      '$streak Days',
+                      '$streak ${streak == 1 ? "Day" : "Days"}',
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
@@ -2605,14 +2685,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Widget _buildQuickActionsRow(String selectedDate) {
+   Widget _buildQuickActionsRow(String selectedDate) {
     final parsedDate = DateFormat('yyyy-MM-dd').parse(selectedDate);
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final isDayEnded = parsedDate.isBefore(today);
 
     return SizedBox(
-      height: 82,
+      height: 80,
       child: Row(
         children: [
           Expanded(
@@ -2640,7 +2720,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           Expanded(
             child: _buildQuickActionButton(
               label: 'Product Analyser',
-              icon: Icons.qr_code_scanner_rounded,
+              icon: Icons.center_focus_strong_rounded,
               onTap: () {
                 showDialog(
                   context: context,
@@ -2674,10 +2754,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final innerBgColor = isDark ? const Color(0xFF2C2C2E) : const Color(0xFFE8EBE6);
     final borderColor = isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder;
     final textColor = isDark ? Colors.white : AppTheme.textPrimary;
+    const Color limeGreen = Color(0xFFD9FF00);
 
     return GestureDetector(
       onTap: onTap,
       child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 8),
         decoration: BoxDecoration(
           color: cardBgColor,
           borderRadius: BorderRadius.circular(16),
@@ -2687,16 +2769,18 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              width: 36,
-              height: 36,
+              width: 32,
+              height: 32,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: innerBgColor,
               ),
-              child: Icon(
-                icon,
-                color: AppTheme.accentCyan,
-                size: 18,
+              child: Center(
+                child: Icon(
+                  icon,
+                  color: limeGreen,
+                  size: 16,
+                ),
               ),
             ),
             const SizedBox(height: 6),
@@ -3156,6 +3240,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                               width: double.infinity,
                               height: 140,
                               decoration: BoxDecoration(
+                                color: isDark ? const Color(0xFF1E1C1F) : const Color(0xFFF5F5F7),
                                 border: Border.all(
                                   color: Colors.white.withOpacity(0.06),
                                 ),
@@ -3163,7 +3248,22 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                               child: () {
                                 final imgStr = item['imageUrl'] as String;
                                 if (imgStr.startsWith('http')) {
-                                  return Image.network(imgStr, fit: BoxFit.cover);
+                                  return Image.network(
+                                    imgStr,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Container(
+                                        color: Colors.white.withOpacity(0.015),
+                                        child: Center(
+                                          child: Icon(
+                                            Icons.restaurant_rounded,
+                                            color: Colors.white.withOpacity(0.2),
+                                            size: 32,
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  );
                                 }
                                 try {
                                   String cleaned = imgStr;
@@ -3172,10 +3272,32 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                     cleaned = cleaned.substring(commaIndex + 1);
                                   }
                                   cleaned = cleaned.replaceAll(RegExp(r'\s+'), '');
-                                  return Image.memory(base64Decode(cleaned), fit: BoxFit.cover);
+                                  return Image.memory(
+                                    base64Decode(cleaned),
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Container(
+                                        color: Colors.white.withOpacity(0.015),
+                                        child: Center(
+                                          child: Icon(
+                                            Icons.restaurant_rounded,
+                                            color: Colors.white.withOpacity(0.2),
+                                            size: 32,
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  );
                                 } catch (e) {
-                                  return const Center(
-                                    child: Icon(Icons.broken_image_rounded, color: AppTheme.accentCoral),
+                                  return Container(
+                                    color: Colors.white.withOpacity(0.015),
+                                    child: Center(
+                                      child: Icon(
+                                        Icons.restaurant_rounded,
+                                        color: Colors.white.withOpacity(0.2),
+                                        size: 32,
+                                      ),
+                                    ),
                                   );
                                 }
                               }(),
@@ -3190,10 +3312,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                             width: double.infinity,
                             padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
                             decoration: BoxDecoration(
-                              color: AppTheme.accentCyan.withOpacity(0.06),
+                              color: Colors.orange.withOpacity(0.06),
                               borderRadius: BorderRadius.circular(20),
                               border: Border.all(
-                                color: AppTheme.accentCyan.withOpacity(0.25),
+                                color: Colors.orange.withOpacity(0.25),
                                 width: 1.2,
                               ),
                             ),
@@ -3205,13 +3327,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                     Container(
                                       padding: const EdgeInsets.all(8),
                                       decoration: BoxDecoration(
-                                        color: AppTheme.accentCyan.withOpacity(0.12),
+                                        color: Colors.orange.withOpacity(0.12),
                                         borderRadius: BorderRadius.circular(10),
                                       ),
-                                      child: const Icon(
-                                        Icons.local_fire_department_rounded,
-                                        color: AppTheme.accentCyan,
-                                        size: 20,
+                                      child: const Text(
+                                        '🔥',
+                                        style: TextStyle(fontSize: 20),
                                       ),
                                     ),
                                     const SizedBox(width: 12),
@@ -3292,11 +3413,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         if (!isEditing)
                           Row(
                             children: [
-                              Expanded(child: _buildDetailMacroCard('PROTEIN', '${proteinController.text}g', AppTheme.accentOrange, Icons.egg_rounded)),
+                              Expanded(child: _buildDetailMacroCard('PROTEIN', '${proteinController.text}g', AppTheme.accentOrange, '🍗')),
                               const SizedBox(width: 8),
-                              Expanded(child: _buildDetailMacroCard('CARBS', '${carbsController.text}g', AppTheme.accentCyan, Icons.bakery_dining_rounded)),
+                              Expanded(child: _buildDetailMacroCard('CARBS', '${carbsController.text}g', AppTheme.accentCyan, '🍚')),
                               const SizedBox(width: 8),
-                              Expanded(child: _buildDetailMacroCard('FAT', '${fatController.text}g', AppTheme.accentCoral, Icons.water_drop_rounded)),
+                              Expanded(child: _buildDetailMacroCard('FAT', '${fatController.text}g', AppTheme.accentCoral, '🥑')),
                             ],
                           )
                         else ...[
@@ -3400,11 +3521,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                   child: Container(
                                     height: 46,
                                     decoration: BoxDecoration(
-                                      color: AppTheme.accentCoral.withOpacity(0.12),
+                                      color: isDark ? const Color(0xFF1E1C1F) : const Color(0xFFF5F5F7),
                                       borderRadius: BorderRadius.circular(14),
                                       border: Border.all(
-                                        color: AppTheme.accentCoral.withOpacity(0.3),
-                                        width: 1.2,
+                                        color: isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.06),
+                                        width: 1.0,
                                       ),
                                     ),
                                     child: const Center(
@@ -3438,23 +3559,19 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                   child: Container(
                                     height: 46,
                                     decoration: BoxDecoration(
-                                      color: AppTheme.accentCyan.withOpacity(0.12),
+                                      color: AppTheme.accentCyan,
                                       borderRadius: BorderRadius.circular(14),
-                                      border: Border.all(
-                                        color: AppTheme.accentCyan.withOpacity(0.3),
-                                        width: 1.2,
-                                      ),
                                     ),
                                     child: const Center(
                                       child: Row(
                                         mainAxisAlignment: MainAxisAlignment.center,
                                         children: [
-                                          Icon(Icons.edit_rounded, color: AppTheme.accentCyan, size: 18),
+                                          Icon(Icons.edit_rounded, color: Colors.black, size: 18),
                                           SizedBox(width: 8),
                                           Text(
                                             "Edit Entry",
                                             style: TextStyle(
-                                              color: AppTheme.accentCyan,
+                                              color: Colors.black,
                                               fontSize: 13,
                                               fontWeight: FontWeight.bold,
                                             ),
@@ -3621,7 +3738,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Widget _buildDetailMacroCard(String label, String val, Color col, IconData icon) {
+  Widget _buildDetailMacroCard(String label, String val, Color col, String emoji) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 14),
       decoration: BoxDecoration(
@@ -3634,7 +3751,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       ),
       child: Column(
         children: [
-          Icon(icon, color: col, size: 16),
+          Text(emoji, style: const TextStyle(fontSize: 16)),
           const SizedBox(height: 6),
           Text(
             label,

@@ -3,361 +3,825 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ZivoFit — Your Health, Perfected. Coming Soon.</title>
-    <meta name="description" content="Track workouts, scan nutrition, and keep your streaks alive. ZivoFit is the ultimate AMOLED-themed health companion. Join the early beta now.">
-    <!-- Google Fonts: Outfit for body/headings -->
+    <title>Zivo — India's AI Health Companion</title>
+    <meta name="description" content="Know what's really inside your food, supplements, and skincare. Zivo is a modern health operating system for India with nutrition tracking, workout logging, streaks, and AI product analysis.">
+    
+    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Stylesheet -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <!-- Background Glows -->
-    <div class="ambient-glow glow-1"></div>
-    <div class="ambient-glow glow-2"></div>
+    <!-- Premium Grid Backdrop -->
+    <div class="grid-backdrop"></div>
+    <div class="backdrop-glows">
+        <div class="glow-sphere orange-glow"></div>
+        <div class="glow-sphere lime-glow"></div>
+    </div>
 
-    <!-- Navigation Bar -->
-    <header class="navbar">
-        <div class="nav-container">
-            <a href="#" class="logo-block" id="nav-logo">
-                <div class="logo-icon">
-                    <svg width="42" height="42" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M 23.5 8 A 11 11 0 1 0 23.5 24" stroke="#D9FF00" stroke-width="3.2" stroke-linecap="round" fill="none"/>
-                        <path d="M 12.5 12 H 19.5 L 12.5 20 H 19.5" stroke="#D9FF00" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-                    </svg>
-                </div>
-                <div class="logo-text-row">
-                    <span class="logo-text">Zivo<span class="highlight">Fit</span></span>
-                    <span class="early-beta-pill">EARLY BETA</span>
-                </div>
+    <!-- Sticky Navigation Header -->
+    <header class="site-header">
+        <div class="container nav-container">
+            <a href="#" class="logo">
+                Zivo<span>.</span>
             </a>
-            <div class="nav-actions">
-                <a href="#signup" class="btn btn-secondary">Get Access</a>
-            </div>
+            <nav class="main-nav">
+                <a href="#analyzer" class="nav-link">Analyzer</a>
+                <a href="#ecosystem" class="nav-link">Ecosystem</a>
+                <a href="#built-for-india" class="nav-link">Built for India</a>
+                <a href="#showcase" class="nav-link">Showcase</a>
+                <a href="#waitlist" class="btn-primary-sm">Join Beta</a>
+            </nav>
+            <button class="mobile-nav-toggle" aria-label="Toggle navigation">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
         </div>
     </header>
 
+    <!-- Mobile Navigation Drawer -->
+    <div class="mobile-nav-drawer">
+        <nav class="mobile-nav-links">
+            <a href="#analyzer" class="mobile-nav-link">Analyzer</a>
+            <a href="#ecosystem" class="mobile-nav-link">Ecosystem</a>
+            <a href="#built-for-india" class="mobile-nav-link">Built for India</a>
+            <a href="#showcase" class="mobile-nav-link">Showcase</a>
+            <a href="#waitlist" class="mobile-btn-primary">Join Beta</a>
+        </nav>
+    </div>
+
+    <!-- MAIN CONTENT -->
     <main>
-        <!-- Hero Section -->
-        <section class="hero-section">
-            <div class="hero-container">
-                <!-- Hero Content (Left Side) -->
+        
+        <!-- SECTION 1 — HERO -->
+        <section class="hero-section" id="hero">
+            <div class="container hero-grid">
                 <div class="hero-content">
-                    <div class="tagline-row">
-                        <span class="micro-badge">REVOLUTIONIZING FITNESS</span>
+                    <div class="badge-container">
+                        <span class="india-badge">
+                            <span class="flag">🇮🇳</span> Built For India
+                        </span>
                     </div>
-                    <h1 class="hero-title">Track Smarter.<br><span class="highlight-text">Live Better.</span></h1>
-                    <p class="hero-subtitle">Track workouts, scan nutrition instantly, and keep your consistency streaks alive in a stunning obsidian interface.</p>
-                    
-                    <!-- Signup Form -->
-                    <form id="signup-form" class="signup-form">
-                        <div class="input-group">
-                            <input type="email" id="email-input" placeholder="Enter your email address" required autocomplete="email">
-                            <button type="submit" class="btn btn-primary">
-                                <span>Join the List</span>
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                    <line x1="5" y1="12" x2="19" y2="12"></line>
-                                    <polyline points="12 5 19 12 12 19"></polyline>
-                                </svg>
-                            </button>
-                        </div>
-                        <div class="form-feedback" id="form-feedback"></div>
-                    </form>
-
-                    <!-- Trust indicators -->
-                    <div class="hero-footer-info">
-                        <span class="info-item">✦ AMOLED Dark Mode</span>
-                        <span class="info-item">✦ Scan & Log Instantly</span>
-                        <span class="info-item">✦ Widget Support</span>
-                    </div>
-                </div>
-
-                <!-- Phone Mockup (Right Side) -->
-                <div class="hero-visual">
-                    <div class="phone-frame-container">
-                        <div class="phone-frame">
-                            <div class="phone-screen">
-                                <!-- Slideshow of screenshots -->
-                                <div class="screenshot-slideshow">
-                                    <img src="images/dashboard.png" class="screenshot active" alt="ZivoFit Dashboard Screen">
-                                    <img src="images/workout.png" class="screenshot" alt="ZivoFit Workouts Tracker">
-                                    <img src="images/scan.png" class="screenshot" alt="ZivoFit Nutrition Scanner">
-                                    <img src="images/progress.png" class="screenshot" alt="ZivoFit Progress Insights">
-                                    <img src="images/landing.png" class="screenshot" alt="ZivoFit App Launch Screen">
-                                    <img src="images/profile.png" class="screenshot" alt="ZivoFit User Profile">
-                                </div>
-                            </div>
-                            <div class="phone-camera"></div>
-                            <div class="phone-speaker"></div>
-                            <div class="phone-power"></div>
-                            <div class="phone-volume"></div>
-                        </div>
-                        <div class="phone-reflection"></div>
-                        <div class="phone-shadow"></div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Beta Access Link Section -->
-        <section class="countdown-section">
-            <div class="section-container">
-                <div class="countdown-box glass-card">
-                    <h3 class="countdown-label">ZivoFit Beta 1.0 Is Live</h3>
-                    <p class="beta-status-text" style="color: var(--text-secondary); margin-bottom: 24px; max-width: 600px; font-size: 1.05rem; line-height: 1.6;">
-                        Our early Android beta is officially available on the Google Play Store! Join the internal test track to download and test Zivofit today.
+                    <h1 class="hero-title">
+                        India's AI<br>Health Companion<span>.</span>
+                    </h1>
+                    <p class="hero-subtitle">
+                        Know what's really inside the food you eat, the supplements you take, and the skincare you use.
                     </p>
-                    <div class="download-badge-row">
-                        <a href="https://play.google.com/apps/testing/com.zivofit.app" target="_blank" class="btn btn-primary" style="padding: 14px 32px; font-size: 1.05rem; box-shadow: 0 4px 20px rgba(217, 255, 0, 0.25);">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 8px; display: inline-block; vertical-align: middle;">
-                                <path d="M3,5.25V18.75L18.25,12L3,5.25M4.5,7.88L13.78,12L4.5,16.13V7.88Z" />
-                            </svg>
-                            Get Beta on Google Play
+                    <p class="hero-desc">
+                        Analyze products, track nutrition, log workouts, build streaks, and make smarter health decisions — all in one intelligent app.
+                    </p>
+                    <div class="hero-actions">
+                        <a href="#waitlist" class="btn-primary">Join Beta</a>
+                        <a href="#analyzer" class="btn-secondary">
+                            Watch Demo 
+                            <svg class="chevron-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
                         </a>
                     </div>
                 </div>
-            </div>
-        </section>
-
-        <!-- Bento Features Showcase -->
-        <section class="features-section">
-            <div class="section-container">
-                <h2 class="section-heading">Designed for <span class="highlight">Performance</span></h2>
-                <p class="section-subheading">A sleek, lightning-fast app built to keep you moving towards your goals daily.</p>
-
-                <div class="bento-grid">
-                    <!-- Card 1: Streak Heatmap -->
-                    <div class="bento-card col-span-2 row-span-1 glass-card highlight-glow">
-                        <div class="card-content">
-                            <span class="card-category">Streaks</span>
-                            <h3>Never Break the Chain</h3>
-                            <p>Visualize your progress with custom heatmaps. Gamify your consistency and build habits that stick with rewarding milestones.</p>
-                        </div>
-                        <div class="card-visual streak-visual">
-                            <div class="heatmap-grid">
-                                <!-- Mini mocked heatmap grid squares -->
-                                <div class="cell level-0"></div>
-                                <div class="cell level-1"></div>
-                                <div class="cell level-2"></div>
-                                <div class="cell level-3"></div>
-                                <div class="cell level-0"></div>
-                                <div class="cell level-3"></div>
-                                <div class="cell level-2"></div>
-                                <div class="cell level-1"></div>
-                                <div class="cell level-3"></div>
-                                <div class="cell level-3"></div>
-                                <div class="cell level-2"></div>
-                                <div class="cell level-3"></div>
-                                <div class="cell level-1"></div>
-                                <div class="cell level-0"></div>
-                                <div class="cell level-3"></div>
-                                <div class="cell level-3"></div>
-                                <div class="cell level-3"></div>
-                                <div class="cell level-2"></div>
-                                <div class="cell level-3"></div>
-                                <div class="cell level-3"></div>
-                                <div class="cell level-3"></div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Card 2: Food Scanner -->
-                    <div class="bento-card col-span-1 row-span-1 glass-card">
-                        <div class="card-content">
-                            <span class="card-category">Smart Tech</span>
-                            <h3>Nutrition Scanning</h3>
-                            <p>Point your camera, scan ingredients, and view detailed macro breakdowns instantly. Logging is now friction-free.</p>
-                        </div>
-                        <div class="card-visual scan-visual">
-                            <div class="scanner-line"></div>
-                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#D9FF00" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
-                                <circle cx="12" cy="13" r="4"></circle>
-                            </svg>
-                        </div>
-                    </div>
-
-                    <!-- Card 3: Custom Workout builder -->
-                    <div class="bento-card col-span-1 row-span-1 glass-card">
-                        <div class="card-content">
-                            <span class="card-category">Workouts</span>
-                            <h3>Custom Workouts</h3>
-                            <p>Build and track personalized routines. Monitor reps, sets, rest timers, and weight progressions effortlessly.</p>
-                        </div>
-                        <div class="card-visual workout-visual">
-                            <div class="barbell-graphic">
-                                <div class="bar"></div>
-                                <div class="weight w1"></div>
-                                <div class="weight w2"></div>
-                                <div class="weight w1 right"></div>
-                                <div class="weight w2 right"></div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Card 4: Widgets & Fast Access -->
-                    <div class="bento-card col-span-2 row-span-1 glass-card dark-gradient">
-                        <div class="card-content">
-                            <span class="card-category">Integration</span>
-                            <h3>Native Home Screen Widgets</h3>
-                            <p>Access your health data in real time directly from your device home screen. Quick-glance metrics keep ZivoFit near-of-mind all day long.</p>
-                        </div>
-                        <div class="card-visual widget-visual">
-                            <div class="mock-widget">
-                                <div class="widget-header">
-                                    <span>ZivoFit Focus</span>
-                                    <div class="widget-dot"></div>
-                                </div>
-                                <div class="widget-body">
-                                    <div class="progress-arc">
-                                        <svg width="60" height="60" viewBox="0 0 36 36">
-                                            <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#2C2C2E" stroke-width="3.5" />
-                                            <path class="circle-fill" stroke-dasharray="78, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#D9FF00" stroke-width="3.5" stroke-linecap="round" />
-                                            <text x="18" y="20.5" class="circle-text" fill="#FFFFFF">78%</text>
-                                        </svg>
-                                    </div>
-                                    <div class="widget-stats">
-                                        <div class="stat-row"><span>Kcal</span><strong>620</strong></div>
-                                        <div class="stat-row"><span>Streak</span><strong>12 Days</strong></div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Zivo Vision Lens (Product Analyser) Showcase -->
-        <section class="vision-lens-section" id="vision-lens">
-            <div class="section-container">
-                <div class="vision-grid">
-                    <!-- Left: Feature Description -->
-                    <div class="vision-content">
-                        <span class="micro-badge">MAIN UNIQUE FEATURE</span>
-                        <h2 class="vision-title">Zivo Vision Lens: <br><span class="highlight">3-in-1 Product Analyser</span></h2>
-                        <p class="vision-desc">Our flagship computer vision scanner doesn't just scan barcodes; it analyzes ingredients in depth. Instantly decode and rate everything you consume or apply, specifically calibrated for Indian diets and products.</p>
+                
+                <div class="hero-visual">
+                    <div class="phone-mockup-wrapper floating-mockups">
+                        <!-- Background Shadow Glow -->
+                        <div class="mockup-glow"></div>
                         
-                        <div class="vision-features">
-                            <div class="vision-feature-item">
-                                <div class="icon-wrap">
-                                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <circle cx="12" cy="12" r="10"></circle>
-                                        <line x1="22" y1="12" x2="18" y2="12"></line>
-                                        <line x1="6" y1="12" x2="2" y2="12"></line>
-                                        <line x1="12" y1="6" x2="12" y2="2"></line>
-                                        <line x1="12" y1="22" x2="12" y2="18"></line>
-                                    </svg>
-                                </div>
-                                <div class="text-wrap">
-                                    <h4>Calibrated for Indian Foods (Built in India)</h4>
-                                    <p>Tuned specifically for local Indian home-cooked meals (Roti, Dal, Paneer, etc.) and regional packaged items. Accuracy is carefully calibrated by cross-referencing both the <strong>USDA FoodData Central (FDC)</strong> and <strong>ICMR-NIN (Indian Council of Medical Research - National Institute of Nutrition) / IFCT guidelines</strong> for standard portions and nutrient values.</p>
-                                </div>
-                            </div>
-                            
-                            <div class="vision-feature-item">
-                                <div class="icon-wrap">
-                                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
-                                        <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
-                                        <line x1="12" y1="22.08" x2="12" y2="12"></line>
-                                    </svg>
-                                </div>
-                                <div class="text-wrap">
-                                    <h4>3-in-1 Scan: Food, Supplements & Skincare</h4>
-                                    <p>Point your camera to decrypt complex ingredient lists. Instantly flag sneaky sugars, palm oil, maltodextrin, or comedogenic skincare ingredients (like Parfum, Linalool, Citral) and view a simple safety verdict (A-F).</p>
-                                </div>
-                            </div>
-                            
-                            <div class="vision-feature-item">
-                                <div class="icon-wrap">
-                                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
-                                        <line x1="3" y1="6" x2="21" y2="6"></line>
-                                        <path d="M16 10a4 4 0 0 1-8 0"></path>
-                                    </svg>
-                                </div>
-                                <div class="text-wrap">
-                                    <h4>Alternatives & Instant Commerce Integration</h4>
-                                    <p>Finds Grade A cleaner replacements (like swapping a chemical moisturizer with Minimalist Vitamin C Serum) and lets you buy them instantly via built-in Indian quick commerce buttons for <strong>Blinkit, Swiggy Instamart, Zepto, BigBasket, JioMart, Amazon, and Flipkart</strong>.</p>
+                        <!-- Left Mockup (Dashboard) -->
+                        <div class="phone-mockup phone-left">
+                            <div class="phone-inner">
+                                <div class="phone-speaker"></div>
+                                <div class="phone-screen">
+                                    <img src="assets/images/Dashboard.jpg" alt="Zivo App Dashboard Interface" loading="lazy">
                                 </div>
                             </div>
                         </div>
-                    </div>
-                    
-                    <!-- Right: High-Fidelity Mock Visual of App Screen -->
-                    <div class="vision-visual">
-                        <div class="phone-frame-container small-phone">
-                            <div class="phone-frame">
-                                <div class="phone-screen">
-                                    <img src="images/scan.png" alt="Zivo Vision Lens Screen">
-                                </div>
-                                <div class="phone-camera"></div>
+                        
+                        <!-- Center Mockup (Analyzer - Flagship) -->
+                        <div class="phone-mockup phone-center">
+                            <div class="phone-inner">
                                 <div class="phone-speaker"></div>
+                                <div class="phone-screen">
+                                    <img src="assets/images/Zivo Analyser 12.jpg" alt="Zivo App Product Analyzer Interface" loading="lazy">
+                                </div>
+                                <div class="scanner-laser"></div>
                             </div>
-                            <div class="phone-reflection"></div>
-                            <div class="phone-shadow"></div>
+                        </div>
+
+                        <!-- Right Mockup (Stats/Workout) -->
+                        <div class="phone-mockup phone-right">
+                            <div class="phone-inner">
+                                <div class="phone-speaker"></div>
+                                <div class="phone-screen">
+                                    <img src="assets/images/Stats.jpg" alt="Zivo App Health Analytics Interface" loading="lazy">
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- Footer Call-to-action / Signup anchors -->
-        <section id="signup" class="footer-signup-section">
-            <div class="section-container">
-                <div class="signup-cta-box glass-card">
-                    <h2 class="cta-title">Be Part of the <span class="highlight">Select Few</span></h2>
-                    <p class="cta-subtitle">Our early beta spaces are strictly limited. Secure your priority spot and receive launch announcements and exclusive rewards.</p>
-                    <button class="btn btn-primary scroll-top-trigger">Secure Beta Access</button>
+        <!-- SECTION 2 — THE PROBLEM -->
+        <section class="problem-section" id="problem">
+            <div class="container">
+                <div class="section-header text-center">
+                    <span class="section-tag">The Challenge</span>
+                    <h2 class="section-title">Health Decisions Shouldn't Be Guesswork<span>.</span></h2>
+                </div>
+
+                <div class="problem-grid">
+                    <!-- Card 1 -->
+                    <div class="problem-card">
+                        <div class="card-border-glow"></div>
+                        <div class="problem-card-content">
+                            <div class="problem-icon-wrapper">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="problem-icon"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                            </div>
+                            <h3>Food Labels Are Confusing</h3>
+                            <p>Most people don't understand ingredients, additives, sugars, oils, and preservatives hidden in everyday foods.</p>
+                        </div>
+                    </div>
+
+                    <!-- Card 2 -->
+                    <div class="problem-card">
+                        <div class="card-border-glow"></div>
+                        <div class="problem-card-content">
+                            <div class="problem-icon-wrapper">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="problem-icon"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                            </div>
+                            <h3>Supplements Are Full Of Marketing</h3>
+                            <p>Many products look healthy but contain fillers, artificial ingredients, and misleading claims.</p>
+                        </div>
+                    </div>
+
+                    <!-- Card 3 -->
+                    <div class="problem-card">
+                        <div class="card-border-glow"></div>
+                        <div class="problem-card-content">
+                            <div class="problem-icon-wrapper">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="problem-icon"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+                            </div>
+                            <h3>Skincare Ingredients Are Hard To Decode</h3>
+                            <p>Consumers are expected to understand ingredient names they can't even pronounce.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="problem-bottom text-center">
+                    <p>Most people consume products every day without knowing what's actually inside them.</p>
                 </div>
             </div>
         </section>
+
+        <!-- SECTION 3 — MEET ZIVO ANALYZER -->
+        <section class="analyzer-section" id="analyzer">
+            <div class="container">
+                <div class="analyzer-grid">
+                    <div class="analyzer-content">
+                        <span class="section-tag">Flagship Feature</span>
+                        <h2 class="section-title">Your Personal AI Ingredient Detective<span>.</span></h2>
+                        <p class="section-subtitle">
+                            Scan food, supplements, or skincare products and get instant health insights powered by AI.
+                        </p>
+
+                        <!-- Feature Grid Checklist -->
+                        <div class="analyzer-feature-grid">
+                            <div class="analyzer-feature-item">
+                                <div class="checkbox-wrapper">
+                                    <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                </div>
+                                <div class="feature-text">
+                                    <h4>Ingredient Analysis</h4>
+                                    <p>Deep-dives into chemical compositions.</p>
+                                </div>
+                            </div>
+                            <div class="analyzer-feature-item">
+                                <div class="checkbox-wrapper">
+                                    <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                </div>
+                                <div class="feature-text">
+                                    <h4>Health Ratings</h4>
+                                    <p>Comprehensive ratings from 1 to 10.</p>
+                                </div>
+                            </div>
+                            <div class="analyzer-feature-item">
+                                <div class="checkbox-wrapper">
+                                    <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                </div>
+                                <div class="feature-text">
+                                    <h4>Hidden Sugar Detection</h4>
+                                    <p>Uncovers hidden syrup and dextrose.</p>
+                                </div>
+                            </div>
+                            <div class="analyzer-feature-item">
+                                <div class="checkbox-wrapper">
+                                    <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                </div>
+                                <div class="feature-text">
+                                    <h4>Palm Oil Detection</h4>
+                                    <p>Identifies palm oil derivatives.</p>
+                                </div>
+                            </div>
+                            <div class="analyzer-feature-item">
+                                <div class="checkbox-wrapper">
+                                    <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                </div>
+                                <div class="feature-text">
+                                    <h4>Allergy Warnings</h4>
+                                    <p>Flags lactose, gluten, nuts, and soy.</p>
+                                </div>
+                            </div>
+                            <div class="analyzer-feature-item">
+                                <div class="checkbox-wrapper">
+                                    <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                </div>
+                                <div class="feature-text">
+                                    <h4>Additive Detection</h4>
+                                    <p>Identifies harmful colors & preservatives.</p>
+                                </div>
+                            </div>
+                            <div class="analyzer-feature-item">
+                                <div class="checkbox-wrapper">
+                                    <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                </div>
+                                <div class="feature-text">
+                                    <h4>Better Alternatives</h4>
+                                    <p>Suggests cleaner options instantly.</p>
+                                </div>
+                            </div>
+                            <div class="analyzer-feature-item">
+                                <div class="checkbox-wrapper">
+                                    <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                </div>
+                                <div class="feature-text">
+                                    <h4>AI Recommendations</h4>
+                                    <p>Personalized suggestions based on habits.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Interactive Scan Demo Container -->
+                    <div class="analyzer-visual">
+                        <div class="demo-selector-tabs">
+                            <button class="demo-tab active" data-scan-target="food">Food</button>
+                            <button class="demo-tab" data-scan-target="supplements">Supplements</button>
+                            <button class="demo-tab" data-scan-target="skincare">Skincare</button>
+                        </div>
+                        
+                        <div class="phone-mockup-frame">
+                            <div class="phone-inner">
+                                <div class="phone-speaker"></div>
+                                <div class="phone-screen">
+                                    <!-- Scan Screen Images matching active category -->
+                                    <div class="screen-image-container active" id="scan-food">
+                                        <img src="assets/images/Zivo Analyser 12.jpg" alt="Zivo Analyzer Food Scan" loading="lazy">
+                                    </div>
+                                    <div class="screen-image-container" id="scan-supplements">
+                                        <img src="assets/images/Zivo Analyser 2.jpg" alt="Zivo Analyzer Supplements Scan" loading="lazy">
+                                    </div>
+                                    <div class="screen-image-container" id="scan-skincare">
+                                        <img src="assets/images/Zivo Analyser 3.jpg" alt="Zivo Analyzer Skincare Scan" loading="lazy">
+                                    </div>
+                                </div>
+                                <!-- CSS scanner laser scanner line -->
+                                <div class="scanner-laser active"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 4 — MORE THAN JUST A SCANNER -->
+        <section class="ecosystem-section" id="ecosystem">
+            <div class="container">
+                <div class="section-header text-center">
+                    <span class="section-tag">The Ecosystem</span>
+                    <h2 class="section-title">Everything You Need To Stay Healthy<span>.</span></h2>
+                    <p class="section-subtitle">
+                        Zivo is your complete health operating system, supporting your wellness journey at every step.
+                    </p>
+                </div>
+
+                <!-- Bento Grid Layout for Ecosystem Features -->
+                <div class="ecosystem-grid">
+                    <!-- Nutrition Tracking -->
+                    <div class="eco-card large-eco-card">
+                        <div class="eco-card-text">
+                            <h3>Nutrition Tracking</h3>
+                            <p>Track calories, protein, carbs, fats, and hydration. Log meals in seconds with our intelligent local food database.</p>
+                        </div>
+                        <div class="mini-widget nutrition-widget">
+                            <!-- Calendar Strip Widget -->
+                            <div class="calendar-strip">
+                                <div class="calendar-month">JUN 2026</div>
+                                <div class="calendar-days">
+                                    <div class="day-item">
+                                        <span class="day-name">SUN</span>
+                                        <span class="day-num">14</span>
+                                    </div>
+                                    <div class="day-item">
+                                        <span class="day-name">MON</span>
+                                        <span class="day-num">15</span>
+                                    </div>
+                                    <div class="day-item">
+                                        <span class="day-name">TUE</span>
+                                        <span class="day-num">16</span>
+                                    </div>
+                                    <div class="day-item">
+                                        <span class="day-name">WED</span>
+                                        <span class="day-num">17</span>
+                                    </div>
+                                    <div class="day-item active">
+                                        <span class="day-name">THU</span>
+                                        <span class="day-num">18</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Nutrition Tracker Details Row -->
+                            <div class="nutrition-content-row">
+                                <div class="nutrition-left-col">
+                                    <div class="ring-container">
+                                        <svg viewBox="0 0 100 100" class="mini-ring">
+                                            <circle cx="50" cy="50" r="40" fill="none" stroke="rgba(255,255,255,0.03)" stroke-width="8"/>
+                                            <circle cx="50" cy="50" r="40" fill="none" stroke="#D9FF00" stroke-width="8" stroke-dasharray="251" stroke-dashoffset="60" stroke-linecap="round"/>
+                                        </svg>
+                                        <div class="ring-text">
+                                            <strong class="ring-value">63</strong>
+                                            <span class="ring-label">KCAL LEFT</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="macro-bars">
+                                        <div class="macro-item">
+                                            <span class="macro-label">Protein</span>
+                                            <div class="bar-bg"><div class="bar-fill protein-fill" style="width: 70%;"></div></div>
+                                            <span class="macro-val">124g / 179g</span>
+                                        </div>
+                                        <div class="macro-item">
+                                            <span class="macro-label">Carbs</span>
+                                            <div class="bar-bg"><div class="bar-fill carbs-fill" style="width: 71%;"></div></div>
+                                            <span class="macro-val">101g / 141g</span>
+                                        </div>
+                                        <div class="macro-item">
+                                            <span class="macro-label">Fats</span>
+                                            <div class="bar-bg"><div class="bar-fill fats-fill" style="width: 100%; max-width: 100%;"></div></div>
+                                            <span class="macro-val">62g / 48g</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="nutrition-right-col">
+                                    <!-- Hydration Panel -->
+                                    <div class="hydration-panel">
+                                        <div class="hydration-header">
+                                            <span class="hydration-title">💧 Hydration</span>
+                                            <span class="hydration-percentage">80%</span>
+                                        </div>
+                                        <div class="hydration-stats">
+                                            <span id="hydration-val">2500 ml</span> / <span class="hydration-goal">3130 ml</span>
+                                        </div>
+                                        <div class="bar-bg hydration-bar-bg">
+                                            <div id="hydration-progress" class="bar-fill hydration-fill" style="width: 80%;"></div>
+                                        </div>
+                                        <div class="hydration-actions">
+                                            <button class="btn-hydration" data-add="250">+ 250 ml</button>
+                                            <button class="btn-hydration" data-add="500">+ 500 ml</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Workout Tracking -->
+                    <div class="eco-card medium-eco-card">
+                        <div class="eco-card-text">
+                            <h3>Workout Tracking</h3>
+                            <p>Log exercises, sets, reps, and training progress. Stay guided during active workouts with a sleek, distraction-free tracker.</p>
+                        </div>
+                        <div class="mini-widget workout-widget">
+                            <div class="workout-header">
+                                <span class="workout-title"><span class="workout-live-dot"></span> Active live Gym Log</span>
+                                <span class="workout-meta">Set 3 of 4</span>
+                            </div>
+                            <div class="workout-exercise">💪 Bench Press</div>
+                            <div class="set-rows">
+                                <div class="set-row completed">
+                                    <span class="set-num">1</span>
+                                    <span class="set-details">100 kg × 8 reps</span>
+                                    <span class="set-status-icon">✓</span>
+                                </div>
+                                <div class="set-row completed">
+                                    <span class="set-num">2</span>
+                                    <span class="set-details">100 kg × 8 reps</span>
+                                    <span class="set-status-icon">✓</span>
+                                </div>
+                                <div class="set-row active">
+                                    <span class="set-num">3</span>
+                                    <span class="set-details">102.5 kg × 6 reps</span>
+                                    <span class="set-status-dot"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- AI Health Insights -->
+                    <div class="eco-card small-eco-card">
+                        <div class="eco-card-content-inner">
+                            <div class="eco-icon-wrapper">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="eco-icon"><path d="M12 2a10 10 0 0 1 7.54 16.59c-.44.53-.78 1.15-.78 1.83V21a1 1 0 0 1-1 1H6.24a1 1 0 0 1-1-1v-.58c0-.68-.34-1.3-.78-1.83A10 10 0 0 1 12 2z"/><path d="M9.05 9h5.9M9.05 13h5.9"/></svg>
+                            </div>
+                            <h3>AI Health Insights</h3>
+                            <p>Receive personalized health & wellness recommendations based on your unique habits, scan histories, and workout routines.</p>
+                            <div class="mini-widget insight-widget">
+                                <div class="insight-badge-row">
+                                    <span class="insight-label-pill">AI recommendation</span>
+                                    <span class="insight-time">Just now</span>
+                                </div>
+                                <p class="insight-message">
+                                    💡 <strong>Protein Alert:</strong> Your protein intake is 15g below target today. Scan your dinner to find clean alternatives.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Daily Streaks -->
+                    <div class="eco-card small-eco-card">
+                        <div class="eco-card-content-inner">
+                            <div class="eco-icon-wrapper">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="eco-icon"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
+                            </div>
+                            <h3>Daily Streaks</h3>
+                            <p>Stay consistent with habit-building systems and streak tracking. Never break a chain, and build healthy habits that stick.</p>
+                            <div class="mini-widget streaks-widget">
+                                <div class="streaks-header">
+                                    <span class="streak-count">🔥 23 Days Streak</span>
+                                </div>
+                                <div class="heatmap-grid">
+                                    <!-- Streaks calendar grid mock cells (28 cells for last 4 weeks) -->
+                                    <div class="heat-box level-1"></div>
+                                    <div class="heat-box level-2"></div>
+                                    <div class="heat-box level-0"></div>
+                                    <div class="heat-box level-4"></div>
+                                    <div class="heat-box level-1"></div>
+                                    <div class="heat-box level-3"></div>
+                                    <div class="heat-box level-2"></div>
+                                    <div class="heat-box level-4"></div>
+                                    <div class="heat-box level-0"></div>
+                                    <div class="heat-box level-1"></div>
+                                    <div class="heat-box level-2"></div>
+                                    <div class="heat-box level-4"></div>
+                                    <div class="heat-box level-3"></div>
+                                    <div class="heat-box level-1"></div>
+                                    <div class="heat-box level-4"></div>
+                                    <div class="heat-box level-2"></div>
+                                    <div class="heat-box level-0"></div>
+                                    <div class="heat-box level-4"></div>
+                                    <div class="heat-box level-1"></div>
+                                    <div class="heat-box level-3"></div>
+                                    <div class="heat-box level-2"></div>
+                                    <div class="heat-box level-4"></div>
+                                    <div class="heat-box level-0"></div>
+                                    <div class="heat-box level-1"></div>
+                                    <div class="heat-box level-2"></div>
+                                    <div class="heat-box level-4"></div>
+                                    <div class="heat-box level-3"></div>
+                                    <div class="heat-box level-4"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Health Analytics -->
+                    <div class="eco-card large-eco-card">
+                        <div class="eco-card-text">
+                            <h3>Health Analytics</h3>
+                            <p>Visualize your progress through beautiful dashboards and trends. Monitor muscular balance, macronutrient ratios, and streak streaks over time.</p>
+                        </div>
+                        <div class="mini-widget analytics-widget">
+                            <div class="analytics-header">
+                                <div class="analytics-tabs">
+                                    <span class="analytics-tab">Log</span>
+                                    <span class="analytics-tab active">Analytics</span>
+                                    <span class="analytics-tab">Physique</span>
+                                </div>
+                                <div class="analytics-periods">
+                                    <span class="period-item">1M</span>
+                                    <span class="period-item active">3M</span>
+                                    <span class="period-item">6M</span>
+                                    <span class="period-item">ALL</span>
+                                </div>
+                            </div>
+                            <div class="chart-container">
+                                <svg viewBox="0 0 200 80" class="sparkline-svg">
+                                    <defs>
+                                        <linearGradient id="chart-glow" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="0%" stop-color="#D9FF00" stop-opacity="0.25"/>
+                                            <stop offset="100%" stop-color="#D9FF00" stop-opacity="0"/>
+                                        </linearGradient>
+                                    </defs>
+                                    <path d="M10,70 Q45,40 80,60 T150,30 T190,15 L190,80 L10,80 Z" fill="url(#chart-glow)"/>
+                                    <path d="M10,70 Q45,40 80,60 T150,30 T190,15" fill="none" stroke="#D9FF00" stroke-width="2.5" stroke-linecap="round"/>
+                                    <circle cx="10" cy="70" r="3" fill="#000" stroke="#D9FF00" stroke-width="1.5"/>
+                                    <circle cx="80" cy="60" r="3" fill="#000" stroke="#D9FF00" stroke-width="1.5"/>
+                                    <circle cx="150" cy="30" r="3" fill="#000" stroke="#D9FF00" stroke-width="1.5"/>
+                                    <circle cx="190" cy="15" r="4" fill="#D9FF00" />
+                                </svg>
+                            </div>
+                            <div class="analytics-footer">
+                                <span class="footer-data">🔥 23 Days Streak Consistent</span>
+                                <span class="footer-highlight">💡 You're in the top 18% of users</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 5 — BUILT FOR INDIA -->
+        <section class="built-for-india-section" id="built-for-india">
+            <div class="container">
+                <div class="section-header text-center">
+                    <span class="section-tag">Localization</span>
+                    <h2 class="section-title">Finally, A Health App Built For India<span>.</span></h2>
+                </div>
+
+                <!-- Comparison Table/Grid -->
+                <div class="comparison-grid">
+                    <div class="comparison-col traditional-apps">
+                        <h3>Traditional Health Apps</h3>
+                        <ul class="comparison-list">
+                            <li>
+                                <svg class="list-cross-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                Built for Western products
+                            </li>
+                            <li>
+                                <svg class="list-cross-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                Limited Indian food support
+                            </li>
+                            <li>
+                                <svg class="list-cross-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                Generic recommendations
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="comparison-col zivo-app">
+                        <div class="glow-border-accent"></div>
+                        <h3>Zivo</h3>
+                        <ul class="comparison-list">
+                            <li>
+                                <svg class="list-check-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                Indian foods & snacks database
+                            </li>
+                            <li>
+                                <svg class="list-check-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                Indian supplement brands indexed
+                            </li>
+                            <li>
+                                <svg class="list-check-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                Indian skincare products compatibility
+                            </li>
+                            <li>
+                                <svg class="list-check-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                Indian health priorities addressed
+                            </li>
+                            <li>
+                                <svg class="list-check-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                Alternative recommendations available locally
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Integration Badges -->
+                <div class="integrations-container">
+                    <p class="integrations-title">Scan ingredients directly from your grocery deliveries</p>
+                    <div class="integrations-grid">
+                        <div class="integration-badge">Blinkit</div>
+                        <div class="integration-badge">Zepto</div>
+                        <div class="integration-badge">Swiggy Instamart</div>
+                        <div class="integration-badge">Amazon India</div>
+                        <div class="integration-badge">BigBasket</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 6 — APP SHOWCASE -->
+        <section class="showcase-section" id="showcase">
+            <div class="container">
+                <div class="section-header text-center">
+                    <span class="section-tag">Interactive Preview</span>
+                    <h2 class="section-title">Everything In One Place<span>.</span></h2>
+                    <p class="section-subtitle">
+                        Explore Zivo's clean user interface designed for daily efficiency.
+                    </p>
+                </div>
+
+                <div class="showcase-explorer">
+                    <!-- Showcase Sidebar / Tabs -->
+                    <div class="showcase-tabs">
+                        <button class="showcase-tab active" data-showcase="dashboard">
+                            <span class="tab-dot"></span>
+                            <div class="tab-meta">
+                                <h4>Dashboard</h4>
+                                <p>Your daily health overview</p>
+                            </div>
+                        </button>
+                        <button class="showcase-tab" data-showcase="nutrition">
+                            <span class="tab-dot"></span>
+                            <div class="tab-meta">
+                                <h4>Nutrition Tracking</h4>
+                                <p>Accurate macronutrient logging</p>
+                            </div>
+                        </button>
+                        <button class="showcase-tab" data-showcase="workout">
+                            <span class="tab-dot"></span>
+                            <div class="tab-meta">
+                                <h4>Workout Tracking</h4>
+                                <p>Routine and exercise metrics</p>
+                            </div>
+                        </button>
+                        <button class="showcase-tab" data-showcase="analyzer">
+                            <span class="tab-dot"></span>
+                            <div class="tab-meta">
+                                <h4>Analyzer</h4>
+                                <p>AI ingredient inspector</p>
+                            </div>
+                        </button>
+                        <button class="showcase-tab" data-showcase="streaks">
+                            <span class="tab-dot"></span>
+                            <div class="tab-meta">
+                                <h4>Streak System</h4>
+                                <p>Accountability & habits</p>
+                            </div>
+                        </button>
+                        <button class="showcase-tab" data-showcase="analytics">
+                            <span class="tab-dot"></span>
+                            <div class="tab-meta">
+                                <h4>Analytics</h4>
+                                <p>Deep health insights</p>
+                            </div>
+                        </button>
+                    </div>
+
+                    <!-- Showcase Visual Mockup Display -->
+                    <div class="showcase-viewer">
+                        <div class="viewer-phone-frame">
+                            <div class="phone-inner">
+                                <div class="phone-speaker"></div>
+                                <div class="phone-screen">
+                                    <div class="showcase-screen active" id="showcase-dashboard">
+                                        <img src="assets/images/Dashboard 2.jpg" alt="Zivo Dashboard Screen" loading="lazy">
+                                    </div>
+                                    <div class="showcase-screen" id="showcase-nutrition">
+                                        <img src="assets/images/Food log system.jpg" alt="Zivo Food Logging Screen" loading="lazy">
+                                    </div>
+                                    <div class="showcase-screen" id="showcase-workout">
+                                        <img src="assets/images/Gym workout.jpg" alt="Zivo Gym Workout Screen" loading="lazy">
+                                    </div>
+                                    <div class="showcase-screen" id="showcase-analyzer">
+                                        <img src="assets/images/Zivo Analyser 12.jpg" alt="Zivo Analyzer Screen" loading="lazy">
+                                    </div>
+                                    <div class="showcase-screen" id="showcase-streaks">
+                                        <img src="assets/images/Streak Logs 2.2.jpg" alt="Zivo Streaks Log Screen" loading="lazy">
+                                    </div>
+                                    <div class="showcase-screen" id="showcase-analytics">
+                                        <img src="assets/images/Stats 2.jpg" alt="Zivo Stats Screen" loading="lazy">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 7 — WHY PEOPLE WILL LOVE ZIVO -->
+        <section class="benefits-section" id="benefits">
+            <div class="container">
+                <div class="section-header text-center">
+                    <span class="section-tag">Value Proposition</span>
+                    <h2 class="section-title">Built For Real Life<span>.</span></h2>
+                </div>
+
+                <div class="benefits-grid">
+                    <div class="benefit-item">
+                        <div class="benefit-num">01</div>
+                        <h3>Make better buying decisions.</h3>
+                        <p>Evaluate grocery items, skincare products, and supplements before checkout. Stop spending on marketing gimmicks.</p>
+                    </div>
+                    <div class="benefit-item">
+                        <div class="benefit-num">02</div>
+                        <h3>Understand ingredients instantly.</h3>
+                        <p>Translate complex chemical compound listings on back labels into simple, understandable health scores and summaries.</p>
+                    </div>
+                    <div class="benefit-item">
+                        <div class="benefit-num">03</div>
+                        <h3>Stay accountable through streaks.</h3>
+                        <p>Keep your daily health streaks active. Gamified metrics keep you motivated to scan, exercise, and log calories every day.</p>
+                    </div>
+                    <div class="benefit-item">
+                        <div class="benefit-num">04</div>
+                        <h3>Track your health without complexity.</h3>
+                        <p>An easy-to-use, minimal AMOLED interface designed to reduce administrative friction and focus on core habit changes.</p>
+                    </div>
+                    <div class="benefit-item">
+                        <div class="benefit-num">05</div>
+                        <h3>Build healthier habits that last.</h3>
+                        <p>Incremental daily progress adds up to substantial long-term healthy habits. Designed for sustainability, not quick fixes.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 8 — BETA WAITLIST -->
+        <section class="waitlist-section" id="waitlist">
+            <div class="container">
+                <div class="waitlist-box">
+                    <div class="glow-border-accent"></div>
+                    <div class="waitlist-inner">
+                        <div class="waitlist-content">
+                            <span class="section-tag">Early Access</span>
+                            <h2 class="section-title">Join The Zivo Beta<span>.</span></h2>
+                            <p class="section-subtitle">Help shape the future of AI-powered health tracking in India.</p>
+                            <p class="waitlist-notice">Limited beta access available.</p>
+                        </div>
+                        
+                        <div class="waitlist-form-container">
+                            <form id="beta-form" class="waitlist-form">
+                                <div class="form-group">
+                                    <input type="text" id="user-name" name="name" required placeholder=" " class="form-input">
+                                    <label for="user-name" class="form-label">Name</label>
+                                </div>
+                                <div class="form-group">
+                                    <input type="email" id="user-email" name="email" required placeholder=" " class="form-input">
+                                    <label for="user-email" class="form-label">Email</label>
+                                </div>
+                                <div class="form-group">
+                                    <select id="user-goal" name="goal" class="form-input select-input">
+                                        <option value="" disabled selected hidden></option>
+                                        <option value="understand-ingredients">Understand what I consume</option>
+                                        <option value="nutrition-workout">Track nutrition & workouts</option>
+                                        <option value="build-streaks">Build consistent health streaks</option>
+                                        <option value="cleaner-living">General clean living</option>
+                                    </select>
+                                    <label for="user-goal" class="form-label select-label">What is your primary health goal? (Optional)</label>
+                                </div>
+                                <button type="submit" class="btn-primary form-submit">
+                                    Request Beta Access
+                                </button>
+                            </form>
+                            <!-- Success message state -->
+                            <div class="form-success-message" style="display: none;">
+                                <div class="success-icon-wrapper">
+                                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                                </div>
+                                <h3>You're on the list!</h3>
+                                <p>Thank you for requesting early access. We will reach out via email as soon as a slot opens up in the beta program.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- FINAL CTA -->
+        <section class="final-cta-section">
+            <div class="container text-center">
+                <h2 class="final-title">Track Smarter. Live Better<span>.</span></h2>
+                <a href="#waitlist" class="btn-primary btn-large">Get Early Access</a>
+            </div>
+        </section>
+
     </main>
 
-    <!-- Footer -->
-    <footer>
-        <div class="footer-container">
-            <div class="footer-logo">
-                <div class="logo-block">
-                    <div class="logo-icon">
-                        <svg width="36" height="36" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M 23.5 8 A 11 11 0 1 0 23.5 24" stroke="#D9FF00" stroke-width="3.2" stroke-linecap="round" fill="none"/>
-                            <path d="M 12.5 12 H 19.5 L 12.5 20 H 19.5" stroke="#D9FF00" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-                        </svg>
-                    </div>
-                    <div class="logo-text-row">
-                        <span class="logo-text">Zivo<span class="highlight">Fit</span></span>
-                        <span class="early-beta-pill">EARLY BETA</span>
-                    </div>
-                </div>
+    <!-- FOOTER -->
+    <footer class="site-footer">
+        <div class="container footer-grid">
+            <div class="footer-brand">
+                <a href="#" class="logo">Zivo<span>.</span></a>
+                <p>India's AI Health Companion.</p>
             </div>
             <div class="footer-links">
-                <a href="#">Privacy Policy</a>
-                <a href="#">Terms of Service</a>
-                <a href="mailto:beta@zivofit.com">Contact Us</a>
+                <a href="#" class="footer-link">Privacy Policy</a>
+                <a href="#" class="footer-link">Terms</a>
+                <a href="#" class="footer-link">Contact</a>
             </div>
-            <div class="footer-copyright">
-                <p>&copy; 2026 ZivoFit. All rights reserved. Your health data is processed entirely locally.</p>
-            </div>
+        </div>
+        <div class="container footer-bottom">
+            <p>&copy; 2026 Zivo Health. All rights reserved.</p>
         </div>
     </footer>
 
-    <!-- Glass Success Overlay Modal -->
-    <div class="modal-overlay" id="success-modal">
-        <div class="modal-content glass-card">
-            <div class="modal-success-icon">
-                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#D9FF00" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="20 6 9 17 4 12"></polyline>
-                </svg>
-            </div>
-            <h2>You're registered!</h2>
-            <p style="margin-bottom: 16px;">We have registered <strong id="registered-email">your email</strong> for testing access. Click below to join the internal testing track and download the app:</p>
-            <a href="https://play.google.com/apps/testing/com.zivofit.app" target="_blank" class="btn btn-primary" style="margin-bottom: 12px; width: 100%;">Join Test on Google Play</a>
-            <button class="btn btn-secondary" id="close-modal-btn" style="width: 100%;">Close</button>
-        </div>
-    </div>
-
+    <!-- Scripts -->
     <script src="app.js"></script>
 </body>
 </html>

@@ -372,8 +372,9 @@ class FirebaseService {
         );
         if (url != null) {
           await userDoc.set({'profilePictureUrl': url}, SetOptions(merge: true));
-          // Persist URL locally so we don't re-upload
-          await StorageService.saveProfilePicture(url);
+        } else {
+          // Fallback: Save base64 directly to Firestore
+          await userDoc.set({'profilePictureUrl': profilePicBase64}, SetOptions(merge: true));
         }
       } else if (profilePicBase64 != null && profilePicBase64.startsWith('http')) {
         // Already a URL, just ensure it's in Firestore
@@ -390,7 +391,9 @@ class FirebaseService {
         );
         if (url != null) {
           await userDoc.set({'customBackgroundUrl': url}, SetOptions(merge: true));
-          await StorageService.saveCustomBackground(url);
+        } else {
+          // Fallback: Save base64 directly to Firestore
+          await userDoc.set({'customBackgroundUrl': bgBase64}, SetOptions(merge: true));
         }
       } else if (bgBase64 != null && bgBase64.startsWith('http')) {
         await userDoc.set({'customBackgroundUrl': bgBase64}, SetOptions(merge: true));
@@ -745,9 +748,15 @@ class FirebaseService {
 
   /// Sync profile picture to cloud (upload base64 or persist existing URL)
   static Future<void> saveProfilePictureCloud(String? base64OrUrl) async {
-    if (!isLoggedIn || base64OrUrl == null || base64OrUrl.isEmpty) return;
+    if (!isLoggedIn) return;
     try {
       final uid = currentUser!.uid;
+      if (base64OrUrl == null || base64OrUrl.isEmpty) {
+        await firestore.collection('users').doc(uid).set(
+          {'profilePictureUrl': null}, SetOptions(merge: true),
+        );
+        return;
+      }
       if (!base64OrUrl.startsWith('http')) {
         final url = await _uploadBase64Image(
           uid: uid,
@@ -758,7 +767,11 @@ class FirebaseService {
           await firestore.collection('users').doc(uid).set(
             {'profilePictureUrl': url}, SetOptions(merge: true),
           );
-          await StorageService.saveProfilePicture(url);
+        } else {
+          // Fallback: Save base64 directly to Firestore
+          await firestore.collection('users').doc(uid).set(
+            {'profilePictureUrl': base64OrUrl}, SetOptions(merge: true),
+          );
         }
       } else {
         await firestore.collection('users').doc(uid).set(
@@ -772,9 +785,15 @@ class FirebaseService {
 
   /// Sync custom background to cloud (upload base64 or persist existing URL)
   static Future<void> saveCustomBackgroundCloud(String? base64OrUrl) async {
-    if (!isLoggedIn || base64OrUrl == null || base64OrUrl.isEmpty) return;
+    if (!isLoggedIn) return;
     try {
       final uid = currentUser!.uid;
+      if (base64OrUrl == null || base64OrUrl.isEmpty) {
+        await firestore.collection('users').doc(uid).set(
+          {'customBackgroundUrl': null}, SetOptions(merge: true),
+        );
+        return;
+      }
       if (!base64OrUrl.startsWith('http')) {
         final url = await _uploadBase64Image(
           uid: uid,
@@ -785,7 +804,11 @@ class FirebaseService {
           await firestore.collection('users').doc(uid).set(
             {'customBackgroundUrl': url}, SetOptions(merge: true),
           );
-          await StorageService.saveCustomBackground(url);
+        } else {
+          // Fallback: Save base64 directly to Firestore
+          await firestore.collection('users').doc(uid).set(
+            {'customBackgroundUrl': base64OrUrl}, SetOptions(merge: true),
+          );
         }
       } else {
         await firestore.collection('users').doc(uid).set(

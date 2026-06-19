@@ -8,6 +8,7 @@ import '../../core/logo_widget.dart';
 import '../../services/state_providers.dart';
 import '../../services/firebase_service.dart';
 import '../../services/storage_service.dart';
+import '../../core/widgets/zivo_loader.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
@@ -144,11 +145,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
               child: SizedBox(
                 width: 32,
                 height: 32,
-                child: CircularProgressIndicator(
+                child: ZivoLoader(
+                  size: 32,
                   strokeWidth: 2,
-                  valueColor: const AlwaysStoppedAnimation<Color>(
-                    AppTheme.accentCyan,
-                  ),
                 ),
               ),
             ),

@@ -396,7 +396,7 @@ Future<dynamic> _showFoodDetailsDialog(
   String selectedMealKey = initialMealKey;
   bool isEditing = isDayEnded ? false : startInEditMode;
 
-  Widget buildMacroCard(String label, String val, Color col, IconData icon) {
+  Widget buildMacroCard(String label, String val, Color col, String emoji) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 14),
       decoration: BoxDecoration(
@@ -409,7 +409,7 @@ Future<dynamic> _showFoodDetailsDialog(
       ),
       child: Column(
         children: [
-          Icon(icon, color: col, size: 16),
+          Text(emoji, style: const TextStyle(fontSize: 16)),
           const SizedBox(height: 6),
           Text(
             label,
@@ -434,38 +434,55 @@ Future<dynamic> _showFoodDetailsDialog(
     );
   }
 
-  Widget buildMiniEditField(String label, TextEditingController controller) {
+  Widget buildMiniEditField(String label, TextEditingController controller, String emoji) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 9,
-            color: AppTheme.textSecondary,
-            fontWeight: FontWeight.bold,
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 6),
+          child: Text(
+            label,
+            style: const TextStyle(color: AppTheme.textSecondary, fontSize: 11, fontWeight: FontWeight.bold),
           ),
         ),
-        const SizedBox(height: 4),
         TextField(
           controller: controller,
           keyboardType: TextInputType.number,
-          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: isDark ? Colors.white : AppTheme.textPrimary),
+          style: TextStyle(color: isDark ? Colors.white : Colors.black, fontWeight: FontWeight.w600, fontSize: 13),
           decoration: InputDecoration(
+            hintText: "0",
+            hintStyle: TextStyle(color: isDark ? Colors.white24 : Colors.black26, fontSize: 12),
+            prefixIcon: Padding(
+              padding: const EdgeInsets.only(left: 10, right: 6),
+              child: Center(
+                widthFactor: 1.0,
+                child: Text(emoji, style: const TextStyle(fontSize: 16)),
+              ),
+            ),
+            suffixIcon: Padding(
+              padding: const EdgeInsets.only(right: 12),
+              child: Center(
+                widthFactor: 1,
+                child: Text(
+                  "g",
+                  style: TextStyle(color: isDark ? const Color(0xFF868685) : AppTheme.textSecondary, fontWeight: FontWeight.bold, fontSize: 12),
+                ),
+              ),
+            ),
             filled: true,
-            fillColor: isDark ? Colors.white.withOpacity(0.02) : Colors.black.withOpacity(0.02),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            fillColor: isDark ? const Color(0xFF121214) : Colors.black.withOpacity(0.02),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: isDark ? const Color(0xFF323530) : AppTheme.textPrimary),
+              borderSide: BorderSide(color: isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: isDark ? const Color(0xFF323530) : AppTheme.textPrimary),
+              borderSide: BorderSide(color: isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppTheme.accentCyan),
+              borderSide: const BorderSide(color: AppTheme.accentCyan, width: 1.5),
             ),
           ),
         ),
@@ -565,68 +582,7 @@ Future<dynamic> _showFoodDetailsDialog(
                       ),
                       const SizedBox(height: 18),
 
-                      if (isEditing) ...[
-                        const Text(
-                          'MEAL CATEGORY',
-                          style: TextStyle(
-                            fontSize: 9,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1.0,
-                            color: AppTheme.textSecondary,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Wrap(
-                          spacing: 6,
-                          runSpacing: 6,
-                          children: categories.map((cat) {
-                            final isSelected = selectedMealKey == cat['key'];
-                            return GestureDetector(
-                               onTap: () {
-                                 setState(() {
-                                   selectedMealKey = cat['key'] as String;
-                                 });
-                               },
-                               child: AnimatedContainer(
-                                 duration: const Duration(milliseconds: 200),
-                                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                 decoration: BoxDecoration(
-                                   color: isSelected
-                                       ? AppTheme.accentCyan
-                                       : (isDark ? Colors.white.withOpacity(0.03) : Colors.black.withOpacity(0.03)),
-                                   borderRadius: BorderRadius.circular(24),
-                                   border: Border.all(
-                                     color: isSelected
-                                         ? AppTheme.accentCyan
-                                         : (isDark ? AppTheme.glassBorder : Colors.black.withOpacity(0.08)),
-                                     width: 1.0,
-                                   ),
-                                 ),
-                                 child: Row(
-                                   mainAxisSize: MainAxisSize.min,
-                                   children: [
-                                     Icon(
-                                       cat['icon'] as IconData,
-                                       size: 11,
-                                       color: isSelected ? Colors.black : (isDark ? Colors.white70 : AppTheme.textSecondary),
-                                     ),
-                                     const SizedBox(width: 4),
-                                     Text(
-                                       cat['name'] as String,
-                                       style: TextStyle(
-                                         fontSize: 10,
-                                         fontWeight: FontWeight.bold,
-                                         color: isSelected ? Colors.black : (isDark ? Colors.white70 : AppTheme.textPrimary),
-                                       ),
-                                     ),
-                                   ],
-                                 ),
-                               ),
-                             );
-                          }).toList(),
-                        ),
-                        const SizedBox(height: 16),
-                      ],
+
 
                       // Meal Name
                       if (!isEditing)
@@ -754,10 +710,9 @@ Future<dynamic> _showFoodDetailsDialog(
                                       color: isDark ? AppTheme.accentCyan.withOpacity(0.12) : const Color(0xFFC5EDAB),
                                       borderRadius: BorderRadius.circular(10),
                                     ),
-                                    child: Icon(
-                                      Icons.local_fire_department_rounded,
-                                      color: isDark ? AppTheme.accentCyan : const Color(0xFF054D28),
-                                      size: 20,
+                                    child: const Center(
+                                      widthFactor: 1.0,
+                                      child: Text('🔥', style: TextStyle(fontSize: 20)),
                                     ),
                                   ),
                                   const SizedBox(width: 12),
@@ -797,37 +752,51 @@ Future<dynamic> _showFoodDetailsDialog(
                           ),
                         )
                       else ...[
-                        const Text(
-                          'CALORIES',
-                          style: TextStyle(
-                            fontSize: 9,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1.0,
-                            color: AppTheme.textSecondary,
+                        const Padding(
+                          padding: EdgeInsets.only(left: 4, bottom: 6),
+                          child: Text(
+                            "Calories",
+                            style: TextStyle(color: AppTheme.textSecondary, fontSize: 12, fontWeight: FontWeight.bold),
                           ),
                         ),
-                        const SizedBox(height: 6),
                         TextField(
                           controller: calController,
                           keyboardType: TextInputType.number,
-                          style: TextStyle(fontWeight: FontWeight.bold, color: isDark ? Colors.white : AppTheme.textPrimary),
+                          style: TextStyle(color: isDark ? Colors.white : Colors.black, fontWeight: FontWeight.w600, fontSize: 14),
                           decoration: InputDecoration(
+                            hintText: "0",
+                            hintStyle: TextStyle(color: isDark ? Colors.white24 : Colors.black26, fontSize: 13),
+                            prefixIcon: const Padding(
+                              padding: EdgeInsets.only(left: 12, right: 8),
+                              child: Center(
+                                widthFactor: 1.0,
+                                child: Text('🔥', style: TextStyle(fontSize: 20)),
+                              ),
+                            ),
+                            suffixIcon: Padding(
+                              padding: const EdgeInsets.only(right: 16),
+                              child: Center(
+                                widthFactor: 1,
+                                child: Text(
+                                  "kcal",
+                                  style: TextStyle(color: isDark ? const Color(0xFF868685) : AppTheme.textSecondary, fontWeight: FontWeight.bold, fontSize: 13),
+                                ),
+                              ),
+                            ),
                             filled: true,
-                            fillColor: isDark ? Colors.white.withOpacity(0.02) : Colors.black.withOpacity(0.02),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                            suffixText: ' kcal',
-                            suffixStyle: const TextStyle(color: AppTheme.textSecondary, fontSize: 12),
+                            fillColor: isDark ? const Color(0xFF121214) : Colors.black.withOpacity(0.02),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: isDark ? const Color(0xFF323530) : AppTheme.textPrimary),
+                              borderSide: BorderSide(color: isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder),
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: isDark ? const Color(0xFF323530) : AppTheme.textPrimary),
+                              borderSide: BorderSide(color: isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(color: AppTheme.accentCyan),
+                              borderSide: const BorderSide(color: AppTheme.accentCyan, width: 1.5),
                             ),
                           ),
                         ),
@@ -838,11 +807,11 @@ Future<dynamic> _showFoodDetailsDialog(
                       if (!isEditing)
                         Row(
                           children: [
-                            Expanded(child: buildMacroCard('PROTEIN', '${proteinController.text}g', AppTheme.accentOrange, Icons.egg_rounded)),
+                            Expanded(child: buildMacroCard('PROTEIN', '${proteinController.text}g', AppTheme.accentOrange, '🍗')),
                             const SizedBox(width: 8),
-                            Expanded(child: buildMacroCard('CARBS', '${carbsController.text}g', AppTheme.accentCyan, Icons.bakery_dining_rounded)),
+                            Expanded(child: buildMacroCard('CARBS', '${carbsController.text}g', AppTheme.accentCyan, '🍚')),
                             const SizedBox(width: 8),
-                            Expanded(child: buildMacroCard('FAT', '${fatController.text}g', AppTheme.accentCoral, Icons.water_drop_rounded)),
+                            Expanded(child: buildMacroCard('FAT', '${fatController.text}g', AppTheme.accentCoral, '🥑')),
                           ],
                         )
                       else ...[
@@ -858,13 +827,75 @@ Future<dynamic> _showFoodDetailsDialog(
                         const SizedBox(height: 6),
                         Row(
                           children: [
-                            Expanded(child: buildMiniEditField("Protein", proteinController)),
+                            Expanded(child: buildMiniEditField("Protein", proteinController, '🍗')),
                             const SizedBox(width: 8),
-                            Expanded(child: buildMiniEditField("Carbs", carbsController)),
+                            Expanded(child: buildMiniEditField("Carbs", carbsController, '🍚')),
                             const SizedBox(width: 8),
-                            Expanded(child: buildMiniEditField("Fat", fatController)),
+                            Expanded(child: buildMiniEditField("Fat", fatController, '🥑')),
                           ],
                         ),
+                      ],
+                      if (isEditing) ...[
+                        const Text(
+                          'MEAL CATEGORY',
+                          style: TextStyle(
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1.0,
+                            color: AppTheme.textSecondary,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 6,
+                          children: categories.map((cat) {
+                            final isSelected = selectedMealKey == cat['key'];
+                            return GestureDetector(
+                               onTap: () {
+                                 setState(() {
+                                   selectedMealKey = cat['key'] as String;
+                                 });
+                               },
+                               child: AnimatedContainer(
+                                 duration: const Duration(milliseconds: 200),
+                                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                 decoration: BoxDecoration(
+                                   color: isSelected
+                                       ? AppTheme.accentCyan
+                                       : (isDark ? Colors.white.withOpacity(0.03) : Colors.black.withOpacity(0.03)),
+                                   borderRadius: BorderRadius.circular(24),
+                                   border: Border.all(
+                                     color: isSelected
+                                         ? AppTheme.accentCyan
+                                         : (isDark ? AppTheme.glassBorder : Colors.black.withOpacity(0.08)),
+                                     width: 1.0,
+                                   ),
+                                 ),
+                                 child: Row(
+                                   mainAxisSize: MainAxisSize.min,
+                                   children: [
+                                     Icon(
+                                       cat['icon'] as IconData,
+                                       size: 11,
+                                       color: isSelected ? Colors.black : (isDark ? Colors.white70 : AppTheme.textSecondary),
+                                     ),
+                                     const SizedBox(width: 4),
+                                     Text(
+                                       cat['name'] as String,
+                                       style: TextStyle(
+                                         fontSize: 10,
+                                         fontWeight: FontWeight.bold,
+                                         color: isSelected ? Colors.black : (isDark ? Colors.white70 : AppTheme.textPrimary),
+                                       ),
+                                     ),
+                                   ],
+                                 ),
+                               ),
+                             );
+                          }).toList(),
+                        ),
+                        const SizedBox(height: 16),
                       ],
                       const SizedBox(height: 24),
 

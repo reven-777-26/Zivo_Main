@@ -24,6 +24,8 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   bool _isSignUp = false;
   bool _isLoading = false;
   String? _errorMessage;
+  bool _obscurePassword = true;
+  bool _obscureReenterPassword = true;
 
   @override
   void dispose() {
@@ -297,14 +299,26 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                             },
                           ),
                           const SizedBox(height: 16),
-                          TextFormField(
+                           TextFormField(
                             controller: _passwordController,
-                            obscureText: true,
+                            obscureText: _obscurePassword,
                             style: TextStyle(color: isDark ? Colors.white : AppTheme.textPrimary),
                             decoration: InputDecoration(
                               hintText: 'Password',
                               hintStyle: TextStyle(color: isDark ? AppTheme.textSecondary : AppTheme.textTertiary),
                               prefixIcon: Icon(Icons.lock_outline, color: isDark ? AppTheme.textSecondary : AppTheme.textTertiary),
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                                  color: isDark ? AppTheme.textSecondary : AppTheme.textTertiary,
+                                  size: 20,
+                                ),
+                                onPressed: () {
+                                  setState(() {
+                                    _obscurePassword = !_obscurePassword;
+                                  });
+                                },
+                              ),
                               filled: true,
                               fillColor: isDark ? Colors.black.withOpacity(0.4) : const Color(0xFFF0F2EE),
                               border: OutlineInputBorder(
@@ -331,12 +345,24 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                             const SizedBox(height: 16),
                             TextFormField(
                               controller: _reenterPasswordController,
-                              obscureText: true,
+                              obscureText: _obscureReenterPassword,
                               style: TextStyle(color: isDark ? Colors.white : AppTheme.textPrimary),
                               decoration: InputDecoration(
                                 hintText: 'Re-enter Password',
                                 hintStyle: TextStyle(color: isDark ? AppTheme.textSecondary : AppTheme.textTertiary),
                                 prefixIcon: Icon(Icons.lock_outline, color: isDark ? AppTheme.textSecondary : AppTheme.textTertiary),
+                                suffixIcon: IconButton(
+                                  icon: Icon(
+                                    _obscureReenterPassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                                    color: isDark ? AppTheme.textSecondary : AppTheme.textTertiary,
+                                    size: 20,
+                                  ),
+                                  onPressed: () {
+                                    setState(() {
+                                      _obscureReenterPassword = !_obscureReenterPassword;
+                                    });
+                                  },
+                                ),
                                 filled: true,
                                 fillColor: isDark ? Colors.black.withOpacity(0.4) : const Color(0xFFF0F2EE),
                                 border: OutlineInputBorder(
