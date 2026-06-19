@@ -68,6 +68,14 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
   bool _showReview = false;
   String _selectedMealKey = 'breakfast_cal';
 
+  // Baseline values for auto-scaling
+  double _baselineServingSize = 1.0;
+  int _baselineCal = 0;
+  int _baselineProtein = 0;
+  int _baselineCarbs = 0;
+  int _baselineFat = 0;
+  bool _isAutoScaling = false;
+
   // Focus nodes for keyboard auto-opening
   final FocusNode _describeFocusNode = FocusNode();
   final FocusNode _manualFocusNode = FocusNode();
@@ -133,6 +141,7 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
     super.initState();
     _tabController = TabController(length: 6, vsync: this, initialIndex: widget.initialTab);
     _tabController.addListener(_handleTabSelection);
+    _reviewServingSizeController.addListener(_onServingSizeChanged);
     _initSpeech();
     _initializeCamera();
 
@@ -191,6 +200,7 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
     _manualProteinController.dispose();
     _manualCarbsController.dispose();
     _manualFatController.dispose();
+    _reviewServingSizeController.removeListener(_onServingSizeChanged);
     _reviewServingSizeController.dispose();
     _disposeCamera();
     super.dispose();
@@ -393,9 +403,77 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
           TextEditingController(text: _selectedFood!.carbs.toString());
       _reviewFatController =
           TextEditingController(text: _selectedFood!.fat.toString());
-      _reviewServingSizeController.text = "1";
-      _reviewSelectedServingUnit = 'serving';
+
+      // Smart Parse serving size and unit!
+      final parsed = _parseServingInfo(_selectedFood!.foodName);
+      final double initialSize = parsed['size'];
+      final String initialUnit = parsed['unit'];
+
+      _isAutoScaling = true;
+      _reviewServingSizeController.text = initialSize % 1 == 0 
+          ? initialSize.toInt().toString() 
+          : initialSize.toString();
+      _reviewSelectedServingUnit = initialUnit;
+      _isAutoScaling = false;
+
+      // Initialize baselines
+      _baselineServingSize = initialSize > 0 ? initialSize : 1.0;
+      _baselineCal = _selectedFood!.calories;
+      _baselineProtein = _selectedFood!.protein;
+      _baselineCarbs = _selectedFood!.carbs;
+      _baselineFat = _selectedFood!.fat;
     }
+  }
+
+  void _onServingSizeChanged() {
+    if (_isAutoScaling || !_showReview) return;
+    final text = _reviewServingSizeController.text.trim();
+    if (text.isEmpty) return;
+    final newSize = double.tryParse(text);
+    if (newSize == null || newSize <= 0) return;
+
+    final factor = newSize / (_baselineServingSize > 0 ? _baselineServingSize : 1.0);
+
+    _isAutoScaling = true;
+    setState(() {
+      _reviewCalController.text = (_baselineCal * factor).round().toString();
+      _reviewProteinController.text = (_baselineProtein * factor).round().toString();
+      _reviewCarbsController.text = (_baselineCarbs * factor).round().toString();
+      _reviewFatController.text = (_baselineFat * factor).round().toString();
+    });
+    _isAutoScaling = false;
+  }
+
+  Map<String, dynamic> _parseServingInfo(String text) {
+    final cleanText = text.toLowerCase();
+    double size = 1.0;
+    String unit = 'serving';
+
+    // 1. Detect unit
+    if (cleanText.contains('gram') || cleanText.contains('g ') || cleanText.endsWith('g')) {
+      unit = 'grams';
+    } else if (cleanText.contains('ml') || cleanText.contains('milliliter') || cleanText.contains('litre')) {
+      unit = 'ml';
+    } else if (cleanText.contains('piece')) {
+      unit = 'piece';
+    } else if (cleanText.contains('bowl')) {
+      unit = 'bowl';
+    } else if (cleanText.contains('cup')) {
+      unit = 'cup';
+    } else if (cleanText.contains('scoop')) {
+      unit = 'scoop';
+    } else if (cleanText.contains('egg') || cleanText.contains('banana') || cleanText.contains('apple') || cleanText.contains('cookie') || cleanText.contains('dosa') || cleanText.contains('roti')) {
+      unit = 'piece'; // Default common items to 'piece' instead of generic 'serving'
+    }
+
+    // 2. Detect size
+    final numReg = RegExp(r'\b(\d+(\.\d+)?)\b');
+    final match = numReg.firstMatch(cleanText);
+    if (match != null) {
+      size = double.tryParse(match.group(1)!) ?? 1.0;
+    }
+
+    return {'size': size, 'unit': unit};
   }
 
   // Barcode API Integration
