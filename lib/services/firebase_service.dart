@@ -318,6 +318,26 @@ class FirebaseService {
               }
             }
             updatedItems.add(item);
+
+            // Sync this logged item to the global AI training database collection
+            final String name = item['name'] ?? 'Unknown Meal';
+            final int cal = (item['calories'] ?? 0).toInt();
+            final int prot = (item['protein'] ?? 0).toInt();
+            final int carb = (item['carbs'] ?? 0).toInt();
+            final int fat = (item['fat'] ?? 0).toInt();
+            final String? finalUrl = item['imageUrl'] as String?;
+            
+            final docId = "${uid}_${date}_$i";
+            await firestore.collection('global_food_logs').doc(docId).set({
+              'foodName': name,
+              'calories': cal,
+              'protein': prot,
+              'carbs': carb,
+              'fat': fat,
+              if (finalUrl != null) 'imageUrl': finalUrl,
+              'timestamp': FieldValue.serverTimestamp(),
+              'userId': uid,
+            }, SetOptions(merge: true));
           }
           if (updatedAny) {
             metrics['logged_items'] = updatedItems;
