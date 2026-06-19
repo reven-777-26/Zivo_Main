@@ -987,4 +987,33 @@ class FirebaseService {
       debugPrint("Firebase Storage Delete Error (expected if file doesn't exist): $e");
     }
   }
+
+  /// Saves user-logged food information centrally for future custom AI training.
+  static Future<void> saveToGlobalTrainingData({
+    required String foodName,
+    required int calories,
+    required int protein,
+    required int carbs,
+    required int fat,
+    String? imageUrl,
+  }) async {
+    if (Firebase.apps.isEmpty) return;
+    try {
+      final uid = currentUser?.uid ?? 'anonymous';
+      await firestore.collection('global_food_logs').add({
+        'foodName': foodName,
+        'calories': calories,
+        'protein': protein,
+        'carbs': carbs,
+        'fat': fat,
+        if (imageUrl != null) 'imageUrl': imageUrl,
+        'timestamp': FieldValue.serverTimestamp(),
+        'userId': uid,
+      });
+      debugPrint("Training data saved successfully to global_food_logs.");
+    } catch (e) {
+      debugPrint("Error saving training data: $e");
+    }
+  }
 }
+

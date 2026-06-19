@@ -379,6 +379,19 @@ class DailyMetricsNotifier extends StateNotifier<Map<String, dynamic>> {
     await StorageService.saveDailyMetrics(dateStr, metrics);
     await FirebaseService.saveDailyMetricsCloud(dateStr, metrics);
 
+    if (foodName != null && foodName.trim().isNotEmpty) {
+      unawaited(
+        FirebaseService.saveToGlobalTrainingData(
+          foodName: foodName,
+          calories: calories,
+          protein: protein,
+          carbs: carbs,
+          fat: fat,
+          imageUrl: finalImageUrl,
+        ),
+      );
+    }
+
     // Refresh state
     state = metrics;
     await WidgetSyncService.syncToWidget();
