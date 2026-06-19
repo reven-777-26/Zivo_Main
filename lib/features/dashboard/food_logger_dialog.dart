@@ -12,6 +12,7 @@ import '../../core/theme.dart';
 import '../../core/widgets/zivo_loader.dart';
 import '../../services/ai_backend_service.dart';
 import '../../services/state_providers.dart';
+import '../../services/storage_service.dart';
 import '../../utils/image_picker_helper.dart';
 import '../../services/scanner/native_barcode_scanner.dart';
 import '../../services/scanner/ai_analysis_service.dart';
@@ -130,7 +131,7 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 5, vsync: this, initialIndex: widget.initialTab);
+    _tabController = TabController(length: 6, vsync: this, initialIndex: widget.initialTab);
     _tabController.addListener(_handleTabSelection);
     _initSpeech();
     _initializeCamera();
@@ -1023,6 +1024,7 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
               Tab(icon: Icon(Icons.mic_rounded, size: 18)),
               Tab(icon: Icon(Icons.edit_note_rounded, size: 18)),
               Tab(icon: Icon(Icons.post_add_rounded, size: 18)),
+              Tab(icon: Icon(Icons.bookmarks_rounded, size: 18)),
             ],
           ),
         ),
@@ -1105,6 +1107,7 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
                   _buildVoiceFlow(isDark),
                   _buildTextFlow(isDark),
                   _buildManualFlow(isDark),
+                  _buildPresetsFlow(isDark),
                 ],
               ),
             ),
@@ -2201,74 +2204,130 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
           const SizedBox(height: 16),
           _buildCategorySelector(isDark),
           const SizedBox(height: 20),
-          GestureDetector(
-            onTap: () {
-              final String name = _manualNameController.text.trim().isNotEmpty ? _manualNameController.text.trim() : "Manual Meal";
-              final int cal = int.tryParse(_manualCalController.text) ?? 0;
-              final int prot = int.tryParse(_manualProteinController.text) ?? 0;
-              final int carb = int.tryParse(_manualCarbsController.text) ?? 0;
-              final int fat = int.tryParse(_manualFatController.text) ?? 0;
-              
-              final String sizeText = _manualServingSizeController.text.trim();
-              final String finalName = sizeText.isNotEmpty 
-                  ? "$name ($sizeText $_selectedServingUnit)"
-                  : name;
+          Row(
+            children: [
+              Expanded(
+                child: GestureDetector(
+                  onTap: () async {
+                    final String name = _manualNameController.text.trim().isNotEmpty ? _manualNameController.text.trim() : "Manual Meal";
+                    final String sizeText = _manualServingSizeController.text.trim();
+                    final String finalName = sizeText.isNotEmpty 
+                        ? "$name ($sizeText $_selectedServingUnit)"
+                        : name;
 
-              final selectedDate = ref.read(selectedDateProvider);
-              ref.read(dailyMetricsProvider(selectedDate).notifier).logMeal(
-                    mealKey: _selectedMealKey,
-                    calories: cal,
-                    protein: prot,
-                    carbs: carb,
-                    fat: fat,
-                    foodName: finalName,
-                  );
+                    await StorageService.saveFoodPreset({
+                      'name': finalName,
+                      'calories': int.tryParse(_manualCalController.text) ?? 0,
+                      'protein': int.tryParse(_manualProteinController.text) ?? 0,
+                      'carbs': int.tryParse(_manualCarbsController.text) ?? 0,
+                      'fat': int.tryParse(_manualFatController.text) ?? 0,
+                    });
 
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  backgroundColor: AppTheme.accentEmerald,
-                  content: Row(
-                    children: [
-                      const Icon(Icons.check_circle_rounded, color: Colors.black),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          "Successfully Logged: $finalName!",
-                          style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        backgroundColor: AppTheme.accentEmerald,
+                        content: Text("Preset '$finalName' saved successfully!"),
+                      ),
+                    );
+                  },
+                  child: Container(
+                    height: 52,
+                    decoration: BoxDecoration(
+                      color: Colors.transparent,
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(color: AppTheme.accentCyan, width: 1.5),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.bookmark_add_rounded, color: isDark ? Colors.white : AppTheme.textPrimary, size: 18),
+                        const SizedBox(width: 6),
+                        Text(
+                          "Save Preset",
+                          style: TextStyle(
+                            color: isDark ? Colors.white : AppTheme.textPrimary,
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: GestureDetector(
+                  onTap: () {
+                    final String name = _manualNameController.text.trim().isNotEmpty ? _manualNameController.text.trim() : "Manual Meal";
+                    final int cal = int.tryParse(_manualCalController.text) ?? 0;
+                    final int prot = int.tryParse(_manualProteinController.text) ?? 0;
+                    final int carb = int.tryParse(_manualCarbsController.text) ?? 0;
+                    final int fat = int.tryParse(_manualFatController.text) ?? 0;
+                    
+                    final String sizeText = _manualServingSizeController.text.trim();
+                    final String finalName = sizeText.isNotEmpty 
+                        ? "$name ($sizeText $_selectedServingUnit)"
+                        : name;
+
+                    final selectedDate = ref.read(selectedDateProvider);
+                    ref.read(dailyMetricsProvider(selectedDate).notifier).logMeal(
+                          mealKey: _selectedMealKey,
+                          calories: cal,
+                          protein: prot,
+                          carbs: carb,
+                          fat: fat,
+                          foodName: finalName,
+                        );
+
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        backgroundColor: AppTheme.accentEmerald,
+                        content: Row(
+                          children: [
+                            const Icon(Icons.check_circle_rounded, color: Colors.black),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                "Successfully Logged: $finalName!",
+                                style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ],
+                    );
+
+                    _manualNameController.clear();
+                    _manualCalController.clear();
+                    _manualProteinController.clear();
+                    _manualCarbsController.clear();
+                    _manualFatController.clear();
+                    _manualServingSizeController.text = "1";
+                    _selectedServingUnit = 'serving';
+
+                    Navigator.of(context).pop();
+                  },
+                  child: Container(
+                    height: 52,
+                    decoration: BoxDecoration(
+                      color: AppTheme.accentCyan,
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                    child: const Center(
+                      child: Text(
+                        "Log Meal",
+                        style: TextStyle(
+                          color: AppTheme.textPrimary,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
                   ),
                 ),
-              );
-
-              _manualNameController.clear();
-              _manualCalController.clear();
-              _manualProteinController.clear();
-              _manualCarbsController.clear();
-              _manualFatController.clear();
-              _manualServingSizeController.text = "1";
-              _selectedServingUnit = 'serving';
-
-              Navigator.of(context).pop();
-            },
-            child: Container(
-              height: 52,
-              decoration: BoxDecoration(
-                color: AppTheme.accentCyan,
-                borderRadius: BorderRadius.circular(24),
               ),
-              child: const Center(
-                child: Text(
-                  "Log Meal",
-                  style: TextStyle(
-                    color: AppTheme.textPrimary,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ),
+            ],
           ),
         ],
       ),
@@ -2894,83 +2953,298 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
           _buildCategorySelector(isDark),
           const SizedBox(height: 24),
 
-          // Log Action button
-          GestureDetector(
-            onTap: () {
-              // Assemble the updated Standard Food Object from review TextFields
-              final String name = _reviewNameController.text.trim().isNotEmpty
-                  ? _reviewNameController.text.trim()
-                  : "Unknown Meal";
-              final String sizeText = _reviewServingSizeController.text.trim();
-              final String finalName = sizeText.isNotEmpty
-                  ? "$name ($sizeText $_reviewSelectedServingUnit)"
-                  : name;
+          Row(
+            children: [
+              Expanded(
+                child: GestureDetector(
+                  onTap: () async {
+                    final String name = _reviewNameController.text.trim().isNotEmpty
+                        ? _reviewNameController.text.trim()
+                        : "Unknown Meal";
+                    final String sizeText = _reviewServingSizeController.text.trim();
+                    final String finalName = sizeText.isNotEmpty
+                        ? "$name ($sizeText $_reviewSelectedServingUnit)"
+                        : name;
 
-              final finalFood = StandardFood(
-                foodName: finalName,
-                calories: int.tryParse(_reviewCalController.text) ?? 0,
-                protein: int.tryParse(_reviewProteinController.text) ?? 0,
-                carbs: int.tryParse(_reviewCarbsController.text) ?? 0,
-                fat: int.tryParse(_reviewFatController.text) ?? 0,
-              );
+                    await StorageService.saveFoodPreset({
+                      'name': finalName,
+                      'calories': int.tryParse(_reviewCalController.text) ?? 0,
+                      'protein': int.tryParse(_reviewProteinController.text) ?? 0,
+                      'carbs': int.tryParse(_reviewCarbsController.text) ?? 0,
+                      'fat': int.tryParse(_reviewFatController.text) ?? 0,
+                    });
 
-              debugPrint("Logged Food Object: ${jsonEncode(finalFood.toJson())}");
-              debugPrint("DIALOG DONE: _selectedImageBase64 length: ${_selectedImageBase64?.length ?? 0}");
-
-              // Save to Riverpod dailyMetricsProvider
-              final selectedDate = ref.read(selectedDateProvider);
-              ref.read(dailyMetricsProvider(selectedDate).notifier).logMeal(
-                    mealKey: _selectedMealKey,
-                    calories: finalFood.calories,
-                    protein: finalFood.protein,
-                    carbs: finalFood.carbs,
-                    fat: finalFood.fat,
-                    foodName: finalFood.foodName,
-                    imageUrl: _selectedImageBase64,
-                  );
-
-              // Display confirmation snackbar/toast via ScaffoldMessenger
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  backgroundColor: AppTheme.accentEmerald,
-                  content: Row(
-                    children: [
-                      const Icon(Icons.check_circle_rounded, color: Colors.black),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          "Successfully Logged: ${finalFood.foodName}!",
-                          style: const TextStyle(
-                            color: Colors.black,
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        backgroundColor: AppTheme.accentEmerald,
+                        content: Text("Preset '$finalName' saved successfully!"),
+                      ),
+                    );
+                  },
+                  child: Container(
+                    height: 52,
+                    decoration: BoxDecoration(
+                      color: Colors.transparent,
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(color: AppTheme.accentCyan, width: 1.5),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.bookmark_add_rounded, color: isDark ? Colors.white : AppTheme.textPrimary, size: 18),
+                        const SizedBox(width: 6),
+                        Text(
+                          "Save Preset",
+                          style: TextStyle(
+                            color: isDark ? Colors.white : AppTheme.textPrimary,
+                            fontSize: 15,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: GestureDetector(
+                  onTap: () {
+                    // Assemble the updated Standard Food Object from review TextFields
+                    final String name = _reviewNameController.text.trim().isNotEmpty
+                        ? _reviewNameController.text.trim()
+                        : "Unknown Meal";
+                    final String sizeText = _reviewServingSizeController.text.trim();
+                    final String finalName = sizeText.isNotEmpty
+                        ? "$name ($sizeText $_reviewSelectedServingUnit)"
+                        : name;
+
+                    final finalFood = StandardFood(
+                      foodName: finalName,
+                      calories: int.tryParse(_reviewCalController.text) ?? 0,
+                      protein: int.tryParse(_reviewProteinController.text) ?? 0,
+                      carbs: int.tryParse(_reviewCarbsController.text) ?? 0,
+                      fat: int.tryParse(_reviewFatController.text) ?? 0,
+                    );
+
+                    debugPrint("Logged Food Object: ${jsonEncode(finalFood.toJson())}");
+                    debugPrint("DIALOG DONE: _selectedImageBase64 length: ${_selectedImageBase64?.length ?? 0}");
+
+                    // Save to Riverpod dailyMetricsProvider
+                    final selectedDate = ref.read(selectedDateProvider);
+                    ref.read(dailyMetricsProvider(selectedDate).notifier).logMeal(
+                          mealKey: _selectedMealKey,
+                          calories: finalFood.calories,
+                          protein: finalFood.protein,
+                          carbs: finalFood.carbs,
+                          fat: finalFood.fat,
+                          foodName: finalFood.foodName,
+                          imageUrl: _selectedImageBase64,
+                        );
+
+                    // Display confirmation snackbar/toast via ScaffoldMessenger
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        backgroundColor: AppTheme.accentEmerald,
+                        content: Row(
+                          children: [
+                            const Icon(Icons.check_circle_rounded, color: Colors.black),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                "Successfully Logged: ${finalFood.foodName}!",
+                                style: const TextStyle(
+                                  color: Colors.black,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+
+                    Navigator.of(context).pop();
+                  },
+                  child: Container(
+                    height: 52,
+                    decoration: BoxDecoration(
+                      color: AppTheme.accentCyan,
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                    child: const Center(
+                      child: Text(
+                        "Done",
+                        style: TextStyle(
+                          color: AppTheme.textPrimary,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPresetsFlow(bool isDark) {
+    final presets = StorageService.getFoodPresets();
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            "SAVED MEAL PRESETS",
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1.0,
+              color: AppTheme.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 16),
+          if (presets.isEmpty)
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 40.0),
+                child: Column(
+                  children: [
+                    Icon(Icons.bookmark_border_rounded, size: 48, color: AppTheme.textSecondary.withOpacity(0.3)),
+                    const SizedBox(height: 12),
+                    const Text(
+                      "No presets saved yet.",
+                      style: TextStyle(color: AppTheme.textSecondary, fontSize: 13, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 6),
+                    const Text(
+                      "Save any logged meal as a preset\nto log it instantly next time.",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: AppTheme.textSecondary, fontSize: 11),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else
+            ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: presets.length,
+              separatorBuilder: (context, index) => const SizedBox(height: 10),
+              itemBuilder: (context, index) {
+                final preset = presets[index];
+                final String name = preset['name'] ?? 'Unnamed Preset';
+                final int cal = preset['calories'] ?? 0;
+                final int prot = preset['protein'] ?? 0;
+                final int carb = preset['carbs'] ?? 0;
+                final int fat = preset['fat'] ?? 0;
+
+                return Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF121214) : Colors.black.withOpacity(0.02),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      // Preset Info
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () {
+                            // Populate manual entry controllers
+                            setState(() {
+                              _manualNameController.text = name;
+                              _manualCalController.text = cal.toString();
+                              _manualProteinController.text = prot.toString();
+                              _manualCarbsController.text = carb.toString();
+                              _manualFatController.text = fat.toString();
+                              _tabController.index = 4; // Switch to Manual tab
+                            });
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                duration: Duration(seconds: 2),
+                                content: Text("Loaded preset details into Manual Entry!"),
+                              ),
+                            );
+                          },
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                name,
+                                style: TextStyle(
+                                  color: isDark ? Colors.white : AppTheme.textPrimary,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                "🔥 $cal kcal  |  🍗 ${prot}g  |  🍚 ${carb}g  |  🥑 ${fat}g",
+                                style: const TextStyle(
+                                  color: AppTheme.textSecondary,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      // Action buttons
+                      Row(
+                        children: [
+                          // Quick Log Button
+                          IconButton(
+                            icon: const Icon(Icons.add_circle_rounded, color: AppTheme.accentCyan, size: 26),
+                            tooltip: "Quick Log Meal",
+                            onPressed: () {
+                              final selectedDate = ref.read(selectedDateProvider);
+                              ref.read(dailyMetricsProvider(selectedDate).notifier).logMeal(
+                                    mealKey: _selectedMealKey,
+                                    calories: cal,
+                                    protein: prot,
+                                    carbs: carb,
+                                    fat: fat,
+                                    foodName: name,
+                                  );
+
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  backgroundColor: AppTheme.accentEmerald,
+                                  content: Text(
+                                    "Logged: $name to ${(_selectedMealKey.replaceAll('_cal', '').replaceAll('_', ' ').toUpperCase())}!",
+                                    style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                              );
+                              Navigator.of(context).pop();
+                            },
+                          ),
+                          // Delete Button
+                          IconButton(
+                            icon: const Icon(Icons.delete_outline_rounded, color: AppTheme.accentCoral, size: 20),
+                            tooltip: "Delete Preset",
+                            onPressed: () async {
+                              await StorageService.deleteFoodPreset(name);
+                              setState(() {}); // refresh list
+                            },
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                ),
-              );
-
-              Navigator.of(context).pop();
-            },
-            child: Container(
-              height: 52,
-              decoration: BoxDecoration(
-                color: AppTheme.accentCyan,
-                borderRadius: BorderRadius.circular(24),
-              ),
-              child: const Center(
-                child: Text(
-                  "Done",
-                  style: TextStyle(
-                    color: AppTheme.textPrimary,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
+                );
+              },
             ),
-          ),
         ],
       ),
     );

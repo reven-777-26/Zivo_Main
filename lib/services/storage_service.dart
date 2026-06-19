@@ -168,6 +168,31 @@ class StorageService {
     await _reminderBox.put('fats_goal', {'val': val});
   }
 
+  /// Retrieves list of saved food presets.
+  static List<Map<String, dynamic>> getFoodPresets() {
+    final raw = _reminderBox.get('food_presets');
+    if (raw == null) return [];
+    final list = (raw['list'] as List?)?.map((e) => Map<String, dynamic>.from(e)).toList() ?? [];
+    return list;
+  }
+
+  /// Saves a food preset.
+  static Future<void> saveFoodPreset(Map<String, dynamic> preset) async {
+    final list = getFoodPresets();
+    // Prevent exact duplicates by name
+    list.removeWhere((item) => item['name'].toString().trim().toLowerCase() == preset['name'].toString().trim().toLowerCase());
+    list.insert(0, preset);
+    await _reminderBox.put('food_presets', {'list': list});
+  }
+
+  /// Deletes a food preset.
+  static Future<void> deleteFoodPreset(String name) async {
+    final list = getFoodPresets();
+    list.removeWhere((item) => item['name'].toString().trim().toLowerCase() == name.trim().toLowerCase());
+    await _reminderBox.put('food_presets', {'list': list});
+  }
+
+
   /// Clears only mock nutrition logs and workout logs.
   static Future<void> clearMockDataOnly() async {
     final keys = List<String>.from(_dailyBox.keys.map((k) => k.toString()));
