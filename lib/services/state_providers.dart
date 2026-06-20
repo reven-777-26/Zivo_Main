@@ -11,6 +11,7 @@ import 'storage_service.dart';
 import 'firebase_service.dart';
 import 'widget_sync_service.dart';
 import 'workout_notification_service.dart';
+import 'local_notification_service.dart';
 import 'scanner/ai_analysis_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -532,6 +533,9 @@ class RemindersNotifier extends StateNotifier<Map<String, ReminderSetting>> {
     await StorageService.saveReminders(rawMap);
     await FirebaseService.saveRemindersCloud(rawMap);
 
+    // Sync local notification schedule
+    _syncSystemNotification(key, updated);
+
     // If enabled, trigger a real push notification to confirm functionality
     if (updated.isEnabled) {
       showWebNotification(
@@ -558,6 +562,9 @@ class RemindersNotifier extends StateNotifier<Map<String, ReminderSetting>> {
     await StorageService.saveReminders(rawMap);
     await FirebaseService.saveRemindersCloud(rawMap);
 
+    // Sync local notification schedule
+    _syncSystemNotification(key, updated);
+
     showWebNotification(
       '🔔 Custom Reminder Created!',
       'Zivo will notify you daily at $time for $label.',
@@ -573,6 +580,60 @@ class RemindersNotifier extends StateNotifier<Map<String, ReminderSetting>> {
     final rawMap = newState.map((k, v) => MapEntry(k, v.toJson()));
     await StorageService.saveReminders(rawMap);
     await FirebaseService.saveRemindersCloud(rawMap);
+
+    // Cancel notification
+    final notificationId = key.hashCode.abs() & 0x7FFFFFFF;
+    await LocalNotificationService.cancelReminder(notificationId);
+  }
+
+  void _syncSystemNotification(String key, ReminderSetting reminder) {
+    // Request permission on-demand
+    LocalNotificationService.requestPermissions();
+
+    final notificationId = key.hashCode.abs() & 0x7FFFFFFF;
+    if (reminder.isEnabled) {
+      final parsed = _parseTime(reminder.time);
+      if (parsed != null) {
+        LocalNotificationService.scheduleDailyReminder(
+          id: notificationId,
+          title: '🔔 ${reminder.label} Reminder!',
+          body: 'Time to log your daily ${reminder.label.toLowerCase()} metrics and stay consistent!',
+          hour: parsed['hour']!,
+          minute: parsed['minute']!,
+        ).catchError((e) {
+          debugPrint("Failed to schedule local notification: $e");
+        });
+      }
+    } else {
+      LocalNotificationService.cancelReminder(notificationId).catchError((e) {
+        debugPrint("Failed to cancel local notification: $e");
+      });
+    }
+  }
+
+  static Map<String, int>? _parseTime(String timeStr) {
+    try {
+      final clean = timeStr.trim().toUpperCase();
+      final parts = clean.split(' ');
+      if (parts.length != 2) return null;
+      
+      final timeParts = parts[0].split(':');
+      if (timeParts.length != 2) return null;
+      
+      int hour = int.parse(timeParts[0]);
+      int minute = int.parse(timeParts[1]);
+      final isPm = parts[1] == 'PM';
+      
+      if (isPm && hour != 12) {
+        hour += 12;
+      } else if (!isPm && hour == 12) {
+        hour = 0;
+      }
+      return {'hour': hour, 'minute': minute};
+    } catch (e) {
+      debugPrint("Error parsing time string $timeStr: $e");
+      return null;
+    }
   }
 }
 

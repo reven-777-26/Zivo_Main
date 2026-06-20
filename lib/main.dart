@@ -6,6 +6,7 @@ import 'services/storage_service.dart';
 import 'services/router_service.dart';
 import 'services/state_providers.dart';
 import 'services/premium_service.dart';
+import 'services/local_notification_service.dart';
 import 'firebase_options.dart';
 
 void main() async {
@@ -26,6 +27,9 @@ void main() async {
 
   // Initialize Premium subscription client
   await PremiumService.initialize();
+
+  // Initialize Local Notifications Service
+  await LocalNotificationService.initialize();
 
   runApp(const ProviderScope(child: MyApp()));
 }
