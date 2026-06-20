@@ -352,7 +352,7 @@ class _UnifiedVisionScannerDialogState extends ConsumerState<UnifiedVisionScanne
                 Icon(Icons.center_focus_strong_rounded, color: isDark ? AppTheme.accentCyan : const Color(0xFF054D28), size: 20),
                 const SizedBox(width: 8),
                 Text(
-                  'Auto-Scan Barcode',
+                  'Zivo analyser',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w900,

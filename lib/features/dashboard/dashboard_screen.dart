@@ -1510,6 +1510,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                         fontWeight: FontWeight.bold,
                                         color: textColor,
                                       ),
+                                      maxLines: 2,
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                     const SizedBox(height: 2),
@@ -2788,7 +2789,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           const SizedBox(width: 8),
           Expanded(
             child: _buildQuickActionButton(
-              label: 'Product Analyser',
+              label: 'Zivo analyser',
               icon: Icons.center_focus_strong_rounded,
               onTap: () {
                 showDialog(
