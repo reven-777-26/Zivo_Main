@@ -13,6 +13,8 @@ import '../../../../utils/image_picker_helper.dart';
 import '../../../../utils/web_barcode_scanner.dart';
 import '../../shared/providers/unified_vision_provider.dart';
 import 'unified_product_detail_screen.dart';
+import 'zivo_analyzer_loading_widget.dart';
+import '../../../../services/audio_service.dart';
 
 class UnifiedVisionScannerDialog extends ConsumerStatefulWidget {
   const UnifiedVisionScannerDialog({super.key});
@@ -263,6 +265,7 @@ class _UnifiedVisionScannerDialogState extends ConsumerState<UnifiedVisionScanne
     state.currentReport.when(
       data: (report) {
         if (report != null) {
+          AudioService.playAiOutput();
           Navigator.push(
             context,
             MaterialPageRoute(
@@ -318,32 +321,9 @@ class _UnifiedVisionScannerDialogState extends ConsumerState<UnifiedVisionScanne
   }
 
   Widget _buildLoadingState(bool isDark, String message) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        const SizedBox(height: 32),
-        const ZivoLoader(
-          size: 52,
-          strokeWidth: 4,
-        ),
-        const SizedBox(height: 24),
-        Text(
-          message.isNotEmpty ? message : "Analyzing barcode...",
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: isDark ? Colors.white : AppTheme.textPrimary,
-            fontSize: 15,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 8),
-        const Text(
-          "Connecting to global databases & Gemini AI...",
-          style: TextStyle(color: AppTheme.textSecondary, fontSize: 11),
-        ),
-        const SizedBox(height: 32),
-      ],
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 24),
+      child: ZivoAnalyzerLoadingWidget(progressMessage: message),
     );
   }
 

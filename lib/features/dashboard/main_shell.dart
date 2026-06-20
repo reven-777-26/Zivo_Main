@@ -22,6 +22,7 @@ import '../../core/health_math.dart';
 import '../../services/firebase_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../core/widgets/zivo_loader.dart';
+import '../../services/audio_service.dart';
 
 class MainShell extends ConsumerStatefulWidget {
   const MainShell({super.key});
@@ -55,6 +56,7 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
         final body = notif['body'] ?? '';
         _showInAppNotification(title, body);
         ref.read(notificationsProvider.notifier).addSystemNotification(title, body);
+        AudioService.playNotification();
       }
     });
 
@@ -63,6 +65,7 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
 
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      AudioService.playAppOpen();
       showWebNotification(
         '💪 Zivo Active & Ready!',
         'Push reminders and notification systems are fully integrated. Stay on track!',
@@ -1998,103 +2001,7 @@ class _ProfilePlaceholderScreenState
               ),
             ),
 
-            // ── 7. LOADER PREVIEW ACCORDION ──
-            _buildAccordionSection(
-              title: '✨  Loader Preview',
-              sectionKey: 'loader',
-              content: StatefulBuilder(
-                builder: (context, setLocal) {
-                  final isDarkLocal = Theme.of(context).brightness == Brightness.dark;
-                  final accent = ref.watch(accentColorProvider);
-                  final loaderNames = ['Morph', 'Orbit', 'Sonar', 'Flow', 'Beat', 'Spin', 'DNA', 'Dots', 'Wave', 'Clock', 'Spiral', 'Atom', 'Ripple', 'Bounce ⚡', 'Spark ⚡', 'Glitch ⚡', 'Lotus', 'Ring', 'Cube'];
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Toggle between loader styles to preview the animation live.',
-                        style: TextStyle(
-                          color: AppTheme.textSecondary,
-                          fontSize: 13,
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      // Live preview canvas
-                      Center(
-                        child: Container(
-                          width: 120,
-                          height: 120,
-                          decoration: BoxDecoration(
-                            color: isDarkLocal ? const Color(0xFF121214) : const Color(0xFFF0F2EF),
-                            borderRadius: BorderRadius.circular(24),
-                            border: Border.all(
-                              color: isDarkLocal ? const Color(0xFF2C2C2E) : const Color(0xFFE0E3DC),
-                              width: 1.0,
-                            ),
-                          ),
-                          child: Center(
-                            child: ZivoLoader(
-                              size: 72,
-                              color: accent,
-                              style: _selectedLoader,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      // Style toggle chips
-                      Wrap(
-                        alignment: WrapAlignment.center,
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: List.generate(loaderNames.length, (i) {
-                          final isSelected = _selectedLoader == i;
-                          return GestureDetector(
-                            onTap: () {
-                              setState(() => _selectedLoader = i);
-                              setLocal(() {});
-                            },
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 220),
-                              curve: Curves.easeOut,
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
-                              decoration: BoxDecoration(
-                                color: isSelected ? accent : Colors.transparent,
-                                borderRadius: BorderRadius.circular(99),
-                                border: Border.all(
-                                  color: isSelected ? accent : (isDarkLocal ? const Color(0xFF3A3A3A) : const Color(0xFFD0D3CC)),
-                                  width: 1.5,
-                                ),
-                              ),
-                              child: Text(
-                                loaderNames[i],
-                                style: TextStyle(
-                                  color: isSelected
-                                      ? Colors.black
-                                      : (isDarkLocal ? Colors.white70 : AppTheme.textSecondary),
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 13,
-                                ),
-                              ),
-                            ),
-                          );
-                        }),
-                      ),
-                      const SizedBox(height: 8),
-                      Center(
-                        child: Text(
-                          'Currently showing: ${loaderNames[_selectedLoader]}',
-                          style: TextStyle(
-                            color: accent,
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ],
-                  );
-                },
-              ),
-            ),
+
 
             // ── 8. SUPPORT ACCORDION ──
             _buildAccordionSection(

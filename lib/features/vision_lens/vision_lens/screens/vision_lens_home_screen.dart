@@ -17,6 +17,8 @@ import 'unified_product_detail_screen.dart';
 import '../../../dashboard/food_logger_dialog.dart';
 import '../../../dashboard/food_history_screen.dart';
 import '../../../../core/widgets/zivo_loader.dart';
+import 'zivo_analyzer_loading_widget.dart';
+import '../../../../services/audio_service.dart';
 
 
 class VisionLensHomeScreen extends ConsumerStatefulWidget {
@@ -328,35 +330,8 @@ class _VisionLensHomeScreenState extends ConsumerState<VisionLensHomeScreen> wit
                       width: 1.0,
                     ),
                   ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const ZivoLoader(
-                        size: 48.0,
-                        strokeWidth: 3.0,
-                      ),
-                      const SizedBox(height: 24),
-                      Text(
-                        'Zivo Analyser',
-                        style: TextStyle(
-                          color: isDark ? Colors.white : AppTheme.textPrimary,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w900,
-                          decoration: TextDecoration.none,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        state.progressMessage.isNotEmpty ? state.progressMessage : 'Analyzing product...',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: isDark ? const Color(0xFF868685) : AppTheme.textSecondary,
-                          fontSize: 13,
-                          fontWeight: FontWeight.normal,
-                          decoration: TextDecoration.none,
-                        ),
-                      ),
-                    ],
+                  child: ZivoAnalyzerLoadingWidget(
+                    progressMessage: state.progressMessage,
                   ),
                 ),
               ),
@@ -376,6 +351,7 @@ class _VisionLensHomeScreenState extends ConsumerState<VisionLensHomeScreen> wit
     state.currentReport.when(
       data: (report) {
         if (report != null) {
+          AudioService.playAiOutput();
           Navigator.push(
             context,
             MaterialPageRoute(
@@ -426,11 +402,11 @@ class _VisionLensHomeScreenState extends ConsumerState<VisionLensHomeScreen> wit
             child: GestureDetector(
               onTap: () => _showAnalyserHelpSheet(context),
               child: Container(
-                width: 30,
-                height: 30,
+                width: 22,
+                height: 22,
                 decoration: BoxDecoration(
                   color: const Color(0xFFD9FF00).withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(8),
+                  shape: BoxShape.circle,
                   border: Border.all(
                     color: const Color(0xFFD9FF00),
                     width: 1.0,
@@ -440,7 +416,7 @@ class _VisionLensHomeScreenState extends ConsumerState<VisionLensHomeScreen> wit
                   child: Icon(
                     Icons.question_mark_rounded,
                     color: Color(0xFFD9FF00),
-                    size: 16,
+                    size: 12,
                   ),
                 ),
               ),

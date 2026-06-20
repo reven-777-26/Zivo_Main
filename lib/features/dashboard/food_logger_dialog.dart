@@ -17,6 +17,8 @@ import '../../utils/image_picker_helper.dart';
 import '../../services/scanner/native_barcode_scanner.dart';
 import '../../services/scanner/ai_analysis_service.dart';
 import '../../services/firebase_service.dart';
+import 'food_log_loading_widget.dart';
+import '../../services/audio_service.dart';
 
 class BreakdownItem {
   String name;
@@ -111,6 +113,7 @@ class FoodLoggerDialog extends ConsumerStatefulWidget {
 class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  final GlobalKey<ScaffoldMessengerState> _dialogScaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
 
   // Global flow states
   bool _isLoading = false;
@@ -550,15 +553,29 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
     }
   }
 
+  void _showLocalSnackBar(String message, {Color? backgroundColor}) {
+    _dialogScaffoldMessengerKey.currentState?.clearSnackBars();
+    _dialogScaffoldMessengerKey.currentState?.showSnackBar(
+      SnackBar(
+        content: Text(message, style: const TextStyle(fontWeight: FontWeight.bold)),
+        backgroundColor: backgroundColor ?? AppTheme.accentEmerald,
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.all(12),
+        duration: const Duration(seconds: 3),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+    );
+  }
+
   Widget _buildHelpButton({required VoidCallback onTap, required bool isDark}) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 30,
-        height: 30,
+        width: 22,
+        height: 22,
         decoration: BoxDecoration(
           color: const Color(0xFFD9FF00).withOpacity(0.12),
-          borderRadius: BorderRadius.circular(8),
+          shape: BoxShape.circle,
           border: Border.all(
             color: const Color(0xFFD9FF00),
             width: 1.0,
@@ -568,7 +585,7 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
           child: Icon(
             Icons.question_mark_rounded,
             color: Color(0xFFD9FF00),
-            size: 16,
+            size: 12,
           ),
         ),
       ),
@@ -620,7 +637,7 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
                     padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
                       color: const Color(0xFFD9FF00).withOpacity(0.12),
-                      borderRadius: BorderRadius.circular(8),
+                      shape: BoxShape.circle,
                       border: Border.all(color: const Color(0xFFD9FF00)),
                     ),
                     child: const Icon(
@@ -1602,6 +1619,7 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
         throw Exception(result['error']);
       }
 
+      AudioService.playAiOutput();
       setState(() {
         _isLoading = false;
         final rawItems = result['items'] as List?;
@@ -1837,111 +1855,45 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
         borderRadius: BorderRadius.circular(24),
         child: BackdropFilter(
           filter: ui.ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-          child: Container(
-            constraints: BoxConstraints(
-              maxWidth: 500,
-              maxHeight: MediaQuery.of(context).size.height * 0.85,
-            ),
-            decoration: BoxDecoration(
-              color: isDark
-                  ? const Color(0xFF0E0F0C)
-                  : Colors.white.withOpacity(0.9),
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(
-                color: isDark
-                    ? const Color(0xFF323530)
-                    : AppTheme.glassBorder,
-                width: 1.0,
+            child: ScaffoldMessenger(
+              key: _dialogScaffoldMessengerKey,
+              child: Scaffold(
+                backgroundColor: Colors.transparent,
+                body: Container(
+                  constraints: BoxConstraints(
+                    maxWidth: 500,
+                    maxHeight: MediaQuery.of(context).size.height * 0.85,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? const Color(0xFF0E0F0C)
+                        : Colors.white.withOpacity(0.9),
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(
+                      color: isDark
+                          ? const Color(0xFF323530)
+                          : AppTheme.glassBorder,
+                      width: 1.0,
+                    ),
+                  ),
+                  padding: const EdgeInsets.all(24),
+                  child: _isLoading
+                      ? _buildLoadingState(isDark)
+                      : _showReview
+                          ? _buildReviewScreen(isDark)
+                          : _buildMethodChooser(isDark),
+                ),
               ),
             ),
-            padding: const EdgeInsets.all(24),
-            child: _isLoading
-                ? _buildLoadingState(isDark)
-                : _showReview
-                    ? _buildReviewScreen(isDark)
-                    : _buildMethodChooser(isDark),
-          ),
         ),
       ),
     );
   }
 
   Widget _buildLoadingState(bool isDark) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        const SizedBox(height: 40),
-        const ZivoLoader(
-          size: 60,
-          strokeWidth: 4,
-        ),
-        const SizedBox(height: 24),
-        Text(
-          _loadingText,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: isDark ? Colors.white : AppTheme.textPrimary,
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 8),
-        const Text(
-          "This might take a few seconds...",
-          style: TextStyle(
-            color: AppTheme.textSecondary,
-            fontSize: 12,
-          ),
-        ),
-        if (_selectedImageBase64 != null &&
-            _selectedImageBase64!.isNotEmpty &&
-            !_selectedImageBase64!.startsWith('http')) ...[
-          const SizedBox(height: 20),
-          const Text(
-            "PREVIEWING IMAGE TO BE DECODED",
-            style: TextStyle(
-              fontSize: 9,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1.0,
-              color: AppTheme.accentCyan,
-            ),
-          ),
-          const SizedBox(height: 10),
-          Container(
-            height: 150,
-            width: double.infinity,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppTheme.glassBorder),
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: () {
-                try {
-                  String cleaned = _selectedImageBase64!;
-                  final commaIndex = cleaned.indexOf(',');
-                  if (commaIndex != -1) {
-                    cleaned = cleaned.substring(commaIndex + 1);
-                  }
-                  return Image.memory(
-                    base64Decode(cleaned),
-                    fit: BoxFit.contain,
-                  );
-                } catch (e) {
-                  return Center(
-                    child: Text(
-                      "Error loading preview: $e",
-                      style: const TextStyle(color: AppTheme.accentCoral, fontSize: 11),
-                    ),
-                  );
-                }
-              }(),
-            ),
-          ),
-        ],
-        const SizedBox(height: 40),
-      ],
+    return const Padding(
+      padding: EdgeInsets.symmetric(vertical: 24),
+      child: FoodLogLoadingWidget(),
     );
   }
 
@@ -3461,12 +3413,7 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
                     });
                     FirebaseService.saveFoodPresetsCloud(StorageService.getFoodPresets());
 
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        backgroundColor: AppTheme.accentEmerald,
-                        content: Text("Preset '$finalName' saved successfully!"),
-                      ),
-                    );
+                     _showLocalSnackBar("Preset '$finalName' saved successfully!");
                   },
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
@@ -4435,12 +4382,7 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
                     });
                     FirebaseService.saveFoodPresetsCloud(StorageService.getFoodPresets());
 
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        backgroundColor: AppTheme.accentEmerald,
-                        content: Text("Preset '$finalName' saved successfully!"),
-                      ),
-                    );
+                     _showLocalSnackBar("Preset '$finalName' saved successfully!");
                   },
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
@@ -4664,12 +4606,7 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
                               _selectedServingUnit = "serving";
                               _tabController.index = 4; // Switch to Manual tab
                             });
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                duration: Duration(seconds: 2),
-                                content: Text("Loaded preset details into Manual Entry!"),
-                              ),
-                            );
+                            _showLocalSnackBar("Loaded preset details into Manual Entry!");
                           },
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,

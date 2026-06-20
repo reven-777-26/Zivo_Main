@@ -58,6 +58,7 @@ dependencies:
   home_widget: ^0.9.3
   flutter_secure_storage: ^10.3.1
   purchases_flutter: ^8.1.1
+  audioplayers: ^6.0.0
 
 
 dev_dependencies:
@@ -83,6 +84,9 @@ flutter:
     - assets/add_meal.png
     - assets/product_analyser.png
     - assets/workout_log.png
+    - ui_sfx/app_open.mp3
+    - ui_sfx/ui_1.mp3
+    - ui_sfx/zivo_output.mp3
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
