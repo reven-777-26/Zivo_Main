@@ -379,9 +379,9 @@ class _UnifiedProductDetailScreenState extends ConsumerState<UnifiedProductDetai
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: gradeColor.withOpacity(0.06),
+                          color: isDark ? const Color(0xFF121214) : Colors.black.withOpacity(0.02),
                           borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: gradeColor.withOpacity(0.2), width: 1.0),
+                          border: Border.all(color: isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder, width: 1.0),
                         ),
                         child: Row(
                           children: [
@@ -390,8 +390,8 @@ class _UnifiedProductDetailScreenState extends ConsumerState<UnifiedProductDetai
                               height: 52,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                color: gradeColor.withOpacity(0.15),
-                                border: Border.all(color: gradeColor.withOpacity(0.4), width: 2.0),
+                                color: gradeColor.withOpacity(0.08),
+                                border: Border.all(color: gradeColor.withOpacity(0.3), width: 1.5),
                               ),
                               alignment: Alignment.center,
                               child: Text(
@@ -446,9 +446,9 @@ class _UnifiedProductDetailScreenState extends ConsumerState<UnifiedProductDetai
                     width: double.infinity,
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: AppTheme.accentCoral.withOpacity(0.05),
+                      color: isDark ? const Color(0xFF141618) : Colors.white,
                       borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: AppTheme.accentCoral.withOpacity(0.2), width: 1.0),
+                      border: Border.all(color: isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder, width: 1.0),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -456,19 +456,18 @@ class _UnifiedProductDetailScreenState extends ConsumerState<UnifiedProductDetai
                         margin: const EdgeInsets.only(bottom: 8),
                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                         decoration: BoxDecoration(
-                          color: isDark ? Colors.white.withOpacity(0.03) : Colors.black.withOpacity(0.02),
+                          color: isDark ? const Color(0xFF121214) : Colors.black.withOpacity(0.02),
                           borderRadius: BorderRadius.circular(12),
+                          border: Border(
+                            left: BorderSide(
+                              color: AppTheme.accentCoral,
+                              width: 3.5,
+                            ),
+                          ),
                         ),
                         child: Row(
                           children: [
-                            Container(
-                              width: 7, height: 7,
-                              decoration: const BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: AppTheme.accentCoral,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
+                            const SizedBox(width: 4),
                             Expanded(
                               child: Text(
                                 warning,
@@ -511,9 +510,9 @@ class _UnifiedProductDetailScreenState extends ConsumerState<UnifiedProductDetai
                       margin: const EdgeInsets.only(bottom: 10),
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                       decoration: BoxDecoration(
-                        color: color.withOpacity(0.05),
+                        color: isDark ? const Color(0xFF141618) : Colors.white,
                         borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: color.withOpacity(0.18), width: 1.0),
+                        border: Border.all(color: isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder, width: 1.0),
                       ),
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.center,
@@ -522,8 +521,9 @@ class _UnifiedProductDetailScreenState extends ConsumerState<UnifiedProductDetai
                             Container(
                               width: 34, height: 34,
                               decoration: BoxDecoration(
-                                color: color.withOpacity(0.12),
+                                color: color.withOpacity(0.08),
                                 shape: BoxShape.circle,
+                                border: Border.all(color: color.withOpacity(0.2), width: 1.0),
                               ),
                               alignment: Alignment.center,
                               child: Text(emoji, style: const TextStyle(fontSize: 15)),
@@ -1049,10 +1049,11 @@ class _UnifiedProductDetailScreenState extends ConsumerState<UnifiedProductDetai
               Container(
                 width: 30, height: 30,
                 decoration: BoxDecoration(
-                  color: accentColor.withOpacity(0.12),
+                  color: AppTheme.accentCyan.withOpacity(0.08),
                   borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: AppTheme.accentCyan.withOpacity(0.18), width: 1.0),
                 ),
-                child: Icon(icon, color: accentColor, size: 16),
+                child: const Icon(icon, color: AppTheme.accentCyan, size: 16),
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -1068,14 +1069,14 @@ class _UnifiedProductDetailScreenState extends ConsumerState<UnifiedProductDetai
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
           // Status badge
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
             decoration: BoxDecoration(
-              color: accentColor.withOpacity(0.1),
+              color: accentColor.withOpacity(0.08),
               borderRadius: BorderRadius.circular(9999),
-              border: Border.all(color: accentColor.withOpacity(0.25), width: 1.0),
+              border: Border.all(color: accentColor.withOpacity(0.2), width: 1.0),
             ),
             child: Text(
               status.toUpperCase(),
