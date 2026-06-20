@@ -181,6 +181,8 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
   String _reviewSelectedServingUnit = 'serving';
   List<BreakdownItem> _reviewBreakdownItems = [];
   List<BreakdownItem> _manualBreakdownItems = [];
+  bool _showReviewBreakdown = false;
+  bool _showManualBreakdown = false;
 
   // Manual flow controllers
   final TextEditingController _manualNameController = TextEditingController();
@@ -541,6 +543,7 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
       _baselineFat = _selectedFood!.fat;
       
       // Auto-recalculate totals if items were loaded
+      _showReviewBreakdown = _reviewBreakdownItems.isNotEmpty;
       if (_reviewBreakdownItems.isNotEmpty) {
         _updateTotalsFromBreakdown();
       }
@@ -2944,39 +2947,58 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
                     },
                     child: Icon(Icons.question_mark_rounded, color: AppTheme.accentCyan, size: 14),
                   ),
-                ],
-              ),
-              GestureDetector(
-                onTap: () => _showEditBreakdownItemDialog(null, null, isManual: true),
-                child: const Row(
-                  children: [
-                    Icon(Icons.add_circle_outline_rounded, color: AppTheme.accentCyan, size: 14),
-                    SizedBox(width: 4),
-                    Text(
-                      "Add Item",
-                      style: TextStyle(
-                        color: AppTheme.accentCyan,
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
+                  const SizedBox(width: 10),
+                  SizedBox(
+                    height: 20,
+                    width: 35,
+                    child: Transform.scale(
+                      scale: 0.75,
+                      child: Switch(
+                        value: _showManualBreakdown,
+                        activeColor: AppTheme.accentCyan,
+                        onChanged: (val) {
+                          setState(() {
+                            _showManualBreakdown = val;
+                          });
+                        },
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
+              if (_showManualBreakdown)
+                GestureDetector(
+                  onTap: () => _showEditBreakdownItemDialog(null, null, isManual: true),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.add_circle_outline_rounded, color: AppTheme.accentCyan, size: 14),
+                      SizedBox(width: 4),
+                      Text(
+                        "Add Item",
+                        style: TextStyle(
+                          color: AppTheme.accentCyan,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
             ],
           ),
-          const SizedBox(height: 6),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: isDark ? Colors.white.withOpacity(0.01) : Colors.black.withOpacity(0.01),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: isDark ? AppTheme.glassBorder : Colors.black.withOpacity(0.05),
-                width: 1.0,
+          if (_showManualBreakdown) ...[
+            const SizedBox(height: 6),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: isDark ? Colors.white.withOpacity(0.01) : Colors.black.withOpacity(0.01),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: isDark ? AppTheme.glassBorder : Colors.black.withOpacity(0.05),
+                  width: 1.0,
+                ),
               ),
-            ),
             child: _manualBreakdownItems.isEmpty
                 ? const Padding(
                     padding: EdgeInsets.symmetric(vertical: 12),
@@ -3532,6 +3554,7 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
                     _manualFatController.clear();
                     _manualServingSizeController.text = "1";
                     _selectedServingUnit = 'serving';
+                    _showManualBreakdown = false;
                     _manualBreakdownItems.clear();
 
                     Navigator.of(context).pop();
@@ -3852,39 +3875,58 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
                     },
                     child: Icon(Icons.help_outline_rounded, color: isDark ? Colors.white60 : Colors.black54, size: 14),
                   ),
-                ],
-              ),
-              GestureDetector(
-                onTap: () => _showEditBreakdownItemDialog(null, null),
-                child: const Row(
-                  children: [
-                    Icon(Icons.add_circle_outline_rounded, color: AppTheme.accentCyan, size: 14),
-                    SizedBox(width: 4),
-                    Text(
-                      "Add Item",
-                      style: TextStyle(
-                        color: AppTheme.accentCyan,
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
+                  const SizedBox(width: 10),
+                  SizedBox(
+                    height: 20,
+                    width: 35,
+                    child: Transform.scale(
+                      scale: 0.75,
+                      child: Switch(
+                        value: _showReviewBreakdown,
+                        activeColor: AppTheme.accentCyan,
+                        onChanged: (val) {
+                          setState(() {
+                            _showReviewBreakdown = val;
+                          });
+                        },
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
+              if (_showReviewBreakdown)
+                GestureDetector(
+                  onTap: () => _showEditBreakdownItemDialog(null, null),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.add_circle_outline_rounded, color: AppTheme.accentCyan, size: 14),
+                      SizedBox(width: 4),
+                      Text(
+                        "Add Item",
+                        style: TextStyle(
+                          color: AppTheme.accentCyan,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
             ],
           ),
-          const SizedBox(height: 6),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: isDark ? Colors.white.withOpacity(0.01) : Colors.black.withOpacity(0.01),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: isDark ? AppTheme.glassBorder : Colors.black.withOpacity(0.05),
-                width: 1.0,
+          if (_showReviewBreakdown) ...[
+            const SizedBox(height: 6),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: isDark ? Colors.white.withOpacity(0.01) : Colors.black.withOpacity(0.01),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: isDark ? AppTheme.glassBorder : Colors.black.withOpacity(0.05),
+                  width: 1.0,
+                ),
               ),
-            ),
             child: _reviewBreakdownItems.isEmpty
                 ? const Padding(
                     padding: EdgeInsets.symmetric(vertical: 12),
