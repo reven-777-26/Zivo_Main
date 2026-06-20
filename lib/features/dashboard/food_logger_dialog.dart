@@ -192,7 +192,7 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
   final TextEditingController _manualFatController = TextEditingController();
   final TextEditingController _manualServingSizeController = TextEditingController(text: "1");
   String _selectedServingUnit = 'serving';
-  final List<String> _servingUnits = ['grams', 'ml', 'serving', 'piece', 'bowl', 'cup', 'scoop'];
+  final List<String> _servingUnits = ['grams', 'ml', 'serving', 'piece', 'bowl', 'cup', 'scoop', 'plate'];
 
   String _normalizeServingUnit(String? rawUnit) {
     if (rawUnit == null || rawUnit.isEmpty) return 'serving';
@@ -234,7 +234,7 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
       return 'cup';
     }
     if (clean == 'plate' || clean == 'plates' || clean == 'dish' || clean == 'dishes') {
-      return 'bowl';
+      return 'plate';
     }
     if (clean == 'tbsp' || clean == 'tablespoon' || clean == 'tablespoons' || clean == 'tsp' || clean == 'teaspoon' || clean == 'teaspoons') {
       return 'serving';
@@ -1284,6 +1284,8 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
       unit = 'cup';
     } else if (cleanText.contains('scoop')) {
       unit = 'scoop';
+    } else if (cleanText.contains('plate')) {
+      unit = 'plate';
     } else if (cleanText.contains('egg') || cleanText.contains('banana') || cleanText.contains('apple') || cleanText.contains('cookie') || cleanText.contains('dosa') || cleanText.contains('roti')) {
       unit = 'piece'; // Default common items to 'piece' instead of generic 'serving'
     }
