@@ -192,8 +192,11 @@ export const analyzeMeal = onCall({
           },
         },
         {
-          text: "Analyze this food image. Estimate name, cals, protein, " +
-            "carbs, fat. Reference USDA FoodData Central (FDC) and " +
+          text: "Analyze this food image. Estimate name, calories, protein, " +
+            "carbs, fat, servingSize, and servingUnit. " +
+            "Analyze the image carefully to estimate or count the number of food items or portions " +
+            "visible in the image to determine the servingSize (e.g., if 2 slices of bread are visible, " +
+            "servingSize must be 2 and servingUnit must be 'piece'). Reference USDA FoodData Central (FDC) and " +
             "ICMR-NIN (National Institute of Nutrition, India) / IFCT " +
             "guidelines for standard portion sizes and nutritional " +
             "values to ensure maximum accuracy and consistency (e.g., " +
@@ -214,7 +217,9 @@ export const analyzeMeal = onCall({
       contents = [
         {
           text: "Analyze this meal: " +
-            `"${desc}". Estimate name, cals, protein, carbs, fat. ` +
+            `"${desc}". Estimate name, calories, protein, carbs, fat, servingSize, and servingUnit. ` +
+            "Extract the exact quantity and unit described in the text to determine servingSize and servingUnit " +
+            "(e.g., for '2 slices of bread', servingSize must be 2 and servingUnit must be 'piece'). " +
             "Reference USDA FoodData Central (FDC) and ICMR-NIN " +
             "(National Institute of Nutrition, India) / IFCT guidelines " +
             "for standard portion sizes and nutritional values to ensure " +
