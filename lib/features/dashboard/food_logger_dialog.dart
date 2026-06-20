@@ -2956,6 +2956,9 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
                       child: Switch(
                         value: _showManualBreakdown,
                         activeColor: AppTheme.accentCyan,
+                        activeTrackColor: AppTheme.accentCyan.withOpacity(0.3),
+                        inactiveThumbColor: Colors.white70,
+                        inactiveTrackColor: isDark ? Colors.white12 : Colors.black12,
                         onChanged: (val) {
                           setState(() {
                             _showManualBreakdown = val;
@@ -3715,16 +3718,54 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
                   ),
                 ],
               ),
-              // Add a back button to switch back to selector if needed
-              IconButton(
-                icon: const Icon(Icons.arrow_back_rounded,
-                    color: AppTheme.textSecondary),
-                onPressed: () {
-                  setState(() {
-                    _showReview = false;
-                    _errorMessage = null;
-                  });
-                },
+              Row(
+                children: [
+                  // Meal Breakdown Switch at top right
+                  Row(
+                    children: [
+                      Text(
+                        'Breakdown',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: _showReviewBreakdown ? AppTheme.accentCyan : AppTheme.textSecondary,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      SizedBox(
+                        height: 20,
+                        width: 35,
+                        child: Transform.scale(
+                          scale: 0.75,
+                          child: Switch(
+                            value: _showReviewBreakdown,
+                            activeColor: AppTheme.accentCyan,
+                            activeTrackColor: AppTheme.accentCyan.withOpacity(0.3),
+                            inactiveThumbColor: Colors.white70,
+                            inactiveTrackColor: isDark ? Colors.white12 : Colors.black12,
+                            onChanged: (val) {
+                              setState(() {
+                                _showReviewBreakdown = val;
+                              });
+                            },
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(width: 6),
+                  // Add a back button to switch back to selector if needed
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back_rounded,
+                        color: AppTheme.textSecondary),
+                    onPressed: () {
+                      setState(() {
+                        _showReview = false;
+                        _errorMessage = null;
+                      });
+                    },
+                  ),
+                ],
               ),
             ],
           ),
@@ -3875,23 +3916,6 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
                       );
                     },
                     child: Icon(Icons.help_outline_rounded, color: isDark ? Colors.white60 : Colors.black54, size: 14),
-                  ),
-                  const SizedBox(width: 10),
-                  SizedBox(
-                    height: 20,
-                    width: 35,
-                    child: Transform.scale(
-                      scale: 0.75,
-                      child: Switch(
-                        value: _showReviewBreakdown,
-                        activeColor: AppTheme.accentCyan,
-                        onChanged: (val) {
-                          setState(() {
-                            _showReviewBreakdown = val;
-                          });
-                        },
-                      ),
-                    ),
                   ),
                 ],
               ),
