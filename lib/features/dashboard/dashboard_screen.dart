@@ -2921,12 +2921,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               ),
               child: Row(
                 children: [
-                  // Circular Image Thumbnail
+                  // Rounded Rectangular Image Thumbnail
                   Container(
                     width: 56,
                     height: 56,
                     decoration: BoxDecoration(
-                      shape: BoxShape.circle,
+                      borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: borderColor, width: 1.0),
                       image: DecorationImage(
                         image: imageProvider,
