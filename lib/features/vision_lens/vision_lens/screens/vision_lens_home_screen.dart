@@ -895,8 +895,8 @@ class _VisionLensHomeScreenState extends ConsumerState<VisionLensHomeScreen> wit
   Widget _buildFoodLogPanel() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final themeTextColor = isDark ? Colors.white : AppTheme.textPrimary;
-    final cardBgColor = isDark ? const Color(0xFF1C1E1B) : AppTheme.glassBackground;
-    final borderColor = isDark ? const Color(0xFF323530) : AppTheme.glassBorder;
+    final cardBgColor = isDark ? const Color(0xFF141618) : AppTheme.glassBackground;
+    final borderColor = isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder;
 
     final selectedDate = ref.watch(selectedDateProvider);
     final dailyStats = ref.watch(dailyMetricsProvider(selectedDate));
