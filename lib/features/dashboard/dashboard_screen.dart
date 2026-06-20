@@ -4822,7 +4822,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   });
                 }
               } catch (e) {
-                debugPrint("Aura Nutrient Ingestion pipeline failed: $e");
+                debugPrint("Zivo Nutrient Ingestion pipeline failed: $e");
                 if (ctx.mounted) {
                   setState(() {
                     isScanning = false;
@@ -5772,7 +5772,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                     const Padding(
                                       padding: EdgeInsets.symmetric(vertical: 10),
                                       child: Text(
-                                        'AURA AI HEALTH INSIGHTS',
+                                        'ZIVO AI HEALTH INSIGHTS',
                                         style: TextStyle(
                                           color: Color(0xFFD9FF00), // Lime Green color
                                           fontSize: 10,

@@ -670,7 +670,7 @@ class DatabaseService {
           'Contains refined sugar (glycemic acne trigger).'
         ],
         category: 'Food',
-        source: 'Aura Smart Lens Database',
+        source: 'Zivo Smart Lens Database',
         confidence: 'HIGH',
         method: 'Barcode Decoded',
         rawServingSize: '1 sachet (14g)',
@@ -701,7 +701,7 @@ class DatabaseService {
           'Allergen Info: Contains hazelnuts, milk, and soy.'
         ],
         category: 'Food',
-        source: 'Aura Smart Lens Database',
+        source: 'Zivo Smart Lens Database',
         confidence: 'HIGH',
         method: 'Barcode Decoded',
         rawServingSize: '1 tbsp (15g)',
@@ -731,7 +731,7 @@ class DatabaseService {
           'Allergen Info: Contains gluten and wheat.'
         ],
         category: 'Food',
-        source: 'Aura Smart Lens Database',
+        source: 'Zivo Smart Lens Database',
         confidence: 'HIGH',
         method: 'Barcode Decoded',
         rawServingSize: '1 pack (100g)',

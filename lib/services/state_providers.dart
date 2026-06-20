@@ -520,7 +520,7 @@ class RemindersNotifier extends StateNotifier<Map<String, ReminderSetting>> {
     if (updated.isEnabled) {
       showWebNotification(
         '🔔 ${updated.label} Reminder Scheduled!',
-        'Aura will notify you daily at ${updated.time}.',
+        'Zivo will notify you daily at ${updated.time}.',
       );
     }
   }
@@ -544,7 +544,7 @@ class RemindersNotifier extends StateNotifier<Map<String, ReminderSetting>> {
 
     showWebNotification(
       '🔔 Custom Reminder Created!',
-      'Aura will notify you daily at $time for $label.',
+      'Zivo will notify you daily at $time for $label.',
     );
   }
 

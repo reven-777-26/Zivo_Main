@@ -312,7 +312,7 @@ class InsightEngine {
         final corrSeverity = matchedFlag == 'perfectWeekStreak' ? InsightSeverity.good : InsightSeverity.alert;
 
         correlationCard = InsightCard(
-          title: matchedFlag == 'perfectWeekStreak' ? 'Elite Consistency' : 'Aura Health Warning',
+          title: matchedFlag == 'perfectWeekStreak' ? 'Elite Consistency' : 'Zivo Health Warning',
           body: filledText,
           iconType: 'correlation',
           needsAttention: matchedFlag != 'perfectWeekStreak',

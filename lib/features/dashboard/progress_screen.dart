@@ -663,6 +663,26 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                 ),
               ),
               const SizedBox(height: 20),
+              Row(
+                children: const [
+                  Icon(
+                    Icons.psychology_rounded,
+                    color: Color(0xFFD9FF00),
+                    size: 20,
+                  ),
+                  SizedBox(width: 8),
+                  Text(
+                    'AI Insights',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFFD9FF00),
+                      letterSpacing: -0.3,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
               _buildInsightsPanel(),
               const SizedBox(height: 20),
           ],
