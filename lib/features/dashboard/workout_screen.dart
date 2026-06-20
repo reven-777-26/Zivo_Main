@@ -865,10 +865,20 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        Text(
+                          'MY TEMPLATES',
+                          style: TextStyle(
+                            fontSize: 9,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 1.4,
+                            color: accentColor,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
                         const Text(
                           'Workout Presets',
                           style: TextStyle(
-                            fontSize: 22,
+                            fontSize: 20,
                             fontWeight: FontWeight.w900,
                             letterSpacing: -0.5,
                           ),
@@ -907,15 +917,20 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
                     ),
                     GestureDetector(
                       onTap: () => _showAllPresetsSheet(context),
-                      child: Padding(
-                        padding: const EdgeInsets.only(bottom: 4.0),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: accentColor.withOpacity(0.08),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: accentColor.withOpacity(0.3), width: 1.0),
+                        ),
                         child: Text(
                           'VIEW ALL',
                           style: TextStyle(
                             color: accentColor,
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1.0,
+                            fontSize: 9,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.8,
                           ),
                         ),
                       ),
@@ -1110,13 +1125,28 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
                 const SizedBox(height: 32),
 
                 // Recent History Header
-                const Text(
-                  'Recent History',
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: -0.5,
-                  ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'WORKOUT LOG',
+                      style: TextStyle(
+                        fontSize: 9,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 1.4,
+                        color: AppTheme.accentCyan,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    const Text(
+                      'Recent History',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 16),
 

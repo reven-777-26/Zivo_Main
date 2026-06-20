@@ -305,13 +305,28 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    'Stats',
-                    style: TextStyle(
-                      fontSize: 26,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: -0.5,
-                    ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'PERFORMANCE',
+                        style: TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 1.4,
+                          color: AppTheme.accentCyan,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      const Text(
+                        'Stats',
+                        style: TextStyle(
+                          fontSize: 26,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                    ],
                   ),
                   GestureDetector(
                     onTap: () => _showStatsHelpSheet(context),
@@ -663,14 +678,28 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                 children: [
                   const Icon(Icons.psychology_rounded, color: AppTheme.accentCyan, size: 20),
                   const SizedBox(width: 8),
-                  Text(
-                    'AI Insights',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w900,
-                      color: isDark ? Colors.white : AppTheme.textPrimary,
-                      letterSpacing: -0.5,
-                    ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'AI POWERED',
+                        style: TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 1.4,
+                          color: AppTheme.accentCyan,
+                        ),
+                      ),
+                      Text(
+                        'AI Insights',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w900,
+                          color: isDark ? Colors.white : AppTheme.textPrimary,
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),

@@ -233,15 +233,31 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   // Daily Food Journal Section
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      Text(
-                        "Today's Entries",
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: -0.3,
-                          color: isDark ? Colors.white : AppTheme.textPrimary,
-                        ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'FOOD JOURNAL',
+                            style: TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 1.4,
+                              color: AppTheme.accentCyan,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            "Today's Entries",
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: -0.5,
+                              color: isDark ? Colors.white : AppTheme.textPrimary,
+                            ),
+                          ),
+                        ],
                       ),
                       GestureDetector(
                         onTap: () {
@@ -251,13 +267,21 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                             ),
                           );
                         },
-                        child: const Text(
-                          'VIEW ALL',
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                            color: AppTheme.accentCyan,
-                            letterSpacing: 0.5,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: AppTheme.accentCyan.withOpacity(0.08),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: AppTheme.accentCyan.withOpacity(0.3), width: 1.0),
+                          ),
+                          child: const Text(
+                            'VIEW ALL',
+                            style: TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w800,
+                              color: AppTheme.accentCyan,
+                              letterSpacing: 0.8,
+                            ),
                           ),
                         ),
                       ),
@@ -994,7 +1018,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       width: double.infinity,
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: isDark ? const Color(0xFF121214) : const Color(0xFFF9F9F9),
+                        color: isDark ? const Color(0xFF141618) : const Color(0xFFF9F9F9),
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
                           color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFE8EBE6),
@@ -1011,9 +1035,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                 "CALORIE ENERGY TRACKER",
                                 style: TextStyle(
                                   fontSize: 9.5,
-                                  fontWeight: FontWeight.bold,
+                                  fontWeight: FontWeight.w800,
                                   letterSpacing: 1.0,
-                                  color: textMutedColor,
+                                  color: AppTheme.accentCyan,
                                 ),
                               ),
                               Text(
@@ -1064,7 +1088,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           child: Container(
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: isDark ? const Color(0xFF121214) : const Color(0xFFF9F9F9),
+                              color: isDark ? const Color(0xFF141618) : const Color(0xFFF9F9F9),
                               borderRadius: BorderRadius.circular(20),
                               border: Border.all(
                                 color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFE8EBE6),
@@ -1078,9 +1102,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                   "HYDRATION",
                                   style: TextStyle(
                                     fontSize: 9.5,
-                                    fontWeight: FontWeight.bold,
+                                    fontWeight: FontWeight.w800,
                                     letterSpacing: 1.0,
-                                    color: textMutedColor,
+                                    color: AppTheme.accentCyan,
                                   ),
                                 ),
                                 const SizedBox(height: 8),
@@ -1123,7 +1147,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           child: Container(
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: isDark ? const Color(0xFF121214) : const Color(0xFFF9F9F9),
+                              color: isDark ? const Color(0xFF141618) : const Color(0xFFF9F9F9),
                               borderRadius: BorderRadius.circular(20),
                               border: Border.all(
                                 color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFE8EBE6),
@@ -1137,9 +1161,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                   "JOURNAL LOGS",
                                   style: TextStyle(
                                     fontSize: 9.5,
-                                    fontWeight: FontWeight.bold,
+                                    fontWeight: FontWeight.w800,
                                     letterSpacing: 1.0,
-                                    color: textMutedColor,
+                                    color: AppTheme.accentCyan,
                                   ),
                                 ),
                                 const SizedBox(height: 8),
@@ -1186,7 +1210,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         width: double.infinity,
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: isDark ? const Color(0xFF121214) : const Color(0xFFF9F9F9),
+                          color: isDark ? const Color(0xFF141618) : const Color(0xFFF9F9F9),
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
                             color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFE8EBE6),
@@ -1200,9 +1224,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                               "MACRONUTRIENT RATIOS",
                               style: TextStyle(
                                 fontSize: 9.5,
-                                fontWeight: FontWeight.bold,
+                                fontWeight: FontWeight.w800,
                                 letterSpacing: 1.0,
-                                color: textMutedColor,
+                                color: AppTheme.accentCyan,
                               ),
                             ),
                             const SizedBox(height: 12),
@@ -1265,10 +1289,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     Text(
                       'WORKOUTS COMPLETED',
                       style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1.0,
-                        color: textMutedColor,
+                        fontSize: 9,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 1.4,
+                        color: AppTheme.accentCyan,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -1317,7 +1341,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           margin: const EdgeInsets.only(bottom: 10),
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            color: isDark ? const Color(0xFF151811) : const Color(0xFFF9FBE7),
+                            color: isDark ? const Color(0xFF141618) : const Color(0xFFF9FBE7),
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
                               color: accentColor.withOpacity(0.2),
@@ -1386,10 +1410,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     Text(
                       'FOODS LOGGED',
                       style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1.0,
-                        color: textMutedColor,
+                        fontSize: 9,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 1.4,
+                        color: AppTheme.accentCyan,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -1504,26 +1528,19 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       width: double.infinity,
                       padding: const EdgeInsets.all(18),
                       decoration: BoxDecoration(
-                        color: isDark ? const Color(0xFF151811) : const Color(0xFFF9FBE7),
+                        color: isDark ? const Color(0xFF141618) : const Color(0xFFF2FBE7),
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                          color: accentColor.withOpacity(0.3),
-                          width: 1.5,
+                          color: accentColor.withOpacity(0.25),
+                          width: 1.0,
                         ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: accentColor.withOpacity(0.05),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
-                          )
-                        ],
                       ),
                       child: Column(
                         children: [
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Text('🔥 ', style: const TextStyle(fontSize: 14)),
+                              const Text('🔥 ', style: TextStyle(fontSize: 14)),
                               Flexible(
                                 child: Text(
                                   motivationTitle,
@@ -1536,7 +1553,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
-                              Text(' 🔥', style: const TextStyle(fontSize: 14)),
+                              const Text(' 🔥', style: TextStyle(fontSize: 14)),
                             ],
                           ),
                           const SizedBox(height: 8),
@@ -1547,7 +1564,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                               fontSize: 12.5,
                               fontWeight: FontWeight.bold,
                               height: 1.4,
-                              color: isDark ? Colors.white : AppTheme.textPrimary,
+                              color: isDark ? Colors.white.withOpacity(0.9) : AppTheme.textPrimary,
                             ),
                           ),
                         ],
@@ -2849,10 +2866,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     }
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardBgColor = isDark ? const Color(0xFF121214) : AppTheme.glassBackground;
+    final cardBgColor = isDark ? const Color(0xFF141618) : AppTheme.glassBackground;
     final borderColor = isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder;
     final textColor = isDark ? Colors.white : AppTheme.textPrimary;
-    final textMutedColor = isDark ? const Color(0xFFC5C9AC) : AppTheme.textSecondary;
+    final textMutedColor = isDark ? const Color(0xFF868685) : AppTheme.textSecondary;
 
     return Column(
       children: loggedItems.reversed.map((item) {
