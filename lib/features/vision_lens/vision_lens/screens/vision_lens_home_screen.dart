@@ -422,9 +422,29 @@ class _VisionLensHomeScreenState extends ConsumerState<VisionLensHomeScreen> wit
         ),
         title: null,
         actions: [
-          IconButton(
-            icon: Icon(Icons.help_outline_rounded, color: isDark ? Colors.white : AppTheme.textPrimary),
-            onPressed: () => _showAnalyserHelpSheet(context),
+          Center(
+            child: GestureDetector(
+              onTap: () => _showAnalyserHelpSheet(context),
+              child: Container(
+                width: 30,
+                height: 30,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFD9FF00).withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: const Color(0xFFD9FF00),
+                    width: 1.0,
+                  ),
+                ),
+                child: const Center(
+                  child: Icon(
+                    Icons.question_mark_rounded,
+                    color: Color(0xFFD9FF00),
+                    size: 16,
+                  ),
+                ),
+              ),
+            ),
           ),
           IconButton(
             icon: Icon(Icons.history_rounded, color: isDark ? Colors.white : AppTheme.textPrimary),
