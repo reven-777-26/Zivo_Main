@@ -307,23 +307,14 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                 children: [
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
+                    children: const [
                       Text(
-                        'PERFORMANCE',
-                        style: TextStyle(
-                          fontSize: 9,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 1.4,
-                          color: AppTheme.accentCyan,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      const Text(
                         'Stats',
                         style: TextStyle(
                           fontSize: 26,
                           fontWeight: FontWeight.w900,
                           letterSpacing: -0.5,
+                          color: Colors.white,
                         ),
                       ),
                     ],
