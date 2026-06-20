@@ -140,22 +140,22 @@ class _ZivoAnalyzerLoadingWidgetState extends State<ZivoAnalyzerLoadingWidget> {
         children: [
           // 1. Sonar style loader (style: 2)
           const ZivoLoader(
-            size: 76,
+            size: 54,
             style: 2,
-            strokeWidth: 2.5,
+            strokeWidth: 2.2,
           ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 16),
 
           // 2. Category detected indicator (conditionally shown)
           if (categoryHeader.isNotEmpty) ...[
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              margin: const EdgeInsets.only(bottom: 24),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              margin: const EdgeInsets.only(bottom: 12),
               decoration: BoxDecoration(
-                color: const Color(0xFFD9FF00).withOpacity(0.10),
+                color: const Color(0xFFD9FF00).withOpacity(0.08),
                 borderRadius: BorderRadius.circular(30),
                 border: Border.all(
-                  color: const Color(0xFFD9FF00).withOpacity(0.3),
+                  color: const Color(0xFFD9FF00).withOpacity(0.2),
                   width: 1.0,
                 ),
               ),
@@ -164,7 +164,7 @@ class _ZivoAnalyzerLoadingWidgetState extends State<ZivoAnalyzerLoadingWidget> {
                   Text(
                     categoryHeader,
                     style: const TextStyle(
-                      fontSize: 14,
+                      fontSize: 12,
                       fontWeight: FontWeight.bold,
                       color: Color(0xFFD9FF00),
                     ),
@@ -173,7 +173,7 @@ class _ZivoAnalyzerLoadingWidgetState extends State<ZivoAnalyzerLoadingWidget> {
                   Text(
                     categorySubtitle,
                     style: TextStyle(
-                      fontSize: 11,
+                      fontSize: 10,
                       color: isDark ? Colors.white60 : AppTheme.textSecondary,
                     ),
                   ),
@@ -184,11 +184,11 @@ class _ZivoAnalyzerLoadingWidgetState extends State<ZivoAnalyzerLoadingWidget> {
 
           // 3. Step Progression Card
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            width: 280,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            width: 240,
             decoration: BoxDecoration(
               color: isDark ? Colors.white.withOpacity(0.04) : Colors.black.withOpacity(0.02),
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(14),
               border: Border.all(
                 color: isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.04),
                 width: 1.0,
@@ -214,7 +214,7 @@ class _ZivoAnalyzerLoadingWidgetState extends State<ZivoAnalyzerLoadingWidget> {
                       _steps[_currentStep],
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: 13,
                         fontWeight: FontWeight.bold,
                         color: isDark ? Colors.white : AppTheme.textPrimary,
                       ),
@@ -224,7 +224,7 @@ class _ZivoAnalyzerLoadingWidgetState extends State<ZivoAnalyzerLoadingWidget> {
                 const SizedBox(height: 8),
                 // Progress Bar
                 Container(
-                  width: 220,
+                  width: 180,
                   height: 4,
                   decoration: BoxDecoration(
                     color: isDark ? Colors.white24 : Colors.black12,
@@ -234,7 +234,7 @@ class _ZivoAnalyzerLoadingWidgetState extends State<ZivoAnalyzerLoadingWidget> {
                     children: [
                       AnimatedContainer(
                         duration: const Duration(milliseconds: 1400),
-                        width: 220 * ((_currentStep + 1) / _steps.length),
+                        width: 180 * ((_currentStep + 1) / _steps.length),
                         height: 4,
                         decoration: BoxDecoration(
                           color: const Color(0xFFD9FF00),
@@ -245,12 +245,12 @@ class _ZivoAnalyzerLoadingWidgetState extends State<ZivoAnalyzerLoadingWidget> {
                   ),
                 ),
                 if (widget.progressMessage.isNotEmpty && !widget.progressMessage.startsWith("AI is analyzing")) ...[
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 8),
                   Text(
                     widget.progressMessage,
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontSize: 11,
+                      fontSize: 10,
                       color: isDark ? Colors.white38 : Colors.black38,
                       fontStyle: FontStyle.italic,
                     ),
@@ -259,24 +259,24 @@ class _ZivoAnalyzerLoadingWidgetState extends State<ZivoAnalyzerLoadingWidget> {
               ],
             ),
           ),
-          const SizedBox(height: 36),
+          const SizedBox(height: 18),
 
           // 4. Rotating Facts Section
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            constraints: const BoxConstraints(minHeight: 48),
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            constraints: const BoxConstraints(minHeight: 40),
             child: Column(
               children: [
                 Text(
                   "ZIVO INSIGHTS",
                   style: TextStyle(
-                    fontSize: 11,
-                    letterSpacing: 1.5,
+                    fontSize: 10,
+                    letterSpacing: 1.2,
                     fontWeight: FontWeight.w900,
                     color: isDark ? const Color(0xFFD9FF00) : AppTheme.accentCyan,
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
                 AnimatedSwitcher(
                   duration: const Duration(milliseconds: 400),
                   layoutBuilder: (Widget? currentChild, List<Widget> previousChildren) {

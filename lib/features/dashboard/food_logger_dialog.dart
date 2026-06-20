@@ -1854,34 +1854,38 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
       child: ClipRRect(
         borderRadius: BorderRadius.circular(24),
         child: BackdropFilter(
-          filter: ui.ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+          filter: ui.ImageFilter.blur(sigmaX: 16, sigmaY: 16),
             child: ScaffoldMessenger(
               key: _dialogScaffoldMessengerKey,
               child: Scaffold(
                 backgroundColor: Colors.transparent,
-                body: Container(
-                  constraints: BoxConstraints(
-                    maxWidth: 500,
-                    maxHeight: MediaQuery.of(context).size.height * 0.85,
-                  ),
-                  decoration: BoxDecoration(
-                    color: isDark
-                        ? const Color(0xFF0E0F0C)
-                        : Colors.white.withOpacity(0.9),
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(
-                      color: isDark
-                          ? const Color(0xFF323530)
-                          : AppTheme.glassBorder,
-                      width: 1.0,
+                body: Center(
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 250),
+                    curve: Curves.easeInOut,
+                    constraints: BoxConstraints(
+                      maxWidth: _isLoading ? 310 : 500,
+                      maxHeight: _isLoading ? 340 : MediaQuery.of(context).size.height * 0.85,
                     ),
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? const Color(0xFF121214).withOpacity(0.85)
+                          : Colors.white.withOpacity(0.9),
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(
+                        color: isDark
+                            ? const Color(0xFF2C2C2E)
+                            : AppTheme.glassBorder,
+                        width: 1.0,
+                      ),
+                    ),
+                    padding: EdgeInsets.all(_isLoading ? 16 : 24),
+                    child: _isLoading
+                        ? _buildLoadingState(isDark)
+                        : _showReview
+                            ? _buildReviewScreen(isDark)
+                            : _buildMethodChooser(isDark),
                   ),
-                  padding: const EdgeInsets.all(24),
-                  child: _isLoading
-                      ? _buildLoadingState(isDark)
-                      : _showReview
-                          ? _buildReviewScreen(isDark)
-                          : _buildMethodChooser(isDark),
                 ),
               ),
             ),
@@ -1891,10 +1895,7 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
   }
 
   Widget _buildLoadingState(bool isDark) {
-    return const Padding(
-      padding: EdgeInsets.symmetric(vertical: 24),
-      child: FoodLogLoadingWidget(),
-    );
+    return const FoodLogLoadingWidget();
   }
 
   Widget _buildMethodChooser(bool isDark) {

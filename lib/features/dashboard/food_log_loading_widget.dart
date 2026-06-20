@@ -77,18 +77,19 @@ class _FoodLogLoadingWidgetState extends State<FoodLogLoadingWidget> {
         children: [
           // 1. Sonar style loader (style: 2)
           const ZivoLoader(
-            size: 76,
+            size: 54,
             style: 2,
-            strokeWidth: 2.5,
+            strokeWidth: 2.2,
           ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 16),
           
           // 2. Active Step Indicator Card
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            width: 240,
             decoration: BoxDecoration(
               color: isDark ? Colors.white.withOpacity(0.04) : Colors.black.withOpacity(0.02),
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(14),
               border: Border.all(
                 color: isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.04),
                 width: 1.0,
@@ -114,7 +115,7 @@ class _FoodLogLoadingWidgetState extends State<FoodLogLoadingWidget> {
                       _steps[_currentStep],
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: 16,
+                        fontSize: 13,
                         fontWeight: FontWeight.bold,
                         color: isDark ? Colors.white : AppTheme.textPrimary,
                       ),
@@ -147,24 +148,24 @@ class _FoodLogLoadingWidgetState extends State<FoodLogLoadingWidget> {
               ],
             ),
           ),
-          const SizedBox(height: 36),
+          const SizedBox(height: 18),
 
           // 3. Rotating Facts section
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            constraints: const BoxConstraints(minHeight: 48),
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            constraints: const BoxConstraints(minHeight: 40),
             child: Column(
               children: [
                 Text(
                   "DID YOU KNOW?",
                   style: TextStyle(
-                    fontSize: 11,
-                    letterSpacing: 1.5,
+                    fontSize: 10,
+                    letterSpacing: 1.2,
                     fontWeight: FontWeight.w900,
                     color: isDark ? const Color(0xFFD9FF00) : AppTheme.accentCyan,
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
                 AnimatedSwitcher(
                   duration: const Duration(milliseconds: 400),
                   layoutBuilder: (Widget? currentChild, List<Widget> previousChildren) {
