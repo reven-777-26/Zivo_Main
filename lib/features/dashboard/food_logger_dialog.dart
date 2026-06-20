@@ -190,6 +190,55 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
   String _selectedServingUnit = 'serving';
   final List<String> _servingUnits = ['grams', 'ml', 'serving', 'piece', 'bowl', 'cup', 'scoop'];
 
+  String _normalizeServingUnit(String? rawUnit) {
+    if (rawUnit == null || rawUnit.isEmpty) return 'serving';
+    final clean = rawUnit.trim().toLowerCase();
+
+    // Direct match check first
+    for (final unit in _servingUnits) {
+      if (clean == unit) return unit;
+    }
+
+    // Common abbreviations/plurals mappings
+    if (clean == 'g' || clean == 'gram' || clean == 'grams' || clean.startsWith('g/')) {
+      return 'grams';
+    }
+    if (clean == 'ml' || clean == 'mls' || clean.contains('milliliter') || clean.contains('litre') || clean.contains('liter')) {
+      return 'ml';
+    }
+    if (clean == 'piece' || clean == 'pieces' || clean == 'pcs' || clean == 'pc') {
+      return 'piece';
+    }
+    if (clean == 'bowl' || clean == 'bowls') {
+      return 'bowl';
+    }
+    if (clean == 'cup' || clean == 'cups') {
+      return 'cup';
+    }
+    if (clean == 'scoop' || clean == 'scoops') {
+      return 'scoop';
+    }
+    if (clean == 'serving' || clean == 'servings') {
+      return 'serving';
+    }
+
+    // Map common food units to closest matching standard units
+    if (clean == 'slice' || clean == 'slices' || clean == 'loaf' || clean == 'loaves') {
+      return 'piece';
+    }
+    if (clean == 'glass' || clean == 'glasses' || clean == 'bottle' || clean == 'bottles' || clean == 'can' || clean == 'cans') {
+      return 'cup';
+    }
+    if (clean == 'plate' || clean == 'plates' || clean == 'dish' || clean == 'dishes') {
+      return 'bowl';
+    }
+    if (clean == 'tbsp' || clean == 'tablespoon' || clean == 'tablespoons' || clean == 'tsp' || clean == 'teaspoon' || clean == 'teaspoons') {
+      return 'serving';
+    }
+
+    return clean;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -461,7 +510,8 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
       // Smart Parse serving size and unit!
       final parsed = _parseServingInfo(_selectedFood!.foodName);
       final double initialSize = _selectedFood!.servingSize ?? parsed['size'];
-      final String initialUnit = _selectedFood!.servingUnit ?? parsed['unit'];
+      final String rawUnit = _selectedFood!.servingUnit ?? parsed['unit'];
+      final String initialUnit = _normalizeServingUnit(rawUnit);
 
       _isAutoScaling = true;
       _reviewServingSizeController.text = initialSize % 1 == 0 
@@ -3047,12 +3097,18 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
                             ),
                             icon: const Icon(Icons.keyboard_arrow_down_rounded, color: AppTheme.accentCyan),
                             isExpanded: true,
-                            items: _servingUnits.map((String unit) {
-                              return DropdownMenuItem<String>(
-                                value: unit,
-                                child: Text(unit),
-                              );
-                            }).toList(),
+                            items: () {
+                              final list = List<String>.from(_servingUnits);
+                              if (!list.contains(_selectedServingUnit)) {
+                                list.add(_selectedServingUnit);
+                              }
+                              return list.map((String unit) {
+                                return DropdownMenuItem<String>(
+                                  value: unit,
+                                  child: Text(unit),
+                                );
+                              }).toList();
+                            }(),
                             onChanged: (String? val) {
                               if (val != null) {
                                   setState(() {
@@ -3949,12 +4005,18 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
                             ),
                             icon: const Icon(Icons.keyboard_arrow_down_rounded, color: AppTheme.accentCyan),
                             isExpanded: true,
-                            items: _servingUnits.map((String unit) {
-                              return DropdownMenuItem<String>(
-                                value: unit,
-                                child: Text(unit),
-                              );
-                            }).toList(),
+                            items: () {
+                              final list = List<String>.from(_servingUnits);
+                              if (!list.contains(_reviewSelectedServingUnit)) {
+                                list.add(_reviewSelectedServingUnit);
+                              }
+                              return list.map((String unit) {
+                                return DropdownMenuItem<String>(
+                                  value: unit,
+                                  child: Text(unit),
+                                );
+                              }).toList();
+                            }(),
                             onChanged: (String? val) {
                               if (val != null) {
                                 setState(() {
