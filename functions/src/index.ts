@@ -105,7 +105,9 @@ export const analyzeMeal = onCall({
             "For countable items use 'piece' (bread slices, eggs, etc.). " +
             "For liquids use 'ml' or 'cup'. For bulk/weight use 'grams'. " +
             "For bowl-served items (dal, soup, rice) use 'bowl'. " +
-            "Must be one of: piece, grams, ml, cup, bowl, scoop, serving.",
+            "For plated meals (biryani, pasta, etc.) use 'plate'. " +
+            "Must be one of: piece, grams, ml, cup, bowl, scoop, " +
+            "serving, plate.",
         },
         items: {
           type: "ARRAY",
