@@ -265,6 +265,11 @@ final customBackgroundProvider = StateProvider<String?>((ref) {
   return StorageService.getCustomBackground();
 });
 
+// Custom Background Opacity Provider: Manages transparency overlay
+final customBackgroundOpacityProvider = StateProvider<double>((ref) {
+  return StorageService.getCustomBackgroundOpacity();
+});
+
 // Profile Provider: Manages the UserProfile state, loaded from Hive.
 final profileProvider = StateNotifierProvider<ProfileNotifier, UserProfile?>((
   ref,

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:flutter/cupertino.dart';
 import '../../core/theme.dart';
 import '../../core/health_math.dart';
 import '../../core/logo_widget.dart';
@@ -46,9 +48,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
   // Text Editing Controllers for Direct Typing
-  late TextEditingController _ageController;
+  late TextEditingController _dayController;
+  late TextEditingController _monthController;
+  late TextEditingController _yearController;
   late TextEditingController _heightController;
   late TextEditingController _weightController;
+
+  DateTime _selectedDob = DateTime(2000, 1, 1);
 
   // Summary Targets (calculated on activity complete)
   HealthTargets? _calculatedTargets;
@@ -57,19 +63,26 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   @override
   void initState() {
     super.initState();
-    _ageController = TextEditingController(text: _age.toString());
+    _dayController = TextEditingController(text: '01');
+    _monthController = TextEditingController(text: '01');
+    _yearController = TextEditingController(text: '2000');
     _heightController = TextEditingController(text: _height.round().toString());
     _weightController = TextEditingController(text: _weight.toStringAsFixed(0));
+    _age = 26; // Default computed age for Jan 1, 2000 in 2026
   }
 
   @override
   void dispose() {
-    _ageController.dispose();
+    _dayController.dispose();
+    _monthController.dispose();
+    _yearController.dispose();
     _heightController.dispose();
     _weightController.dispose();
     _pageController.dispose();
     super.dispose();
   }
+
+
 
   void _nextPage() {
     if (_currentStep < _totalSteps - 1) {
@@ -135,6 +148,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       waterGoal: _calculatedTargets!.waterGoal,
       gender: _gender,
     );
+
+    // Save DOB string to StorageService
+    final dobStr = "${_dayController.text.padLeft(2, '0')}/${_monthController.text.padLeft(2, '0')}/${_yearController.text}";
+    await StorageService.saveDob(dobStr);
 
     await StorageService.saveCarbsGoal(_calculatedTargets!.carbGoal);
     await StorageService.saveFatsGoal(_calculatedTargets!.fatGoal);
@@ -257,40 +274,18 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           const Spacer(),
-          // Zivo circular-Z logo
-          const ZivoLogoWidget(size: 96)
-              .animate()
-              .scale(duration: 800.ms, curve: Curves.elasticOut),
-          const SizedBox(height: 28),
-          
-          // App Title (ZivoFit) in Heavy Display Weight
-          RichText(
-            text: TextSpan(
-              style: const TextStyle(
-                fontSize: 36,
-                fontWeight: FontWeight.w900,
-                fontFamily: 'Outfit',
-                letterSpacing: -0.8,
-              ),
-              children: [
-                TextSpan(
-                  text: 'Zivo',
-                  style: TextStyle(color: isDark ? const Color(0xFFE8EBE6) : AppTheme.textPrimary),
-                ),
-                TextSpan(
-                  text: 'Fit',
-                  style: TextStyle(color: isDark ? const Color(0xFFD9FF00) : const Color(0xFF5C9E00)),
-                ),
-              ],
-            ),
+          // SVG Logo from assets
+          SvgPicture.asset(
+            'assets/Logo.svg',
+            width: 140,
+            height: 140,
           )
           .animate()
-          .fadeIn(delay: 200.ms, duration: 600.ms)
-          .slideY(begin: 0.15, end: 0, curve: Curves.easeOutCubic),
-          const SizedBox(height: 16),
+          .scale(duration: 800.ms, curve: Curves.elasticOut),
+          const SizedBox(height: 36),
           
           Text(
-            'Welcome to ZivoFit. Track Smarter. Live Better.',
+            'Welcome. Track Smarter. Live Better.',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 15,
@@ -299,7 +294,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             ),
           )
           .animate()
-          .fadeIn(delay: 400.ms, duration: 600.ms)
+          .fadeIn(delay: 300.ms, duration: 600.ms)
           .slideY(begin: 0.15, end: 0, curve: Curves.easeOutCubic),
           const Spacer(),
           // Begin button
@@ -548,7 +543,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     );
   }
 
-  // Step 4: Age Input
+  // Step 4: Age Input (Calculated from Date of Birth Scroller)
   Widget _buildAgeStep() {
     return Padding(
       padding: const EdgeInsets.all(24.0),
@@ -556,88 +551,99 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'How Old Are You?',
+            'When is Your Birthday?',
             style: TextStyle(fontSize: 26, fontWeight: FontWeight.w900, color: textColor),
           ),
           const SizedBox(height: 6),
           Text(
-            'Age is used to compute basal metabolic rate (BMR).',
+            'We use your date of birth to calculate your age and BMR.',
             style: TextStyle(color: textMutedColor, fontSize: 14),
           ),
           const Spacer(),
           Center(
             child: GlassCard(
-              width: 260,
+              width: 320,
               padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
               child: Column(
                 children: [
-                  Text(
-                    'YEARS',
-                    style: TextStyle(
-                      color: textMutedColor,
-                      fontSize: 11,
-                      letterSpacing: 2,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Direct keyboard typing synced
-                  Container(
-                    width: 120,
-                    decoration: BoxDecoration(
-                      color: isDark ? Colors.black.withOpacity(0.4) : const Color(0xFFFFFFFF),
-                      borderRadius: BorderRadius.circular(12), // rounded.md (12px)
-                      border: Border.all(
-                        color: isDark ? const Color(0xFF323530) : const Color(0xFFC4C6C2),
-                        width: 1.2,
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'DATE OF BIRTH',
+                        style: TextStyle(
+                          color: textMutedColor,
+                          fontSize: 11,
+                          letterSpacing: 2,
+                        ),
                       ),
-                    ),
-                    child: TextField(
-                      controller: _ageController,
-                      keyboardType: TextInputType.number,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 48,
-                        fontWeight: FontWeight.w900,
-                        color: isDark ? AppTheme.accentCyan : const Color(0xFF163300),
-                      ),
-                      decoration: const InputDecoration(
-                        border: InputBorder.none,
-                        contentPadding: EdgeInsets.symmetric(vertical: 4),
-                      ),
-                      onChanged: (text) {
-                        final val = int.tryParse(text);
-                        if (val != null && val >= 10 && val <= 100) {
-                          setState(() {
-                            _age = val;
-                          });
-                        }
-                      },
-                    ),
+                    ],
                   ),
                   const SizedBox(height: 16),
-
-                  // Quick selectors
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      _buildRoundAdjuster(Icons.remove, () {
-                        if (_age > 10) {
+                  CupertinoTheme(
+                    data: CupertinoThemeData(
+                      brightness: isDark ? Brightness.dark : Brightness.light,
+                      textTheme: CupertinoTextThemeData(
+                        dateTimePickerTextStyle: TextStyle(
+                          color: isDark ? Colors.white : AppTheme.textPrimary,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    child: SizedBox(
+                      height: 160,
+                      child: CupertinoDatePicker(
+                        mode: CupertinoDatePickerMode.date,
+                        initialDateTime: _selectedDob,
+                        minimumDate: DateTime(1920),
+                        maximumDate: DateTime.now(),
+                        onDateTimeChanged: (DateTime newDate) {
                           setState(() {
-                            _age--;
-                            _ageController.text = _age.toString();
+                            _selectedDob = newDate;
+                            _age = DateTime.now().year - newDate.year;
+                            if (DateTime.now().month < newDate.month ||
+                                (DateTime.now().month == newDate.month && DateTime.now().day < newDate.day)) {
+                              _age--;
+                            }
+                            _dayController.text = newDate.day.toString().padLeft(2, '0');
+                            _monthController.text = newDate.month.toString().padLeft(2, '0');
+                            _yearController.text = newDate.year.toString();
                           });
-                        }
-                      }),
-                      _buildRoundAdjuster(Icons.add, () {
-                        if (_age < 100) {
-                          setState(() {
-                            _age++;
-                            _ageController.text = _age.toString();
-                          });
-                        }
-                      }),
-                    ],
+                        },
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  // Calculated Age Display
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: (isDark ? AppTheme.accentCyan : const Color(0xFF5C9E00)).withOpacity(0.06),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: (isDark ? AppTheme.accentCyan : const Color(0xFF5C9E00)).withOpacity(0.2),
+                        width: 1.0,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Calculated Age: ',
+                          style: TextStyle(fontSize: 13, color: textMutedColor, fontWeight: FontWeight.bold),
+                        ),
+                        Text(
+                          '$_age years',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w900,
+                            color: isDark ? AppTheme.accentCyan : const Color(0xFF5C9E00),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),

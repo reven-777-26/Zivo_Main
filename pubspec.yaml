@@ -59,6 +59,7 @@ dependencies:
   flutter_secure_storage: ^10.3.1
   purchases_flutter: ^8.1.1
   audioplayers: ^6.0.0
+  flutter_svg: ^2.3.0
 
 
 dev_dependencies:
@@ -84,6 +85,7 @@ flutter:
     - assets/add_meal.png
     - assets/product_analyser.png
     - assets/workout_log.png
+    - assets/Logo.svg
     - assets/ui_sfx/app_open.mp3
     - assets/ui_sfx/ui_1.mp3
     - assets/ui_sfx/zivo_output.mp3

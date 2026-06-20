@@ -543,6 +543,8 @@ class ProfilePlaceholderScreen extends ConsumerStatefulWidget {
 
 class _ProfilePlaceholderScreenState
     extends ConsumerState<ProfilePlaceholderScreen> {
+  static const bool _showDeveloperMode = false;
+  final _dobController = TextEditingController();
   final _calController = TextEditingController();
   final _protController = TextEditingController();
   final _carbsController = TextEditingController();
@@ -563,6 +565,16 @@ class _ProfilePlaceholderScreenState
   bool _fakeDataEnabled = false;
   int _selectedLoader = 0; // 0=Morph, 1=EKG, 2=Arc
   Timer? _debounceTimer;
+
+  bool get _canResetPassword {
+    final user = FirebaseService.currentUser;
+    if (user == null || user.isAnonymous) return false;
+    final providers = user.providerData.map((p) => p.providerId).toList();
+    final hasPassword = providers.contains('password');
+    final hasGoogle = providers.contains('google.com');
+    final hasApple = providers.contains('apple.com');
+    return (hasPassword || (!hasGoogle && !hasApple)) && user.email != null && user.email!.isNotEmpty;
+  }
 
   void _onSettingsChanged() {
     _debounceTimer?.cancel();
@@ -669,6 +681,16 @@ class _ProfilePlaceholderScreenState
   void initState() {
     super.initState();
     final profile = ref.read(profileProvider);
+
+    // Initialize DOB from StorageService, falling back to estimated DOB from profile.age
+    final savedDob = StorageService.getDob();
+    if (savedDob != null && savedDob.isNotEmpty) {
+      _dobController.text = savedDob;
+    } else if (profile != null) {
+      final estimatedYear = DateTime.now().year - profile.age;
+      _dobController.text = "01/01/$estimatedYear";
+    }
+
     if (profile != null) {
       _calController.text = profile.calorieGoal.toString();
       _protController.text = profile.proteinGoal.toString();
@@ -732,6 +754,7 @@ class _ProfilePlaceholderScreenState
     _heightController.removeListener(_onSettingsChanged);
     _nameController.removeListener(_onSettingsChanged);
 
+    _dobController.dispose();
     _calController.dispose();
     _protController.dispose();
     _carbsController.dispose();
@@ -968,6 +991,7 @@ class _ProfilePlaceholderScreenState
     final String currentGender = profile?.gender ?? 'Male';
 
     return SafeArea(
+      bottom: false,
       child: SingleChildScrollView(
         padding: const EdgeInsets.only(
           left: 20,
@@ -1355,12 +1379,12 @@ class _ProfilePlaceholderScreenState
                     keyboardType: TextInputType.name,
                   ),
                   const SizedBox(height: 12),
-                  _buildEditorField(
-                    _ageController,
-                    'Age',
-                    'yrs',
-                    Icons.cake_rounded,
-                    AppTheme.accentOrange,
+                  _buildDatePickerField(
+                    ctrl: _dobController,
+                    label: 'Date of Birth',
+                    icon: Icons.cake_rounded,
+                    color: AppTheme.accentOrange,
+                    onTap: () => _selectDOB(context),
                   ),
                   const SizedBox(height: 12),
                   _buildDropdownField(
@@ -1641,168 +1665,168 @@ class _ProfilePlaceholderScreenState
                       ),
                     ],
                   ),
-                ],
-              ),
-            ),
-
-            // ── 6. DEVELOPER ACCORDION ──
-            _buildAccordionSection(
-              title: '🛠  Developer',
-              sectionKey: 'developer',
-              content: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Verification test for Flutter ↔ Firebase Cloud Functions connection using Secure Secret Manager.',
-                    style: TextStyle(
-                      color: AppTheme.textSecondary,
-                      fontSize: 13,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  GestureDetector(
-                    onTap: _isLoadingHealthCheck
-                        ? null
-                        : () async {
-                            setState(() {
-                              _isLoadingHealthCheck = true;
-                              _healthCheckResult = null;
-                            });
-                            final result = await AIBackendService.healthCheckAI();
-                            if (mounted) {
-                              setState(() {
-                                _isLoadingHealthCheck = false;
-                                _healthCheckResult = result.toString();
-                              });
-                            }
-                          },
-                    child: Container(
-                      width: double.infinity,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        color: accentColor,
-                        borderRadius: BorderRadius.circular(14),
-                        boxShadow: [
-                          BoxShadow(
-                            color: accentColor.withOpacity(0.15),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Center(
-                        child: _isLoadingHealthCheck
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor:
-                                      AlwaysStoppedAnimation<Color>(Colors.black),
-                                ),
-                              )
-                            : const Text(
-                                'Run healthCheckAI()',
-                                style: TextStyle(
-                                  color: Colors.black,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
+                 // ── 6. DEVELOPER ACCORDION ──
+            if (_showDeveloperMode)
+              _buildAccordionSection(
+                title: '🛠  Developer',
+                sectionKey: 'developer',
+                content: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Verification test for Flutter ↔ Firebase Cloud Functions connection using Secure Secret Manager.',
+                      style: TextStyle(
+                        color: AppTheme.textSecondary,
+                        fontSize: 13,
                       ),
                     ),
-                  ),
-                  if (_healthCheckResult != null) ...[
                     const SizedBox(height: 16),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.3),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color: AppTheme.glassBorder,
-                          width: 1,
-                        ),
-                      ),
-                      child: Text(
-                        _healthCheckResult!,
-                        style: TextStyle(
+                    GestureDetector(
+                      onTap: _isLoadingHealthCheck
+                          ? null
+                          : () async {
+                              setState(() {
+                                _isLoadingHealthCheck = true;
+                                _healthCheckResult = null;
+                              });
+                              final result = await AIBackendService.healthCheckAI();
+                              if (mounted) {
+                                setState(() {
+                                  _isLoadingHealthCheck = false;
+                                  _healthCheckResult = result.toString();
+                                });
+                              }
+                            },
+                      child: Container(
+                        width: double.infinity,
+                        height: 44,
+                        decoration: BoxDecoration(
                           color: accentColor,
-                          fontFamily: 'monospace',
-                          fontSize: 12,
+                          borderRadius: BorderRadius.circular(14),
+                          boxShadow: [
+                            BoxShadow(
+                              color: accentColor.withOpacity(0.15),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Center(
+                          child: _isLoadingHealthCheck
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor:
+                                        AlwaysStoppedAnimation<Color>(Colors.black),
+                                  ),
+                                )
+                              : const Text(
+                                  'Run healthCheckAI()',
+                                  style: TextStyle(
+                                    color: Colors.black,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
                         ),
                       ),
                     ),
-                  ],
-                  const Divider(color: AppTheme.glassBorder, height: 32),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Mock / Fake Data',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 15,
-                              color: Colors.white,
-                            ),
+                    if (_healthCheckResult != null) ...[
+                      const SizedBox(height: 16),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.3),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: AppTheme.glassBorder,
+                            width: 1,
                           ),
-                          SizedBox(height: 2),
-                          Text(
-                            'Enable to seed mock logs & workout trends',
-                            style: TextStyle(
-                              color: AppTheme.textSecondary,
-                              fontSize: 12,
-                            ),
+                        ),
+                        child: Text(
+                          _healthCheckResult!,
+                          style: TextStyle(
+                            color: accentColor,
+                            fontFamily: 'monospace',
+                            fontSize: 12,
                           ),
-                        ],
-                      ),
-                      Switch(
-                        value: _fakeDataEnabled,
-                        activeColor: accentColor,
-                        onChanged: (val) async {
-                          setState(() {
-                            _fakeDataEnabled = val;
-                          });
-                          await StorageService.saveFakeDataEnabled(val);
-                          if (val) {
-                            await StorageService.seedDummyData();
-                            ref.invalidate(workoutHistoryProvider);
-                            ref.invalidate(profileProvider);
-                            ref.invalidate(dailyMetricsProvider);
-                            final selectedDate = ref.read(selectedDateProvider);
-                            ref.invalidate(dailyMetricsProvider(selectedDate));
-                            if (mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Fake mock data generated successfully!'),
-                                  behavior: SnackBarBehavior.floating,
-                                ),
-                              );
-                            }
-                          } else {
-                            await StorageService.clearMockDataOnly();
-                            await FirebaseService.clearMockDataCloud();
-                            ref.invalidate(workoutHistoryProvider);
-                            ref.invalidate(profileProvider);
-                            final selectedDate = ref.read(selectedDateProvider);
-                            ref.invalidate(dailyMetricsProvider(selectedDate));
-                            ref.invalidate(dailyMetricsProvider);
-                            if (mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Mock logs and history cleared.'),
-                                  behavior: SnackBarBehavior.floating,
-                                ),
-                              );
-                            }
-                          }
-                        },
+                        ),
                       ),
                     ],
-                  ),
+                    const Divider(color: AppTheme.glassBorder, height: 32),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Mock / Fake Data',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 15,
+                                color: Colors.white,
+                              ),
+                            ),
+                            SizedBox(height: 2),
+                            Text(
+                              'Enable to seed mock logs & workout trends',
+                              style: TextStyle(
+                                color: AppTheme.textSecondary,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                        Switch(
+                          value: _fakeDataEnabled,
+                          activeColor: accentColor,
+                          onChanged: (val) async {
+                            setState(() {
+                              _fakeDataEnabled = val;
+                            });
+                            await StorageService.saveFakeDataEnabled(val);
+                            if (val) {
+                              await StorageService.seedDummyData();
+                              ref.invalidate(workoutHistoryProvider);
+                              ref.invalidate(profileProvider);
+                              ref.invalidate(dailyMetricsProvider);
+                              final selectedDate = ref.read(selectedDateProvider);
+                              ref.invalidate(dailyMetricsProvider(selectedDate));
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Fake mock data generated successfully!'),
+                                    behavior: SnackBarBehavior.floating,
+                                  ),
+                                );
+                              }
+                            } else {
+                              await StorageService.clearMockDataOnly();
+                              await FirebaseService.clearMockDataCloud();
+                              ref.invalidate(workoutHistoryProvider);
+                              ref.invalidate(profileProvider);
+                              final selectedDate = ref.read(selectedDateProvider);
+                              ref.invalidate(dailyMetricsProvider(selectedDate));
+                              ref.invalidate(dailyMetricsProvider);
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Mock logs and history cleared.'),
+                                    behavior: SnackBarBehavior.floating,
+                                  ),
+                                );
+                              }
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
                 ],
               ),
             ),
@@ -1941,6 +1965,47 @@ class _ProfilePlaceholderScreenState
                     ),
                   ),
                   const SizedBox(height: 12),
+
+                  if (_canResetPassword) ...[
+                    GestureDetector(
+                      onTap: () {
+                        _showPasswordResetDialog(context);
+                      },
+                      child: Container(
+                        width: double.infinity,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: AppTheme.accentEmerald.withOpacity(0.05),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: AppTheme.accentEmerald.withOpacity(0.3),
+                            width: 1.0,
+                          ),
+                        ),
+                        child: const Center(
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.lock_reset_rounded,
+                                color: AppTheme.accentEmerald,
+                                size: 18,
+                              ),
+                              SizedBox(width: 8),
+                              Text(
+                                'Reset Password',
+                                style: TextStyle(
+                                  color: AppTheme.accentEmerald,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
 
                   // 1. Sign Out Button
                   GestureDetector(
@@ -2505,6 +2570,120 @@ class _ProfilePlaceholderScreenState
     );
   }
 
+  void _updateAgeFromDOBString(String dobStr) {
+    final parts = dobStr.split('/');
+    if (parts.length == 3) {
+      final d = int.tryParse(parts[0]);
+      final m = int.tryParse(parts[1]);
+      final y = int.tryParse(parts[2]);
+      if (d != null && m != null && y != null) {
+        try {
+          final dob = DateTime(y, m, d);
+          final now = DateTime.now();
+          int age = now.year - dob.year;
+          if (now.month < dob.month || (now.month == dob.month && now.day < dob.day)) {
+            age--;
+          }
+          if (age >= 0 && age <= 120) {
+            setState(() {
+              _ageController.text = age.toString();
+            });
+          }
+        } catch (e) {
+          // Invalid date
+        }
+      }
+    }
+  }
+
+  Future<void> _selectDOB(BuildContext context) async {
+    DateTime initialDate = DateTime(2000, 1, 1);
+    final parts = _dobController.text.split('/');
+    if (parts.length == 3) {
+      final d = int.tryParse(parts[0]);
+      final m = int.tryParse(parts[1]);
+      final y = int.tryParse(parts[2]);
+      if (d != null && m != null && y != null) {
+        try {
+          initialDate = DateTime(y, m, d);
+        } catch (_) {}
+      }
+    }
+
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: initialDate,
+      firstDate: DateTime(1920),
+      lastDate: DateTime.now(),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: ColorScheme.dark(
+              primary: AppTheme.accentCyan,
+              onPrimary: Colors.black,
+              surface: const Color(0xFF1C1E1B),
+              onSurface: Colors.white,
+            ),
+            dialogBackgroundColor: const Color(0xFF0E0F0C),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null) {
+      final dobStr = "${picked.day.toString().padLeft(2, '0')}/${picked.month.toString().padLeft(2, '0')}/${picked.year}";
+      setState(() {
+        _dobController.text = dobStr;
+      });
+      await StorageService.saveDob(dobStr);
+      _updateAgeFromDOBString(dobStr);
+    }
+  }
+
+  Widget _buildDatePickerField({
+    required TextEditingController ctrl,
+    required String label,
+    required IconData icon,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final fieldBg = isDark
+        ? const Color(0xFF141618)
+        : Colors.black.withOpacity(0.015);
+    final fieldBorder = isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder;
+    final textColor = isDark ? Colors.white : AppTheme.textPrimary;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: fieldBg,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: fieldBorder, width: 1.0),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 1),
+      child: TextField(
+        controller: ctrl,
+        readOnly: true,
+        onTap: onTap,
+        style: TextStyle(
+          color: textColor,
+          fontWeight: FontWeight.bold,
+          fontSize: 14,
+        ),
+        decoration: InputDecoration(
+          icon: Icon(icon, color: color, size: 18),
+          labelText: label,
+          labelStyle: const TextStyle(
+            color: AppTheme.textSecondary,
+            fontSize: 11,
+          ),
+          border: InputBorder.none,
+        ),
+      ),
+    );
+  }
+
   Widget _buildDropdownField({
     required String value,
     required List<String> items,
@@ -3004,6 +3183,137 @@ class _ProfilePlaceholderScreenState
           ),
         ],
       ),
+    );
+  }
+
+  void _showPasswordResetDialog(BuildContext context) {
+    final user = FirebaseService.currentUser;
+    if (user == null || user.email == null || user.email!.isEmpty) return;
+    final email = user.email!;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accentColor = ref.read(accentColorProvider);
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        bool isSending = false;
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              backgroundColor: isDark ? const Color(0xFF141618) : Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+                side: BorderSide(
+                  color: isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder,
+                  width: 1,
+                ),
+              ),
+              title: Text(
+                'Reset Password',
+                style: TextStyle(
+                  color: isDark ? Colors.white : AppTheme.textPrimary,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'We will send a password reset link to:',
+                    style: TextStyle(
+                      color: isDark ? const Color(0xFF868685) : AppTheme.textSecondary,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    email,
+                    style: TextStyle(
+                      color: isDark ? Colors.white : AppTheme.textPrimary,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Please check your inbox to complete the password reset process.',
+                    style: TextStyle(
+                      color: isDark ? const Color(0xFF868685) : AppTheme.textSecondary,
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: isSending ? null : () => Navigator.pop(ctx),
+                  child: const Text(
+                    'Cancel',
+                    style: TextStyle(color: AppTheme.textSecondary),
+                  ),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: accentColor,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  onPressed: isSending
+                      ? null
+                      : () async {
+                          setState(() {
+                            isSending = true;
+                          });
+                          try {
+                            await FirebaseService.sendPasswordResetEmail(email);
+                            if (ctx.mounted) {
+                              Navigator.pop(ctx);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Password reset link sent to $email'),
+                                  backgroundColor: AppTheme.accentEmerald,
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                            }
+                          } catch (e) {
+                            if (ctx.mounted) {
+                              Navigator.pop(ctx);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Error sending link: ${e.toString()}'),
+                                  backgroundColor: AppTheme.accentCoral,
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                            }
+                          }
+                        },
+                  child: isSending
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
+                          ),
+                        )
+                      : const Text(
+                          'Send Link',
+                          style: TextStyle(
+                            color: Colors.black,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 

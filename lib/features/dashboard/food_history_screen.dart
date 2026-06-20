@@ -496,8 +496,11 @@ Future<dynamic> _showFoodDetailsDialog(
     );
   }
 
-  return showDialog(
+  return showModalBottomSheet(
     context: context,
+    backgroundColor: Colors.transparent,
+    isScrollControlled: true,
+    enableDrag: false,
     builder: (context) {
       return StatefulBuilder(
         builder: (context, setState) {
@@ -533,27 +536,42 @@ Future<dynamic> _showFoodDetailsDialog(
             {'name': 'Snacks', 'key': 'snacks_cal', 'icon': Icons.bakery_dining_rounded},
             {'name': 'Eating Out', 'key': 'outside_food_cal', 'icon': Icons.delivery_dining_rounded},
           ];
-          return Dialog(
-            backgroundColor: Colors.transparent,
-            insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+          return Padding(
+            padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(28),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
                 child: Container(
+                  constraints: BoxConstraints(
+                    maxHeight: MediaQuery.of(context).size.height * 0.85,
+                  ),
                   decoration: BoxDecoration(
                     color: isDark ? const Color(0xFF0E0F0C) : Colors.white,
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(
-                      color: isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder,
-                      width: 1.0,
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+                    border: Border(
+                      top: BorderSide(
+                        color: isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder,
+                        width: 1.0,
+                      ),
                     ),
                   ),
-                  padding: const EdgeInsets.all(24),
+                  padding: const EdgeInsets.only(left: 24, right: 24, top: 16, bottom: 24),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      Center(
+                        child: Container(
+                          width: 36,
+                          height: 4,
+                          margin: const EdgeInsets.only(bottom: 16),
+                          decoration: BoxDecoration(
+                            color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFE8EBE6),
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                      ),
                       // Header Row
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -610,7 +628,14 @@ Future<dynamic> _showFoodDetailsDialog(
                       ),
                       const SizedBox(height: 18),
 
-                      if (isEditing) ...[
+                      // Scrollable middle details section
+                      Flexible(
+                        child: SingleChildScrollView(
+                          physics: const BouncingScrollPhysics(),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (isEditing) ...[
                         const Text(
                           'MEAL CATEGORY',
                           style: TextStyle(
@@ -1205,6 +1230,10 @@ Future<dynamic> _showFoodDetailsDialog(
                           ),
                         ),
                       ],
+                    ],
+                  ),
+                ),
+              ),
                       const SizedBox(height: 24),
 
                       // Buttons section

@@ -3,12 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../../core/theme.dart';
 import '../../core/logo_widget.dart';
 import '../../services/state_providers.dart';
 import '../../services/firebase_service.dart';
 import '../../services/storage_service.dart';
-import '../../core/widgets/zivo_loader.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
@@ -72,86 +72,102 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textColor = isDark ? const Color(0xFFE8EBE6) : AppTheme.textPrimary;
-    final bgColor = isDark ? const Color(0xFF0E0F0C) : AppTheme.obsidianBackground;
+    final bgColor = isDark ? const Color(0xFF141618) : AppTheme.obsidianBackground;
 
     return Scaffold(
       backgroundColor: bgColor,
       body: Stack(
         children: [
+          // Background ambient gradient glow
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: RadialGradient(
+                  center: Alignment.center,
+                  radius: 1.2,
+                  colors: [
+                    const Color(0xFFD2FB10).withOpacity(0.04),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ),
           Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Zivo circular-Z logo
-                const ZivoLogoWidget(size: 80)
+                // SVG Logo from assets with entry and looping pulse animations
+                SvgPicture.asset(
+                  'assets/Logo.svg',
+                  width: 140,
+                  height: 140,
+                )
                 .animate()
-                .fadeIn(duration: 800.ms)
+                .fadeIn(duration: 1000.ms)
                 .scale(
-                  begin: const Offset(0.7, 0.7),
+                  begin: const Offset(0.5, 0.5),
                   curve: Curves.easeOutBack,
-                  duration: 800.ms,
+                  duration: 1000.ms,
+                )
+                .then(delay: 200.ms)
+                .shimmer(duration: 1200.ms, color: const Color(0xFFD2FB10).withOpacity(0.4))
+                .animate(onPlay: (controller) => controller.repeat(reverse: true))
+                .scale(
+                  begin: const Offset(1, 1),
+                  end: const Offset(1.05, 1.05),
+                  duration: 2000.ms,
+                  curve: Curves.easeInOut,
                 ),
-                const SizedBox(height: 32),
+                const SizedBox(height: 48),
                 
-                // App Title (ZivoFit) in Heavy Display Weight
-                RichText(
-                  text: TextSpan(
-                    style: TextStyle(
-                      fontSize: 38,
-                      fontWeight: FontWeight.w900,
-                      fontFamily: 'Outfit',
-                      letterSpacing: -0.8,
+                // Tagline styled with a premium glassmorphic neon glow pill and repeating shimmer loop
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.02),
+                    borderRadius: BorderRadius.circular(30),
+                    border: Border.all(
+                      color: const Color(0xFFD2FB10).withOpacity(0.18),
+                      width: 1.2,
                     ),
-                    children: [
-                      TextSpan(
-                        text: 'Zivo',
-                        style: TextStyle(color: textColor),
-                      ),
-                      TextSpan(
-                        text: 'Fit',
-                        style: const TextStyle(color: Color(0xFFD9FF00)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFFD2FB10).withOpacity(0.03),
+                        blurRadius: 20,
+                        spreadRadius: 1,
                       ),
                     ],
                   ),
-                )
-                .animate()
-                .fadeIn(delay: 200.ms, duration: 600.ms)
-                .slideY(begin: 0.15, end: 0, curve: Curves.easeOutCubic),
-                const SizedBox(height: 12),
-                
-                // App Subtitle
-                Text(
-                  'Track Smarter. Live Better.',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: isDark ? AppTheme.textTertiary : const Color(0xFF868685),
-                    letterSpacing: 0.196,
+                  child: ShaderMask(
+                    shaderCallback: (bounds) => const LinearGradient(
+                      colors: [
+                        Colors.white,
+                        Color(0xFFD2FB10),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ).createShader(bounds),
+                    child: const Text(
+                      'TRACK SMARTER. LIVE BETTER.',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w900,
+                        fontFamily: 'Outfit',
+                        color: Colors.white,
+                        letterSpacing: 1.5,
+                      ),
+                    ),
                   ),
                 )
                 .animate()
-                .fadeIn(delay: 400.ms, duration: 600.ms)
-                .slideY(begin: 0.15, end: 0, curve: Curves.easeOutCubic),
+                .fadeIn(delay: 500.ms, duration: 800.ms)
+                .slideY(begin: 0.3, end: 0, curve: Curves.easeOutCubic)
+                .animate(onPlay: (controller) => controller.repeat())
+                .shimmer(delay: 2000.ms, duration: 1500.ms, color: const Color(0xFFD2FB10).withOpacity(0.35)),
               ],
             ),
           ),
-
-          // Loading spinner at the bottom
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: Padding(
-              padding: const EdgeInsets.only(bottom: 64.0),
-              child: SizedBox(
-                width: 32,
-                height: 32,
-                child: ZivoLoader(
-                  size: 32,
-                  strokeWidth: 2,
-                ),
-              ),
-            ),
-          ).animate().fadeIn(delay: 600.ms),
         ],
       ),
     );

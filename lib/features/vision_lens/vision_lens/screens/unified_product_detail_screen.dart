@@ -77,7 +77,25 @@ class _UnifiedProductDetailScreenState extends ConsumerState<UnifiedProductDetai
       ),
     );
     if (url == null || url.isEmpty) return placeholder;
-    if (url.startsWith('data:image/') || url.contains(';base64,')) {
+    if (url.startsWith('http')) {
+      return Image.network(
+        url,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => placeholder,
+        loadingBuilder: (context, child, progress) {
+          if (progress == null) return child;
+          return Center(
+            child: CircularProgressIndicator(
+              value: progress.expectedTotalBytes != null
+                  ? progress.cumulativeBytesLoaded / progress.expectedTotalBytes!
+                  : null,
+              strokeWidth: 2,
+              valueColor: const AlwaysStoppedAnimation<Color>(AppTheme.accentCyan),
+            ),
+          );
+        },
+      );
+    } else {
       try {
         String clean = url;
         final commaIndex = url.indexOf(',');
@@ -88,23 +106,6 @@ class _UnifiedProductDetailScreenState extends ConsumerState<UnifiedProductDetai
         return placeholder;
       }
     }
-    return Image.network(
-      url,
-      fit: BoxFit.cover,
-      errorBuilder: (_, __, ___) => placeholder,
-      loadingBuilder: (context, child, progress) {
-        if (progress == null) return child;
-        return Center(
-          child: CircularProgressIndicator(
-            value: progress.expectedTotalBytes != null
-                ? progress.cumulativeBytesLoaded / progress.expectedTotalBytes!
-                : null,
-            strokeWidth: 2,
-            valueColor: const AlwaysStoppedAnimation<Color>(AppTheme.accentCyan),
-          ),
-        );
-      },
-    );
   }
 
   // ─────────────────── Brand Logo ───────────────────

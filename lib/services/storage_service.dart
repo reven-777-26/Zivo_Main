@@ -88,6 +88,22 @@ class StorageService {
     await _profileBox.put('current_profile', profile);
   }
 
+  /// Retrieves the saved user date of birth from Hive.
+  static String? getDob() {
+    final raw = _reminderBox.get('user_dob');
+    if (raw == null) return null;
+    return raw['dob'] as String?;
+  }
+
+  /// Saves the user date of birth to Hive.
+  static Future<void> saveDob(String? dob) async {
+    if (dob == null) {
+      await _reminderBox.delete('user_dob');
+    } else {
+      await _reminderBox.put('user_dob', {'dob': dob});
+    }
+  }
+
   /// Retrieves the profile picture base64 from Hive.
   static String? getProfilePicture() {
     final raw = _reminderBox.get('profile_picture');
@@ -118,6 +134,18 @@ class StorageService {
     } else {
       await _reminderBox.put('custom_background', {'base64': base64Str});
     }
+  }
+
+  /// Retrieves custom background opacity (defaults to 0.75).
+  static double getCustomBackgroundOpacity() {
+    final raw = _reminderBox.get('custom_background_opacity');
+    if (raw == null) return 0.75;
+    return (raw['opacity'] as num?)?.toDouble() ?? 0.75;
+  }
+
+  /// Saves custom background opacity.
+  static Future<void> saveCustomBackgroundOpacity(double opacity) async {
+    await _reminderBox.put('custom_background_opacity', {'opacity': opacity});
   }
 
   /// Retrieves the accent color index from Hive.

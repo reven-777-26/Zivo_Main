@@ -4237,17 +4237,10 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    GestureDetector(
-                      onTap: () {
-                        ImagePickerHelper.pickImage((base64, name, filePath) {
-                          setStateSheet(() {
-                            selfieBase64 = base64;
-                          });
-                        });
-                      },
-                      child: Container(
+                    if (selfieBase64 != null)
+                      Container(
                         width: double.infinity,
-                        height: selfieBase64 != null ? 140 : 60,
+                        height: 140,
                         decoration: BoxDecoration(
                           color: isDark ? const Color(0xFF0E0F0C) : Colors.black.withOpacity(0.015),
                           borderRadius: BorderRadius.circular(14),
@@ -4256,72 +4249,137 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
                             width: 1.0,
                           ),
                         ),
-                        child: selfieBase64 != null
-                            ? Stack(
-                                children: [
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(14),
-                                    child: () {
-                                      try {
-                                        String cleaned = selfieBase64!;
-                                        final commaIndex = cleaned.indexOf(',');
-                                        if (commaIndex != -1) {
-                                          cleaned = cleaned.substring(commaIndex + 1);
-                                        }
-                                        cleaned = cleaned.replaceAll(RegExp(r'\s+'), '');
-                                        return Image.memory(
-                                          base64Decode(cleaned),
-                                          width: double.infinity,
-                                          height: 140,
-                                          fit: BoxFit.cover,
-                                        );
-                                      } catch (e) {
-                                        return const Center(child: Text('Error loading image'));
-                                      }
-                                    }(),
+                        child: Stack(
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(14),
+                              child: () {
+                                try {
+                                  String cleaned = selfieBase64!;
+                                  final commaIndex = cleaned.indexOf(',');
+                                  if (commaIndex != -1) {
+                                    cleaned = cleaned.substring(commaIndex + 1);
+                                  }
+                                  cleaned = cleaned.replaceAll(RegExp(r'\s+'), '');
+                                  return Image.memory(
+                                    base64Decode(cleaned),
+                                    width: double.infinity,
+                                    height: 140,
+                                    fit: BoxFit.cover,
+                                  );
+                                } catch (e) {
+                                  return const Center(child: Text('Error loading image'));
+                                }
+                              }(),
+                            ),
+                            Positioned(
+                              right: 8,
+                              top: 8,
+                              child: GestureDetector(
+                                onTap: () {
+                                  setStateSheet(() {
+                                    selfieBase64 = null;
+                                  });
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: const BoxDecoration(
+                                    color: Colors.black54,
+                                    shape: BoxShape.circle,
                                   ),
-                                  Positioned(
-                                    right: 8,
-                                    top: 8,
-                                    child: GestureDetector(
-                                      onTap: () {
-                                        setStateSheet(() {
-                                          selfieBase64 = null;
-                                        });
-                                      },
-                                      child: Container(
-                                        padding: const EdgeInsets.all(4),
-                                        decoration: const BoxDecoration(
-                                          color: Colors.black54,
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: const Icon(
-                                          Icons.close_rounded,
-                                          color: Colors.white,
-                                          size: 16,
-                                        ),
+                                  child: const Icon(
+                                    Icons.close_rounded,
+                                    color: Colors.white,
+                                    size: 16,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    else
+                      Row(
+                        children: [
+                          // Take Photo
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () {
+                                ImagePickerHelper.pickImage((base64, name, filePath) {
+                                  setStateSheet(() {
+                                    selfieBase64 = base64;
+                                  });
+                                }, fromCamera: true);
+                              },
+                              child: Container(
+                                height: 60,
+                                decoration: BoxDecoration(
+                                  color: isDark ? const Color(0xFF0E0F0C) : Colors.black.withOpacity(0.015),
+                                  borderRadius: BorderRadius.circular(14),
+                                  border: Border.all(
+                                    color: isDark ? const Color(0xFF323530) : AppTheme.glassBorder,
+                                    width: 1.0,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.camera_alt_rounded, color: accentColor, size: 18),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'Take Photo',
+                                      style: TextStyle(
+                                        color: isDark ? Colors.white70 : AppTheme.textPrimary,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 13,
                                       ),
                                     ),
-                                  ),
-                                ],
-                              )
-                            : Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.camera_alt_rounded, color: accentColor, size: 18),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    'Click / Upload Photo',
-                                    style: TextStyle(
-                                      color: isDark ? Colors.white70 : AppTheme.textPrimary,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 13,
-                                    ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          // Upload Photo
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () {
+                                ImagePickerHelper.pickImage((base64, name, filePath) {
+                                  setStateSheet(() {
+                                    selfieBase64 = base64;
+                                  });
+                                }, fromCamera: false);
+                              },
+                              child: Container(
+                                height: 60,
+                                decoration: BoxDecoration(
+                                  color: isDark ? const Color(0xFF0E0F0C) : Colors.black.withOpacity(0.015),
+                                  borderRadius: BorderRadius.circular(14),
+                                  border: Border.all(
+                                    color: isDark ? const Color(0xFF323530) : AppTheme.glassBorder,
+                                    width: 1.0,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.photo_library_rounded, color: accentColor, size: 18),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'Upload Photo',
+                                      style: TextStyle(
+                                        color: isDark ? Colors.white70 : AppTheme.textPrimary,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
                     const SizedBox(height: 16),
 
                     // Save as Preset Checkbox Row
