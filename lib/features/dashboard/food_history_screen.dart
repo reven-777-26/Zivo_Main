@@ -778,70 +778,59 @@ Future<dynamic> _showFoodDetailsDialog(
                       ],
                       const SizedBox(height: 20),
 
-                      // Bento-Grid of Calories
+                      // Calories field styled like 3rd screenshot
                       if (!isEditing)
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-                          decoration: BoxDecoration(
-                            color: isDark ? AppTheme.accentCyan.withOpacity(0.04) : const Color(0xFFE2F6D5),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: isDark ? AppTheme.accentCyan.withOpacity(0.2) : const Color(0xFFC5EDAB),
-                              width: 1.2,
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Padding(
+                              padding: EdgeInsets.only(left: 4, bottom: 6),
+                              child: Text(
+                                "Calories",
+                                style: TextStyle(color: AppTheme.textSecondary, fontSize: 12, fontWeight: FontWeight.bold),
+                              ),
                             ),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Row(
+                            Container(
+                              width: double.infinity,
+                              height: 52,
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              decoration: BoxDecoration(
+                                color: isDark ? const Color(0xFF121214) : Colors.black.withOpacity(0.02),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder,
+                                  width: 1.0,
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(8),
-                                    decoration: BoxDecoration(
-                                      color: isDark ? AppTheme.accentCyan.withOpacity(0.1) : const Color(0xFFC5EDAB),
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    child: const Center(
-                                      widthFactor: 1.0,
-                                      child: Text('🔥', style: TextStyle(fontSize: 20)),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                  Row(
                                     children: [
+                                      const Text('🔥', style: TextStyle(fontSize: 20)),
+                                      const SizedBox(width: 12),
                                       Text(
-                                        'CALORIES',
+                                        calController.text,
                                         style: TextStyle(
-                                          color: isDark ? AppTheme.accentCyan : const Color(0xFF054D28),
-                                          fontSize: 9,
-                                          fontWeight: FontWeight.w900,
-                                          letterSpacing: 0.8,
-                                        ),
-                                      ),
-                                      Text(
-                                        'Energy Output',
-                                        style: TextStyle(
-                                          color: isDark ? AppTheme.textSecondary : const Color(0xFF054D28),
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.w500,
+                                          color: isDark ? Colors.white : Colors.black,
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 14,
                                         ),
                                       ),
                                     ],
                                   ),
+                                  Text(
+                                    "kcal",
+                                    style: TextStyle(
+                                      color: isDark ? const Color(0xFF868685) : AppTheme.textSecondary,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 13,
+                                    ),
+                                  ),
                                 ],
                               ),
-                              Text(
-                                '${calController.text} kcal',
-                                style: TextStyle(
-                                  color: isDark ? Colors.white : AppTheme.textPrimary,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w900,
-                                ),
-                              ),
-                            ],
-                          ),
+                            ),
+                          ],
                         )
                       else ...[
                         const Padding(
@@ -895,17 +884,181 @@ Future<dynamic> _showFoodDetailsDialog(
                       ],
                       const SizedBox(height: 12),
 
-                      // Macros Splits
-                      if (!isEditing)
+                      // Macros Splits styled like 3rd screenshot
+                      if (!isEditing) ...[
+                        const Padding(
+                          padding: EdgeInsets.only(left: 4, bottom: 8),
+                          child: Text(
+                            "MACRONUTRIENTS",
+                            style: TextStyle(color: AppTheme.textSecondary, fontSize: 9, fontWeight: FontWeight.bold, letterSpacing: 1.0),
+                          ),
+                        ),
                         Row(
                           children: [
-                            Expanded(child: buildMacroCard('PROTEIN', '${proteinController.text}g', AppTheme.accentOrange, '🍗')),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Padding(
+                                    padding: EdgeInsets.only(left: 4, bottom: 6),
+                                    child: Text(
+                                      "Protein",
+                                      style: TextStyle(color: AppTheme.textSecondary, fontSize: 11, fontWeight: FontWeight.bold),
+                                    ),
+                                  ),
+                                  Container(
+                                    height: 48,
+                                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                                    decoration: BoxDecoration(
+                                      color: isDark ? const Color(0xFF121214) : Colors.black.withOpacity(0.02),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder,
+                                        width: 1.0,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            const Text('🍗', style: TextStyle(fontSize: 16)),
+                                            const SizedBox(width: 6),
+                                            Text(
+                                              proteinController.text,
+                                              style: TextStyle(
+                                                color: isDark ? Colors.white : Colors.black,
+                                                fontWeight: FontWeight.w600,
+                                                fontSize: 13,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        Text(
+                                          "g",
+                                          style: TextStyle(
+                                            color: isDark ? const Color(0xFF868685) : AppTheme.textSecondary,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                             const SizedBox(width: 8),
-                            Expanded(child: buildMacroCard('CARBS', '${carbsController.text}g', AppTheme.accentCyan, '🍚')),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Padding(
+                                    padding: EdgeInsets.only(left: 4, bottom: 6),
+                                    child: Text(
+                                      "Carbs",
+                                      style: TextStyle(color: AppTheme.textSecondary, fontSize: 11, fontWeight: FontWeight.bold),
+                                    ),
+                                  ),
+                                  Container(
+                                    height: 48,
+                                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                                    decoration: BoxDecoration(
+                                      color: isDark ? const Color(0xFF121214) : Colors.black.withOpacity(0.02),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder,
+                                        width: 1.0,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            const Text('🍚', style: TextStyle(fontSize: 16)),
+                                            const SizedBox(width: 6),
+                                            Text(
+                                              carbsController.text,
+                                              style: TextStyle(
+                                                color: isDark ? Colors.white : Colors.black,
+                                                fontWeight: FontWeight.w600,
+                                                fontSize: 13,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        Text(
+                                          "g",
+                                          style: TextStyle(
+                                            color: isDark ? const Color(0xFF868685) : AppTheme.textSecondary,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                             const SizedBox(width: 8),
-                            Expanded(child: buildMacroCard('FAT', '${fatController.text}g', AppTheme.accentCoral, '🥑')),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Padding(
+                                    padding: EdgeInsets.only(left: 4, bottom: 6),
+                                    child: Text(
+                                      "Fat",
+                                      style: TextStyle(color: AppTheme.textSecondary, fontSize: 11, fontWeight: FontWeight.bold),
+                                    ),
+                                  ),
+                                  Container(
+                                    height: 48,
+                                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                                    decoration: BoxDecoration(
+                                      color: isDark ? const Color(0xFF121214) : Colors.black.withOpacity(0.02),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder,
+                                        width: 1.0,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            const Text('🥑', style: TextStyle(fontSize: 16)),
+                                            const SizedBox(width: 6),
+                                            Text(
+                                              fatController.text,
+                                              style: TextStyle(
+                                                color: isDark ? Colors.white : Colors.black,
+                                                fontWeight: FontWeight.w600,
+                                                fontSize: 13,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        Text(
+                                          "g",
+                                          style: TextStyle(
+                                            color: isDark ? const Color(0xFF868685) : AppTheme.textSecondary,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                           ],
-                        )
+                        ),
+                      ]
                       else ...[
                         const Text(
                           'MACRONUTRIENTS (G)',
