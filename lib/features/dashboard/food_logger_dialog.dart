@@ -3074,7 +3074,8 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
                     ],
                   ),
           ),
-          const SizedBox(height: 14),
+        ],
+        const SizedBox(height: 14),
 
           // Serving Size & Unit Row
           Row(
@@ -4002,7 +4003,8 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
                     ],
                   ),
           ),
-          const SizedBox(height: 14),
+        ],
+        const SizedBox(height: 14),
 
           // Serving Size & Unit Row
           Row(
