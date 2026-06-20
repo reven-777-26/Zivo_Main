@@ -295,37 +295,33 @@ class _UnifiedVisionScannerDialogState extends ConsumerState<UnifiedVisionScanne
     return Dialog(
       backgroundColor: Colors.transparent,
       insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
-        child: BackdropFilter(
-          filter: ui.ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-          child: Container(
-            color: isDark
-                ? Colors.black.withOpacity(0.4)
-                : Colors.white.withOpacity(0.1),
-            child: Center(
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 250),
-                curve: Curves.easeInOut,
-                constraints: BoxConstraints(
-                  maxWidth: isScanning ? 310 : 480,
-                  maxHeight: isScanning ? 370 : MediaQuery.of(context).size.height * 0.8,
-                ),
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? const Color(0xFF121214).withOpacity(0.85)
-                      : AppTheme.glassBackground.withOpacity(0.9),
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(
-                    color: isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder,
-                    width: 1.0,
-                  ),
-                ),
-                padding: EdgeInsets.all(isScanning ? 16 : 24),
-                child: isScanning
-                    ? _buildLoadingState(isDark, visionState.progressMessage)
-                    : _buildScannerView(isDark),
+      child: Center( // Center the dialog container properly to avoid stretching full-screen
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: BackdropFilter(
+            filter: ui.ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeInOut,
+              width: isScanning ? 300 : 480,
+              height: isScanning ? 350 : null, // Let scanner auto-wrap, keep loading box fixed
+              constraints: BoxConstraints(
+                maxHeight: isScanning ? 350 : MediaQuery.of(context).size.height * 0.8,
               ),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? const Color(0xFF121214).withOpacity(0.85)
+                    : AppTheme.glassBackground.withOpacity(0.9),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(
+                  color: isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder,
+                  width: 1.0,
+                ),
+              ),
+              padding: EdgeInsets.all(isScanning ? 10 : 24),
+              child: isScanning
+                  ? _buildLoadingState(isDark, visionState.progressMessage)
+                  : _buildScannerView(isDark),
             ),
           ),
         ),
