@@ -2996,33 +2996,37 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
                           return Row(
                             children: [
                               Expanded(
-                                child: GestureDetector(
-                                  onTap: () => _showEditBreakdownItemDialog(item, index, isManual: true),
-                                  behavior: HitTestBehavior.opaque,
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        item.name,
-                                        style: TextStyle(
-                                          color: isDark ? Colors.white : AppTheme.textPrimary,
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.bold,
-                                        ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      item.name,
+                                      style: TextStyle(
+                                        color: isDark ? Colors.white : AppTheme.textPrimary,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.bold,
                                       ),
-                                      const SizedBox(height: 2),
-                                      Text(
-                                        "${item.servingSize % 1 == 0 ? item.servingSize.toInt().toString() : item.servingSize.toString()} ${item.servingUnit} • ${item.calories} kcal • P: ${item.protein}g C: ${item.carbs}g F: ${item.fat}g",
-                                        style: const TextStyle(
-                                          color: AppTheme.textSecondary,
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.w600,
-                                        ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      "${item.servingSize % 1 == 0 ? item.servingSize.toInt().toString() : item.servingSize.toString()} ${item.servingUnit} • ${item.calories} kcal • P: ${item.protein}g C: ${item.carbs}g F: ${item.fat}g",
+                                      style: const TextStyle(
+                                        color: AppTheme.textSecondary,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
                                       ),
-                                    ],
-                                  ),
+                                    ),
+                                  ],
                                 ),
                               ),
+                              IconButton(
+                                icon: const Icon(Icons.edit_rounded, color: AppTheme.accentCyan, size: 16),
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
+                                tooltip: 'Edit item',
+                                onPressed: () => _showEditBreakdownItemDialog(item, index, isManual: true),
+                              ),
+                              const SizedBox(width: 8),
                               IconButton(
                                 icon: const Icon(Icons.delete_outline_rounded, color: AppTheme.accentCoral, size: 18),
                                 padding: EdgeInsets.zero,
@@ -3930,33 +3934,37 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
                           return Row(
                             children: [
                               Expanded(
-                                child: GestureDetector(
-                                  onTap: () => _showEditBreakdownItemDialog(item, index),
-                                  behavior: HitTestBehavior.opaque,
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        item.name,
-                                        style: TextStyle(
-                                          color: isDark ? Colors.white : AppTheme.textPrimary,
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.bold,
-                                        ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      item.name,
+                                      style: TextStyle(
+                                        color: isDark ? Colors.white : AppTheme.textPrimary,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.bold,
                                       ),
-                                      const SizedBox(height: 2),
-                                      Text(
-                                        "${item.servingSize % 1 == 0 ? item.servingSize.toInt().toString() : item.servingSize.toString()} ${item.servingUnit} • ${item.calories} kcal • P: ${item.protein}g C: ${item.carbs}g F: ${item.fat}g",
-                                        style: const TextStyle(
-                                          color: AppTheme.textSecondary,
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.w600,
-                                        ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      "${item.servingSize % 1 == 0 ? item.servingSize.toInt().toString() : item.servingSize.toString()} ${item.servingUnit} • ${item.calories} kcal • P: ${item.protein}g C: ${item.carbs}g F: ${item.fat}g",
+                                      style: const TextStyle(
+                                        color: AppTheme.textSecondary,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
                                       ),
-                                    ],
-                                  ),
+                                    ),
+                                  ],
                                 ),
                               ),
+                              IconButton(
+                                icon: const Icon(Icons.edit_rounded, color: AppTheme.accentCyan, size: 16),
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
+                                tooltip: 'Edit item',
+                                onPressed: () => _showEditBreakdownItemDialog(item, index),
+                              ),
+                              const SizedBox(width: 8),
                               IconButton(
                                 icon: const Icon(Icons.delete_outline_rounded, color: AppTheme.accentCoral, size: 18),
                                 padding: EdgeInsets.zero,
