@@ -198,14 +198,26 @@ class _ZivoAnalyzerLoadingWidgetState extends State<ZivoAnalyzerLoadingWidget> {
               children: [
                 AnimatedSwitcher(
                   duration: const Duration(milliseconds: 300),
-                  child: Text(
-                    _steps[_currentStep],
+                  layoutBuilder: (Widget? currentChild, List<Widget> previousChildren) {
+                    return Stack(
+                      alignment: Alignment.center,
+                      children: <Widget>[
+                        ...previousChildren,
+                        if (currentChild != null) currentChild,
+                      ],
+                    );
+                  },
+                  child: SizedBox(
                     key: ValueKey<int>(_currentStep),
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: isDark ? Colors.white : AppTheme.textPrimary,
+                    width: double.infinity,
+                    child: Text(
+                      _steps[_currentStep],
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: isDark ? Colors.white : AppTheme.textPrimary,
+                      ),
                     ),
                   ),
                 ),
@@ -267,17 +279,29 @@ class _ZivoAnalyzerLoadingWidgetState extends State<ZivoAnalyzerLoadingWidget> {
                 const SizedBox(height: 8),
                 AnimatedSwitcher(
                   duration: const Duration(milliseconds: 400),
+                  layoutBuilder: (Widget? currentChild, List<Widget> previousChildren) {
+                    return Stack(
+                      alignment: Alignment.topCenter,
+                      children: <Widget>[
+                        ...previousChildren,
+                        if (currentChild != null) currentChild,
+                      ],
+                    );
+                  },
                   transitionBuilder: (Widget child, Animation<double> animation) {
                     return FadeTransition(opacity: animation, child: child);
                   },
-                  child: Text(
-                    activeFactsList[factIndex],
+                  child: SizedBox(
                     key: ValueKey<String>(activeFactsList[factIndex]),
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 13,
-                      height: 1.4,
-                      color: isDark ? Colors.white70 : AppTheme.textSecondary,
+                    width: double.infinity,
+                    child: Text(
+                      activeFactsList[factIndex],
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 13,
+                        height: 1.4,
+                        color: isDark ? Colors.white70 : AppTheme.textSecondary,
+                      ),
                     ),
                   ),
                 ),

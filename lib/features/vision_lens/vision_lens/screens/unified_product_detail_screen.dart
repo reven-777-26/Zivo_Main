@@ -1193,6 +1193,9 @@ class _UnifiedProductDetailScreenState extends ConsumerState<UnifiedProductDetai
         final useVerticalLayout = cardConstraints.maxWidth < 220;
 
         final badgeWidget = Container(
+          constraints: BoxConstraints(
+            maxWidth: cardConstraints.maxWidth - 42,
+          ),
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
           decoration: BoxDecoration(
             color: accentColor.withOpacity(0.08),
@@ -1204,6 +1207,8 @@ class _UnifiedProductDetailScreenState extends ConsumerState<UnifiedProductDetai
           ),
           child: Text(
             status.toUpperCase(),
+            textAlign: TextAlign.center,
+            softWrap: true,
             style: TextStyle(
               color: accentColor,
               fontSize: 9,
@@ -1274,7 +1279,9 @@ class _UnifiedProductDetailScreenState extends ConsumerState<UnifiedProductDetai
                 ),
               ),
               const SizedBox(width: 8),
-              badgeWidget,
+              Flexible(
+                child: badgeWidget,
+              ),
             ],
           );
         }

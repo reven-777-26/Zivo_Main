@@ -98,13 +98,26 @@ class _FoodLogLoadingWidgetState extends State<FoodLogLoadingWidget> {
               children: [
                 AnimatedSwitcher(
                   duration: const Duration(milliseconds: 300),
-                  child: Text(
-                    _steps[_currentStep],
+                  layoutBuilder: (Widget? currentChild, List<Widget> previousChildren) {
+                    return Stack(
+                      alignment: Alignment.center,
+                      children: <Widget>[
+                        ...previousChildren,
+                        if (currentChild != null) currentChild,
+                      ],
+                    );
+                  },
+                  child: SizedBox(
                     key: ValueKey<int>(_currentStep),
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: isDark ? Colors.white : AppTheme.textPrimary,
+                    width: double.infinity,
+                    child: Text(
+                      _steps[_currentStep],
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: isDark ? Colors.white : AppTheme.textPrimary,
+                      ),
                     ),
                   ),
                 ),
@@ -154,17 +167,29 @@ class _FoodLogLoadingWidgetState extends State<FoodLogLoadingWidget> {
                 const SizedBox(height: 8),
                 AnimatedSwitcher(
                   duration: const Duration(milliseconds: 400),
+                  layoutBuilder: (Widget? currentChild, List<Widget> previousChildren) {
+                    return Stack(
+                      alignment: Alignment.topCenter,
+                      children: <Widget>[
+                        ...previousChildren,
+                        if (currentChild != null) currentChild,
+                      ],
+                    );
+                  },
                   transitionBuilder: (Widget child, Animation<double> animation) {
                     return FadeTransition(opacity: animation, child: child);
                   },
-                  child: Text(
-                    _facts[_currentFact],
+                  child: SizedBox(
                     key: ValueKey<int>(_currentFact),
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 13,
-                      height: 1.4,
-                      color: isDark ? Colors.white70 : AppTheme.textSecondary,
+                    width: double.infinity,
+                    child: Text(
+                      _facts[_currentFact],
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 13,
+                        height: 1.4,
+                        color: isDark ? Colors.white70 : AppTheme.textSecondary,
+                      ),
                     ),
                   ),
                 ),
