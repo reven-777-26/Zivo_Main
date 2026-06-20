@@ -19,6 +19,8 @@ import '../../../dashboard/food_history_screen.dart';
 import '../../../../core/widgets/zivo_loader.dart';
 import 'zivo_analyzer_loading_widget.dart';
 import '../../../../services/audio_service.dart';
+import '../../../../services/premium_service.dart';
+import 'package:go_router/go_router.dart';
 
 
 class VisionLensHomeScreen extends ConsumerStatefulWidget {
@@ -1007,22 +1009,46 @@ class _VisionLensHomeScreenState extends ConsumerState<VisionLensHomeScreen> wit
                       _buildCircularLogButton(
                         icon: Icons.camera_alt_rounded,
                         label: 'Photo',
-                        onTap: _triggerDirectPhotoLog,
+                        onTap: () {
+                          if (!PremiumService.hasFeatureAccess('food_log')) {
+                            context.push('/premium');
+                          } else {
+                            _triggerDirectPhotoLog();
+                          }
+                        },
                       ),
                       _buildCircularLogButton(
                         icon: Icons.qr_code_scanner_rounded,
                         label: 'Barcode',
-                        onTap: () => _openFoodLogger(1),
+                        onTap: () {
+                          if (!PremiumService.hasFeatureAccess('food_log')) {
+                            context.push('/premium');
+                          } else {
+                            _openFoodLogger(1);
+                          }
+                        },
                       ),
                       _buildCircularLogButton(
                         icon: Icons.mic_rounded,
                         label: 'Voice',
-                        onTap: _openFoodLoggerWithVoice,
+                        onTap: () {
+                          if (!PremiumService.hasFeatureAccess('food_log')) {
+                            context.push('/premium');
+                          } else {
+                            _openFoodLoggerWithVoice();
+                          }
+                        },
                       ),
                       _buildCircularLogButton(
                         icon: Icons.edit_note_rounded,
                         label: 'Describe',
-                        onTap: () => _openFoodLogger(3),
+                        onTap: () {
+                          if (!PremiumService.hasFeatureAccess('food_log')) {
+                            context.push('/premium');
+                          } else {
+                            _openFoodLogger(3);
+                          }
+                        },
                       ),
                       _buildCircularLogButton(
                         icon: Icons.post_add_rounded,
@@ -1197,6 +1223,10 @@ class _VisionLensHomeScreenState extends ConsumerState<VisionLensHomeScreen> wit
     return Expanded(
       child: GestureDetector(
         onTap: () {
+          if (index == 1 && !PremiumService.hasFeatureAccess('zivo_analyser')) {
+            context.push('/premium');
+            return;
+          }
           setState(() {
             _activeSectionTab = index;
           });

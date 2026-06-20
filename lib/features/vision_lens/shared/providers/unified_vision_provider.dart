@@ -6,6 +6,7 @@ import '../services/vision_storage_service.dart';
 import '../services/unified_vision_service.dart';
 import '../../../../services/firebase_service.dart';
 import '../../../../services/premium_service.dart';
+import '../../../../services/scanner/ai_analysis_service.dart';
 
 class UnifiedVisionState {
   final AsyncValue<UnifiedProductReport?> currentReport;

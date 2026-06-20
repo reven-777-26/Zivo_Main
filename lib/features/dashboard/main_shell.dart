@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../utils/image_picker_helper.dart';
@@ -15,6 +16,8 @@ import '../../services/widget_sync_service.dart';
 import 'package:intl/intl.dart';
 import 'dashboard_screen.dart';
 import 'workout_screen.dart';
+import 'progress_screen.dart';
+import '../vision_lens/vision_lens/screens/vision_lens_home_screen.dart';
 import '../../services/ai_backend_service.dart';
 import '../../services/premium_service.dart';
 import '../../core/health_math.dart';
@@ -389,10 +392,6 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
   }
 
   void _safeSetTab(int index) {
-    if (index == 2 && !PremiumService.hasFeatureAccess('zivo_analyser')) {
-      context.push('/premium');
-      return;
-    }
     if (index == 3 && !PremiumService.hasFeatureAccess('stats_insights')) {
       context.push('/premium');
       return;
@@ -576,6 +575,23 @@ class _ProfilePlaceholderScreenState
   bool _fakeDataEnabled = false;
   int _selectedLoader = 0; // 0=Morph, 1=EKG, 2=Arc
   Timer? _debounceTimer;
+  Map<String, dynamic>? _subDetails;
+  bool _isLoadingSubDetails = false;
+
+  void _onPremiumStatusChanged() {
+    _loadSubscriptionDetails();
+  }
+
+  Future<void> _loadSubscriptionDetails() async {
+    if (!mounted) return;
+    setState(() => _isLoadingSubDetails = true);
+    final details = await PremiumService.getSubscriptionDetails();
+    if (!mounted) return;
+    setState(() {
+      _subDetails = details;
+      _isLoadingSubDetails = false;
+    });
+  }
 
   bool get _canResetPassword {
     final user = FirebaseService.currentUser;
@@ -691,6 +707,8 @@ class _ProfilePlaceholderScreenState
   @override
   void initState() {
     super.initState();
+    _loadSubscriptionDetails();
+    PremiumService.isPremiumNotifier.addListener(_onPremiumStatusChanged);
     final profile = ref.read(profileProvider);
 
     // Initialize DOB from StorageService, falling back to estimated DOB from profile.age
@@ -751,6 +769,7 @@ class _ProfilePlaceholderScreenState
 
   @override
   void dispose() {
+    PremiumService.isPremiumNotifier.removeListener(_onPremiumStatusChanged);
     _ageController.removeListener(_autoRecalculateTargets);
     _weightController.removeListener(_autoRecalculateTargets);
     _heightController.removeListener(_autoRecalculateTargets);
@@ -916,6 +935,7 @@ class _ProfilePlaceholderScreenState
     'goals': false,
     'reminders': false,
     'notifications': false,
+    'subscription': false,
     'appearance': false,
     'developer': false,
     'loader': false,
@@ -1133,15 +1153,107 @@ class _ProfilePlaceholderScreenState
                       ],
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  const Text(
-                    'Elite Form • Premium Member',
-                    style: TextStyle(
-                      color: AppTheme.textSecondary,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+                  const SizedBox(height: 8),
+                  () {
+                    final isActive = _subDetails != null && _subDetails!['active'] == true;
+                    final isTrial = PremiumService.hasTrialAccess();
+                    
+                    if (isActive) {
+                      final planName = _subDetails!['plan'] ?? 'PREMIUM';
+                      return Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF161510), // Solid premium dark color
+                          borderRadius: BorderRadius.circular(30),
+                          border: Border.all(
+                            color: const Color(0xFFFFD700), // Pure Gold
+                            width: 1.5,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFFFFD700).withOpacity(0.25),
+                              blurRadius: 16,
+                              spreadRadius: 2,
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Text(
+                              '👑',
+                              style: TextStyle(
+                                fontSize: 14,
+                                shadows: [
+                                  Shadow(
+                                    color: Color(0xCC000000),
+                                    blurRadius: 4,
+                                    offset: Offset(0, 1),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              '$planName Member'.toUpperCase(),
+                              style: const TextStyle(
+                                color: Color(0xFFFFD700), // Gold text
+                                fontSize: 11,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 1.0,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    } else if (isTrial) {
+                      return Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFD9FF00).withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: const Color(0xFFD9FF00).withOpacity(0.4),
+                          ),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text('⚡ ', style: TextStyle(fontSize: 12)),
+                            Text(
+                              'FREE TRIAL ACTIVE',
+                              style: TextStyle(
+                                color: Color(0xFFD9FF00),
+                                fontSize: 10,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    } else {
+                      return Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.08),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.2),
+                          ),
+                        ),
+                        child: const Text(
+                          'FREE MEMBER',
+                          style: TextStyle(
+                            color: AppTheme.textSecondary,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      );
+                    }
+                  }(),
                 ],
               ),
             ),
@@ -1676,6 +1788,239 @@ class _ProfilePlaceholderScreenState
                       ),
                     ],
                   ),
+                ],
+              ),
+            ),
+
+            // ── 5. SUBSCRIPTION & BILLING ACCORDION ──
+            _buildAccordionSection(
+              title: '💳  Subscription & Billing',
+              sectionKey: 'subscription',
+              content: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  () {
+                    final isActive = _subDetails != null && _subDetails!['active'] == true;
+                    final isTrial = PremiumService.hasTrialAccess();
+                    
+                    if (isActive) {
+                      final planName = _subDetails!['plan'] ?? 'Premium Plan';
+                      final days = _subDetails!['daysUntilRenewal'] ?? 0;
+                      final renewText = days <= 0
+                          ? 'Renews today'
+                          : 'Renews in $days ${days == 1 ? "day" : "days"}';
+                          
+                      return Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0xFF1C1E1B) : Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: const Color(0xFFFFD700).withOpacity(0.3),
+                            width: 1.0,
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Row(
+                                  children: [
+                                    const Text('👑 ', style: TextStyle(fontSize: 16)),
+                                    Text(
+                                      planName,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w900,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: Colors.amber.withOpacity(0.12),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(color: Colors.amber.withOpacity(0.4)),
+                                  ),
+                                  child: const Text(
+                                    'ACTIVE',
+                                    style: TextStyle(
+                                      color: Colors.amber,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              renewText,
+                              style: const TextStyle(
+                                color: AppTheme.textSecondary,
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            if (_subDetails!['expirationDate'] != null) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                'Expiry Date: ${DateFormat('MMMM d, yyyy').format(_subDetails!['expirationDate'] as DateTime)}',
+                                style: const TextStyle(
+                                  color: AppTheme.textTertiary,
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      );
+                    } else if (isTrial) {
+                      final trialStart = PremiumService.getTrialStartDate();
+                      final trialEnd = trialStart.add(const Duration(days: 3));
+                      final remainingDays = trialEnd.difference(DateTime.now()).inDays.clamp(0, 3);
+                      
+                      return Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0xFF1C1E1B) : Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: const Color(0xFFD9FF00).withOpacity(0.2),
+                            width: 1.0,
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Row(
+                                  children: [
+                                    const Text('⚡ ', style: TextStyle(fontSize: 16)),
+                                    const Text(
+                                      '3-Day Free Trial',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w900,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFD9FF00).withOpacity(0.12),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(color: const Color(0xFFD9FF00).withOpacity(0.4)),
+                                  ),
+                                  child: const Text(
+                                    'TRIAL',
+                                    style: TextStyle(
+                                      color: Color(0xFFD9FF00),
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              '$remainingDays ${remainingDays == 1 ? "day" : "days"} remaining in trial',
+                              style: const TextStyle(
+                                color: AppTheme.textSecondary,
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            ElevatedButton(
+                              onPressed: () => context.push('/premium'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFFD9FF00),
+                                foregroundColor: Colors.black,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                minimumSize: const Size(double.infinity, 44),
+                              ),
+                              child: const Text(
+                                'UPGRADE TO ZIVOFIT PREMIUM',
+                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    } else {
+                      return Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0xFF1C1E1B) : Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.1),
+                            width: 1.0,
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Row(
+                              children: [
+                                Text('🥗 ', style: TextStyle(fontSize: 16)),
+                                Text(
+                                  'Free Tier Plan',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w900,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            const Text(
+                              'Subscription inactive. Advanced AI tools and tracking limits apply.',
+                              style: TextStyle(
+                                color: AppTheme.textSecondary,
+                                fontSize: 12.5,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            ElevatedButton(
+                              onPressed: () => context.push('/premium'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFFD9FF00),
+                                foregroundColor: Colors.black,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                minimumSize: const Size(double.infinity, 44),
+                              ),
+                              child: const Text(
+                                'ACTIVATE PREMIUM NOW',
+                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+                  }(),
+                ],
+              ),
+            ),
                  // ── 6. DEVELOPER ACCORDION ──
             if (_showDeveloperMode)
               _buildAccordionSection(
@@ -1838,11 +2183,6 @@ class _ProfilePlaceholderScreenState
                   ],
                 ),
               ),
-                ],
-              ),
-            ),
-
-
 
             // ── 8. SUPPORT ACCORDION ──
             _buildAccordionSection(
@@ -1895,6 +2235,70 @@ class _ProfilePlaceholderScreenState
               sectionKey: 'account',
               content: Column(
                 children: [
+                  // User ID display and copy
+                  () {
+                    final user = FirebaseService.currentUser;
+                    final userId = user?.uid ?? 'Not Signed In';
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 16),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF1A1D20) : Colors.black.withOpacity(0.03),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: isDark ? const Color(0xFF2C2C2E) : Colors.black.withOpacity(0.08),
+                          width: 1.0,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.vpn_key_rounded, color: accentColor, size: 18),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'USER ID',
+                                  style: TextStyle(
+                                    color: AppTheme.textSecondary,
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  userId,
+                                  style: TextStyle(
+                                    color: isDark ? Colors.white70 : AppTheme.textPrimary,
+                                    fontSize: 12,
+                                    fontFamily: 'monospace',
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
+                          if (user != null)
+                            IconButton(
+                              icon: Icon(Icons.copy_rounded, color: accentColor, size: 18),
+                              onPressed: () {
+                                Clipboard.setData(ClipboardData(text: userId));
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('User ID copied to clipboard!'),
+                                    behavior: SnackBarBehavior.floating,
+                                  ),
+                                );
+                              },
+                              tooltip: 'Copy User ID',
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                            ),
+                        ],
+                      ),
+                    );
+                  }(),
                   // 0. Cloud Sync Button
                   GestureDetector(
                     onTap: () async {

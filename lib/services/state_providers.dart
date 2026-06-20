@@ -109,11 +109,29 @@ class NotificationsNotifier extends StateNotifier<List<AppNotification>> {
     await StorageService.saveSystemNotifications([]);
   }
 
+  Future<void> deleteNotification(String id) async {
+    final newState = state.where((e) => e.id != id).toList();
+    state = newState;
+    await StorageService.saveSystemNotifications(newState.map((e) => e.toJson()).toList());
+  }
+
+  Future<void> dismissAuraNotification(String id) async {
+    final dismissed = StorageService.getDismissedAuraNotifications();
+    if (!dismissed.contains(id)) {
+      dismissed.add(id);
+      await StorageService.saveDismissedAuraNotifications(dismissed);
+      // Trigger a state change to notify UI
+      state = [...state];
+    }
+  }
+
   List<AppNotification> getAuraNotifications(UserProfile? profile, List<WorkoutSession> history) {
     if (!StorageService.getAuraNotificationsEnabled()) {
       return [];
     }
 
+    final dismissed = StorageService.getDismissedAuraNotifications();
+    final List<AppNotification> list = [];
     // Generate past 7 days average stats
     final now = DateTime.now();
     final List<DateTime> pastDays = List.generate(7, (index) {
@@ -154,8 +172,6 @@ class NotificationsNotifier extends StateNotifier<List<AppNotification>> {
         return false;
       }
     }).length;
-
-    final List<AppNotification> list = [];
 
     // 1. Calories Insight
     String calorieFeedback = 'Caloric intake is average. Update targets in profile as needed.';
@@ -208,7 +224,7 @@ class NotificationsNotifier extends StateNotifier<List<AppNotification>> {
       timestamp: DateTime.now(),
     ));
 
-    return list;
+    return list.where((n) => !dismissed.contains(n.id)).toList();
   }
 }
 

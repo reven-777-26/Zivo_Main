@@ -11,6 +11,7 @@ import '../../services/storage_service.dart';
 import '../../utils/image_picker_helper.dart';
 import 'package:go_router/go_router.dart';
 import '../../services/premium_service.dart';
+import '../../services/firebase_service.dart';
 
 import 'package:fl_chart/fl_chart.dart';
 
@@ -4500,8 +4501,21 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
                         Navigator.of(ctx).pop();
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
-                            content: Text('Workout session saved successfully!'),
+                            content: Text(
+                              'Workout session saved successfully!',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                                fontSize: 14,
+                              ),
+                            ),
                             backgroundColor: AppTheme.accentEmerald,
+                            behavior: SnackBarBehavior.floating,
+                            margin: EdgeInsets.only(
+                              bottom: 140,
+                              left: 16,
+                              right: 16,
+                            ),
                           ),
                         );
                         setState(() {});
@@ -4847,8 +4861,14 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
       );
     } else {
       try {
+        String cleaned = source;
+        final commaIndex = cleaned.indexOf(',');
+        if (commaIndex != -1) {
+          cleaned = cleaned.substring(commaIndex + 1);
+        }
+        cleaned = cleaned.replaceAll(RegExp(r'\s+'), '');
         return Image.memory(
-          base64Decode(source),
+          base64Decode(cleaned),
           fit: fit,
         );
       } catch (e) {
@@ -5345,10 +5365,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
               child: Stack(
                 children: [
                   Positioned.fill(
-                    child: Image.memory(
-                      base64Decode(beforeBase64),
-                      fit: BoxFit.cover,
-                    ),
+                    child: _buildPhysiqueImage(beforeBase64, fit: BoxFit.cover),
                   ),
                   Positioned(
                     left: 0,
@@ -5359,10 +5376,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
                       child: SizedBox(
                         width: width,
                         height: height,
-                        child: Image.memory(
-                          base64Decode(afterBase64),
-                          fit: BoxFit.cover,
-                        ),
+                        child: _buildPhysiqueImage(afterBase64, fit: BoxFit.cover),
                       ),
                     ),
                   ),

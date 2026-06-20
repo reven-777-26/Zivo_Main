@@ -1306,24 +1306,35 @@ class StorageService {
     await _reminderBox.put('system_notifications_enabled', {'val': enabled});
   }
 
+  static List<String> getDismissedAuraNotifications() {
+    final raw = _reminderBox.get('dismissed_aura_notifications');
+    if (raw == null) return [];
+    return List<String>.from(raw['list'] ?? []);
+  }
+
+  static Future<void> saveDismissedAuraNotifications(List<String> list) async {
+    await _reminderBox.put('dismissed_aura_notifications', {'list': list});
+  }
+
   static List<Map<String, dynamic>> getSystemNotifications() {
     final raw = _reminderBox.get('system_notifications_list');
     if (raw == null) {
-      return [
-        {
-          'id': 'welcome_notif',
-          'category': 'system',
-          'title': '💪 Zivo Active & Ready!',
-          'body': 'Push reminders and notification systems are fully integrated. Stay on track!',
-          'timestamp': DateTime.now().toIso8601String(),
-          'isRead': false,
-        }
-      ];
+      return [];
     }
     return (raw['list'] as List?)?.map((e) => Map<String, dynamic>.from(e)).toList() ?? [];
   }
 
   static Future<void> saveSystemNotifications(List<Map<String, dynamic>> list) async {
     await _reminderBox.put('system_notifications_list', {'list': list});
+  }
+
+  static String getPremiumPlanType() {
+    final raw = _reminderBox.get('premium_plan_type');
+    if (raw == null) return 'Yearly Plan';
+    return (raw['val'] as String?) ?? 'Yearly Plan';
+  }
+
+  static Future<void> savePremiumPlanType(String planType) async {
+    await _reminderBox.put('premium_plan_type', {'val': planType});
   }
 }

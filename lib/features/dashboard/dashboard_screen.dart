@@ -17,6 +17,7 @@ import 'food_logger_dialog.dart';
 import '../../models/workout_log.dart';
 import 'package:go_router/go_router.dart';
 import '../../services/premium_service.dart';
+import '../vision_lens/vision_lens/screens/unified_scanner_dialog.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -2491,11 +2492,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           child: GestureDetector(
                             onTap: () async {
                               if (isDayEnded) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text("This day has ended. You cannot log water."),
-                                    behavior: SnackBarBehavior.floating,
-                                  ),
+                                showWebNotification(
+                                  "🔒 Day Ended",
+                                  "This day has ended. You cannot log water.",
                                 );
                                 return;
                               }
@@ -2538,11 +2537,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           child: GestureDetector(
                             onTap: () async {
                               if (isDayEnded) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text("This day has ended. You cannot log water."),
-                                    behavior: SnackBarBehavior.floating,
-                                  ),
+                                showWebNotification(
+                                  "🔒 Day Ended",
+                                  "This day has ended. You cannot log water.",
                                 );
                                 return;
                               }
@@ -5821,7 +5818,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                     ),
                                     ...displayAura.map((notif) {
                                       IconData icon = Icons.lightbulb_rounded;
-                                      Color color = AppTheme.accentCyan; // Replaced accentOrange fallback with Cyan
+                                      Color color = AppTheme.accentCyan;
 
                                       if (notif.title.contains('Metabolic')) {
                                         icon = Icons.bolt_rounded;
@@ -5833,71 +5830,112 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                         color = AppTheme.accentCyan;
                                       }
 
-                                      return Container(
-                                        margin: const EdgeInsets.only(bottom: 12),
-                                        decoration: BoxDecoration(
-                                          color: glassBg,
-                                          borderRadius: BorderRadius.circular(16),
-                                          border: Border.all(color: borderColor, width: 1),
+                                      return Dismissible(
+                                        key: Key(notif.id),
+                                        direction: DismissDirection.horizontal,
+                                        onDismissed: (_) {
+                                          ref.read(notificationsProvider.notifier).dismissAuraNotification(notif.id);
+                                        },
+                                        background: Container(
+                                          margin: const EdgeInsets.only(bottom: 12),
+                                          alignment: Alignment.centerLeft,
+                                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                                          decoration: BoxDecoration(
+                                            color: AppTheme.accentCoral.withOpacity(0.2),
+                                            borderRadius: BorderRadius.circular(16),
+                                          ),
+                                          child: const Icon(Icons.delete_outline_rounded, color: AppTheme.accentCoral),
                                         ),
-                                        child: ClipRRect(
-                                          borderRadius: BorderRadius.circular(16),
-                                          child: Stack(
-                                            children: [
-                                              Positioned(
-                                                left: 0,
-                                                top: 0,
-                                                bottom: 0,
-                                                child: Container(
-                                                  width: 4,
-                                                  color: color,
+                                        secondaryBackground: Container(
+                                          margin: const EdgeInsets.only(bottom: 12),
+                                          alignment: Alignment.centerRight,
+                                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                                          decoration: BoxDecoration(
+                                            color: AppTheme.accentCoral.withOpacity(0.2),
+                                            borderRadius: BorderRadius.circular(16),
+                                          ),
+                                          child: const Icon(Icons.delete_outline_rounded, color: AppTheme.accentCoral),
+                                        ),
+                                        child: Container(
+                                          margin: const EdgeInsets.only(bottom: 12),
+                                          decoration: BoxDecoration(
+                                            color: glassBg,
+                                            borderRadius: BorderRadius.circular(16),
+                                            border: Border.all(color: borderColor, width: 1),
+                                          ),
+                                          child: ClipRRect(
+                                            borderRadius: BorderRadius.circular(16),
+                                            child: Stack(
+                                              children: [
+                                                Positioned(
+                                                  left: 0,
+                                                  top: 0,
+                                                  bottom: 0,
+                                                  child: Container(
+                                                    width: 4,
+                                                    color: color,
+                                                  ),
                                                 ),
-                                              ),
-                                              Padding(
-                                                padding: const EdgeInsets.fromLTRB(20, 14, 16, 14),
-                                                child: Row(
-                                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                                  children: [
-                                                    Container(
-                                                      width: 36,
-                                                      height: 36,
-                                                      decoration: BoxDecoration(
-                                                        color: color.withOpacity(0.12),
-                                                        shape: BoxShape.circle,
+                                                Padding(
+                                                  padding: const EdgeInsets.fromLTRB(20, 14, 12, 14),
+                                                  child: Row(
+                                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                                    children: [
+                                                      Container(
+                                                        width: 36,
+                                                        height: 36,
+                                                        decoration: BoxDecoration(
+                                                          color: color.withOpacity(0.12),
+                                                          shape: BoxShape.circle,
+                                                        ),
+                                                        child: Center(
+                                                          child: Icon(icon, color: color, size: 18),
+                                                        ),
                                                       ),
-                                                      child: Center(
-                                                        child: Icon(icon, color: color, size: 18),
-                                                      ),
-                                                    ),
-                                                    const SizedBox(width: 14),
-                                                    Expanded(
-                                                      child: Column(
-                                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                                        children: [
-                                                          Text(
-                                                            notif.title,
-                                                            style: TextStyle(
-                                                              fontWeight: FontWeight.bold,
-                                                              fontSize: 14,
-                                                              color: textColor,
+                                                      const SizedBox(width: 14),
+                                                      Expanded(
+                                                        child: Column(
+                                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                                          children: [
+                                                            Text(
+                                                              notif.title,
+                                                              style: TextStyle(
+                                                                fontWeight: FontWeight.bold,
+                                                                fontSize: 14,
+                                                                color: textColor,
+                                                              ),
                                                             ),
-                                                          ),
-                                                          const SizedBox(height: 3),
-                                                          Text(
-                                                            notif.body,
-                                                            style: const TextStyle(
-                                                              color: AppTheme.textSecondary,
-                                                              fontSize: 11.5,
-                                                              height: 1.4,
+                                                            const SizedBox(height: 3),
+                                                            Text(
+                                                              notif.body,
+                                                              style: const TextStyle(
+                                                                color: AppTheme.textSecondary,
+                                                                fontSize: 11.5,
+                                                                height: 1.4,
+                                                              ),
                                                             ),
-                                                          ),
-                                                        ],
+                                                          ],
+                                                        ),
                                                       ),
-                                                    ),
-                                                  ],
+                                                      const SizedBox(width: 8),
+                                                      GestureDetector(
+                                                        onTap: () {
+                                                          ref.read(notificationsProvider.notifier).dismissAuraNotification(notif.id);
+                                                        },
+                                                        child: Padding(
+                                                          padding: const EdgeInsets.only(top: 2.0),
+                                                          child: Icon(
+                                                            Icons.close_rounded,
+                                                            color: textColor.withOpacity(0.35),
+                                                            size: 16,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
                                                 ),
-                                              ),
-                                            ],
+                                              ],
+                                            ),
                                           ),
                                         ),
                                       );
@@ -5919,66 +5957,107 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                     ),
                                     ...displaySystem.map((notif) {
                                       final timeStr = DateFormat('h:mm a').format(notif.timestamp);
-                                      return Container(
-                                        margin: const EdgeInsets.only(bottom: 12),
-                                        child: GlassCard(
-                                          padding: const EdgeInsets.all(14),
-                                          child: Row(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              Container(
-                                                width: 36,
-                                                height: 36,
-                                                decoration: BoxDecoration(
-                                                  color: AppTheme.accentCyan.withOpacity(0.1),
-                                                  shape: BoxShape.circle,
-                                                ),
-                                                child: const Center(
-                                                  child: Icon(
-                                                    Icons.notifications_active_rounded,
-                                                    color: AppTheme.accentCyan,
-                                                    size: 18,
+                                      return Dismissible(
+                                        key: Key(notif.id),
+                                        direction: DismissDirection.horizontal,
+                                        onDismissed: (_) {
+                                          ref.read(notificationsProvider.notifier).deleteNotification(notif.id);
+                                        },
+                                        background: Container(
+                                          margin: const EdgeInsets.only(bottom: 12),
+                                          alignment: Alignment.centerLeft,
+                                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                                          decoration: BoxDecoration(
+                                            color: AppTheme.accentCoral.withOpacity(0.2),
+                                            borderRadius: BorderRadius.circular(16),
+                                          ),
+                                          child: const Icon(Icons.delete_outline_rounded, color: AppTheme.accentCoral),
+                                        ),
+                                        secondaryBackground: Container(
+                                          margin: const EdgeInsets.only(bottom: 12),
+                                          alignment: Alignment.centerRight,
+                                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                                          decoration: BoxDecoration(
+                                            color: AppTheme.accentCoral.withOpacity(0.2),
+                                            borderRadius: BorderRadius.circular(16),
+                                          ),
+                                          child: const Icon(Icons.delete_outline_rounded, color: AppTheme.accentCoral),
+                                        ),
+                                        child: Container(
+                                          margin: const EdgeInsets.only(bottom: 12),
+                                          child: GlassCard(
+                                            padding: const EdgeInsets.fromLTRB(14, 14, 12, 14),
+                                            child: Row(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Container(
+                                                  width: 36,
+                                                  height: 36,
+                                                  decoration: BoxDecoration(
+                                                    color: AppTheme.accentCyan.withOpacity(0.1),
+                                                    shape: BoxShape.circle,
+                                                  ),
+                                                  child: const Center(
+                                                    child: Icon(
+                                                      Icons.notifications_active_rounded,
+                                                      color: AppTheme.accentCyan,
+                                                      size: 18,
+                                                    ),
                                                   ),
                                                 ),
-                                              ),
-                                              const SizedBox(width: 14),
-                                              Expanded(
-                                                child: Column(
-                                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                                  children: [
-                                                    Row(
-                                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                                      children: [
-                                                        Text(
-                                                          notif.title,
-                                                          style: TextStyle(
-                                                            fontWeight: FontWeight.bold,
-                                                            fontSize: 14,
-                                                            color: textColor,
+                                                const SizedBox(width: 14),
+                                                Expanded(
+                                                  child: Column(
+                                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                                    children: [
+                                                      Row(
+                                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                        children: [
+                                                          Text(
+                                                            notif.title,
+                                                            style: TextStyle(
+                                                              fontWeight: FontWeight.bold,
+                                                              fontSize: 14,
+                                                              color: textColor,
+                                                            ),
                                                           ),
-                                                        ),
-                                                        Text(
-                                                          timeStr,
-                                                          style: const TextStyle(
-                                                            color: AppTheme.textTertiary,
-                                                            fontSize: 10,
+                                                          Text(
+                                                            timeStr,
+                                                            style: const TextStyle(
+                                                              color: AppTheme.textTertiary,
+                                                              fontSize: 10,
+                                                            ),
                                                           ),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                    const SizedBox(height: 3),
-                                                    Text(
-                                                      notif.body,
-                                                      style: const TextStyle(
-                                                        color: AppTheme.textSecondary,
-                                                        fontSize: 11.5,
-                                                        height: 1.4,
+                                                        ],
                                                       ),
-                                                    ),
-                                                  ],
+                                                      const SizedBox(height: 3),
+                                                      Text(
+                                                        notif.body,
+                                                        style: const TextStyle(
+                                                          color: AppTheme.textSecondary,
+                                                          fontSize: 11.5,
+                                                          height: 1.4,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
                                                 ),
-                                              ),
-                                            ],
+                                                const SizedBox(width: 8),
+                                                GestureDetector(
+                                                  onTap: () {
+                                                    ref.read(notificationsProvider.notifier).deleteNotification(notif.id);
+                                                  },
+                                                  child: Padding(
+                                                    padding: const EdgeInsets.only(top: 2.0),
+                                                    child: Icon(
+                                                      Icons.close_rounded,
+                                                      color: textColor.withOpacity(0.35),
+                                                      size: 16,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
                                           ),
                                         ),
                                       );

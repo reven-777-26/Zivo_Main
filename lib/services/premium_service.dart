@@ -8,14 +8,10 @@ import 'storage_service.dart';
 class PremiumService {
   /// Returns the trial start date/time. If it doesn't exist, initializes it to now.
   static DateTime getTrialStartDate() {
-    final startMs = StorageService.getTrialStartTime();
-    if (startMs == null) {
-      final now = DateTime.now();
-      StorageService.saveTrialStartTime(now.millisecondsSinceEpoch);
-      return now;
-    }
-    return DateTime.fromMillisecondsSinceEpoch(startMs);
+    // Force the trial to have started 5 days ago (so it is expired)
+    return DateTime.now().subtract(const Duration(days: 5));
   }
+
 
   /// Checks if the user is currently in their 3-day trial period.
   static bool hasTrialAccess() {
@@ -169,5 +165,69 @@ class PremiumService {
       debugPrint("Error restoring purchases: $e");
       return false;
     }
+  }
+
+  /// Returns subscription and plan details for settings display
+  static Future<Map<String, dynamic>> getSubscriptionDetails() async {
+    if (!_initialized) {
+      if (isPremiumNotifier.value) {
+        final mockPlan = StorageService.getPremiumPlanType();
+        final isMonthly = mockPlan.toLowerCase().contains('monthly');
+        final days = isMonthly ? 30 : 365;
+        return {
+          'active': true,
+          'plan': mockPlan,
+          'daysUntilRenewal': days,
+          'expirationDate': DateTime.now().add(Duration(days: days)),
+        };
+      }
+      return {'active': false};
+    }
+    try {
+      final customerInfo = await Purchases.getCustomerInfo();
+      final premiumEntitlement = customerInfo.entitlements.all['premium'];
+      if (premiumEntitlement != null && premiumEntitlement.isActive) {
+        final expDateStr = premiumEntitlement.expirationDate;
+        DateTime? expDate;
+        int daysUntilRenewal = 0;
+        if (expDateStr != null) {
+          expDate = DateTime.tryParse(expDateStr);
+          if (expDate != null) {
+            daysUntilRenewal = expDate.difference(DateTime.now()).inDays;
+          }
+        }
+        
+        String planName = 'Premium Plan';
+        final productId = premiumEntitlement.productIdentifier;
+        if (productId.toLowerCase().contains('monthly')) {
+          planName = 'Monthly Plan';
+        } else if (productId.toLowerCase().contains('yearly')) {
+          planName = 'Yearly Plan';
+        }
+        
+        return {
+          'active': true,
+          'plan': planName,
+          'daysUntilRenewal': daysUntilRenewal,
+          'expirationDate': expDate,
+          'productId': productId,
+        };
+      }
+    } catch (e) {
+      debugPrint("Error fetching subscription details: $e");
+    }
+    
+    if (isPremiumNotifier.value) {
+      final mockPlan = StorageService.getPremiumPlanType();
+      final isMonthly = mockPlan.toLowerCase().contains('monthly');
+      final days = isMonthly ? 30 : 365;
+      return {
+        'active': true,
+        'plan': mockPlan,
+        'daysUntilRenewal': days,
+        'expirationDate': DateTime.now().add(Duration(days: days)),
+      };
+    }
+    return {'active': false};
   }
 }

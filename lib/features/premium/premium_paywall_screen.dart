@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
+import 'package:confetti/confetti.dart';
 import '../../services/premium_service.dart';
+import '../../services/state_providers.dart';
+import '../../services/storage_service.dart';
 
 class PremiumPaywallScreen extends StatefulWidget {
   const PremiumPaywallScreen({super.key});
@@ -15,11 +18,20 @@ class _PremiumPaywallScreenState extends State<PremiumPaywallScreen> {
   Package? _selectedPackage;
   bool _isLoading = true;
   bool _isPurchasing = false;
+  String _selectedMockPlanId = 'monthly';
+  late ConfettiController _confettiController;
 
   @override
   void initState() {
     super.initState();
+    _confettiController = ConfettiController(duration: const Duration(seconds: 4));
     _loadOfferings();
+  }
+
+  @override
+  void dispose() {
+    _confettiController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadOfferings() async {
@@ -39,6 +51,108 @@ class _PremiumPaywallScreenState extends State<PremiumPaywallScreen> {
     });
   }
 
+  void _showPremiumWelcomeDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogCtx) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: const Color(0xFF161814),
+              borderRadius: BorderRadius.circular(28),
+              border: Border.all(
+                color: const Color(0xFFD9FF00).withOpacity(0.3),
+                width: 1.5,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFFD9FF00).withOpacity(0.08),
+                  blurRadius: 24,
+                  spreadRadius: 4,
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFD9FF00).withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Text(
+                    '👑',
+                    style: TextStyle(fontSize: 48),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                  'WELCOME TO PREMIUM',
+                  style: TextStyle(
+                    color: Color(0xFFD9FF00),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 2.0,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Zivofit Premium Active',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Thank you for joining Zivofit Premium! You now have unlimited access to all advanced tools, AI-powered insights, custom meal plans, and real-time logs syncing to your profile.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Color(0xFF868685),
+                    fontSize: 13,
+                    height: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(dialogCtx); // Close dialog
+                    context.pop(); // Pop paywall screen
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFD9FF00),
+                    foregroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 32),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(9999),
+                    ),
+                    minimumSize: const Size(double.infinity, 48),
+                  ),
+                  child: const Text(
+                    'START EXPLORING',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 13,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Future<void> _handlePurchase() async {
     setState(() => _isPurchasing = true);
     bool success = false;
@@ -47,6 +161,7 @@ class _PremiumPaywallScreenState extends State<PremiumPaywallScreen> {
     } else {
       // Mock purchase in sandbox/test mode
       await Future.delayed(const Duration(seconds: 1));
+      await StorageService.savePremiumPlanType(_selectedMockPlanId == 'monthly' ? 'Monthly Plan' : 'Yearly Plan');
       PremiumService.isPremiumNotifier.value = true;
       success = true;
     }
@@ -54,19 +169,12 @@ class _PremiumPaywallScreenState extends State<PremiumPaywallScreen> {
 
     if (mounted) {
       if (success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Welcome to Zivofit Premium! 🎉"),
-            backgroundColor: Colors.green,
-          ),
-        );
-        context.pop(); // Go back
+        _confettiController.play();
+        _showPremiumWelcomeDialog(context);
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Purchase could not be completed. Please try again."),
-            backgroundColor: Colors.redAccent,
-          ),
+        showWebNotification(
+          "⚠️ Purchase Failed",
+          "Purchase could not be completed. Please try again.",
         );
       }
     }
@@ -79,19 +187,12 @@ class _PremiumPaywallScreenState extends State<PremiumPaywallScreen> {
 
     if (mounted) {
       if (success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Purchases successfully restored! 🎉"),
-            backgroundColor: Colors.green,
-          ),
-        );
-        context.pop();
+        _confettiController.play();
+        _showPremiumWelcomeDialog(context);
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("No active subscriptions found to restore."),
-            backgroundColor: Colors.orangeAccent,
-          ),
+        showWebNotification(
+          "⚠️ Restore Failed",
+          "No active subscriptions found to restore.",
         );
       }
     }
@@ -106,6 +207,22 @@ class _PremiumPaywallScreenState extends State<PremiumPaywallScreen> {
       body: SafeArea(
         child: Stack(
           children: [
+            Align(
+              alignment: Alignment.topCenter,
+              child: ConfettiWidget(
+                confettiController: _confettiController,
+                blastDirectionality: BlastDirectionality.explosive,
+                shouldLoop: false,
+                colors: const [
+                  Color(0xFFD9FF00),
+                  Colors.green,
+                  Colors.blue,
+                  Colors.pink,
+                  Colors.orange,
+                  Colors.purple,
+                ],
+              ),
+            ),
             // Background ambient glow
             Positioned(
               top: -100,
@@ -209,8 +326,8 @@ class _PremiumPaywallScreenState extends State<PremiumPaywallScreen> {
                           child: Column(
                             children: const [
                               _BenefitRow(
-                                title: "AI Scans (Up to 50/day)",
-                                subtitle: "Track meals and search product databases with anti-abuse limits.",
+                                title: "Unlimited AI Scans",
+                                subtitle: "Analyze meals, food, supplements & skincare products with no limits.",
                               ),
                               Divider(height: 18, color: Colors.white12),
                               _BenefitRow(
@@ -220,7 +337,7 @@ class _PremiumPaywallScreenState extends State<PremiumPaywallScreen> {
                               Divider(height: 18, color: Colors.white12),
                               _BenefitRow(
                                 title: "Zivo Analyser",
-                                subtitle: "Advanced product barcode lookup and health warnings.",
+                                subtitle: "Upload meals, food, supplements, drinks, or skincare products to uncover ingredient risks, nutrition quality, and healthier alternatives.",
                               ),
                               Divider(height: 18, color: Colors.white12),
                               _BenefitRow(
@@ -360,7 +477,7 @@ class _PremiumPaywallScreenState extends State<PremiumPaywallScreen> {
                     const SizedBox(height: 4.0),
                     Text(
                       package.storeProduct.description,
-                      style: const TextStyle(color: Colors.white54, fontSize: 12.0),
+                      style: const TextStyle(color: Colors.white, fontSize: 12.0),
                     ),
                   ],
                 ),
@@ -401,48 +518,55 @@ class _PremiumPaywallScreenState extends State<PremiumPaywallScreen> {
           separatorBuilder: (_, __) => const SizedBox(height: 12.0),
           itemBuilder: (context, index) {
             final plan = mockPlans[index];
-            final isSelected = _selectedPackage == null && index == 0; // Default selection mock
+            final isSelected = _selectedMockPlanId == plan["id"];
             
-            return Container(
-              padding: const EdgeInsets.all(16.0),
-              decoration: BoxDecoration(
-                color: isSelected ? Colors.amber.withOpacity(0.05) : const Color(0xFF16171E),
-                borderRadius: BorderRadius.circular(12.0),
-                border: Border.all(
-                  color: isSelected ? Colors.amber : Colors.white.withOpacity(0.05),
-                  width: isSelected ? 1.8 : 1.0,
+            return GestureDetector(
+              onTap: () {
+                setState(() {
+                  _selectedMockPlanId = plan["id"]!;
+                });
+              },
+              child: Container(
+                padding: const EdgeInsets.all(16.0),
+                decoration: BoxDecoration(
+                  color: isSelected ? Colors.amber.withOpacity(0.05) : const Color(0xFF16171E),
+                  borderRadius: BorderRadius.circular(12.0),
+                  border: Border.all(
+                    color: isSelected ? Colors.amber : Colors.white.withOpacity(0.05),
+                    width: isSelected ? 1.8 : 1.0,
+                  ),
                 ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        plan["title"]!,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16.0,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          plan["title"]!,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16.0,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 4.0),
-                      Text(
-                        plan["desc"]!,
-                        style: const TextStyle(color: Colors.white54, fontSize: 12.0),
-                      ),
-                    ],
-                  ),
-                  Text(
-                    plan["price"]!,
-                    style: TextStyle(
-                      color: isSelected ? Colors.amber : Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18.0,
+                        const SizedBox(height: 4.0),
+                        Text(
+                          plan["desc"]!,
+                          style: const TextStyle(color: Colors.white, fontSize: 12.0),
+                        ),
+                      ],
                     ),
-                  ),
-                ],
+                    Text(
+                      plan["price"]!,
+                      style: TextStyle(
+                        color: isSelected ? Colors.amber : Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18.0,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             );
           },
@@ -487,7 +611,7 @@ class _BenefitRow extends StatelessWidget {
               Text(
                 subtitle,
                 style: const TextStyle(
-                  color: Colors.white54,
+                  color: Colors.white,
                   fontSize: 12.5,
                   height: 1.3,
                 ),

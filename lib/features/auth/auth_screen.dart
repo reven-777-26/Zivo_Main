@@ -213,40 +213,21 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   // App Branding
-                  const ZivoLogoWidget(size: 80)
-                      .animate()
-                      .scale(duration: 600.ms, curve: Curves.easeOutBack),
-                  const SizedBox(height: 16),
-                  RichText(
-                    text: TextSpan(
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w800,
-                        fontFamily: 'Outfit',
-                        letterSpacing: -0.5,
-                      ),
+                  const ZivoLogoWidget(size: 500)
+                      .animate(onPlay: (controller) => controller.repeat(reverse: true))
+                      .shimmer(duration: 1.8.seconds, color: const Color(0xFFD9FF00).withOpacity(0.75)),
+                  Transform.translate(
+                    offset: const Offset(0, -50),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        TextSpan(
-                          text: 'Zivo',
-                          style: TextStyle(color: textColor),
+                        Text(
+                          _isSignUp ? 'Create your Account' : 'Welcome back! Sign in to Continue',
+                          style: TextStyle(color: isDark ? const Color(0xFFCCCCCC) : AppTheme.textSecondary, fontSize: 14),
+                          textAlign: TextAlign.center,
                         ),
-                        TextSpan(
-                          text: 'Fit',
-                          style: const TextStyle(color: Color(0xFFD9FF00)),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    _isSignUp ? 'Create your profile to start syncing' : 'Welcome back! Sign in to sync data',
-                    style: TextStyle(color: isDark ? const Color(0xFFCCCCCC) : AppTheme.textSecondary),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 32),
-
-                  // Auth Card
-                  GlassCard(
+                        const SizedBox(height: 10),
+                        GlassCard(
                     child: Form(
                       key: _formKey,
                       child: Column(
@@ -440,8 +421,11 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                       ),
                     ),
                   ),
+                      ],
+                    ),
+                  ),
 
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 2),
 
                   // Divider
                   Row(
