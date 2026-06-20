@@ -93,11 +93,19 @@ export const analyzeMeal = onCall({
         },
         servingSize: {
           type: "NUMBER",
-          description: "Estimated serving size (e.g. 1, 1.5, 200).",
+          description: "Exact count of food items or portions. " +
+            "For countable items (slices, pieces, rotis, dosas, eggs, etc.), " +
+            "this MUST be the number of items visible or described. " +
+            "For example: 2 slices of bread = 2, 3 eggs = 3, 1 dosa = 1. " +
+            "For bulk foods use weight (e.g. 200 for 200g rice).",
         },
         servingUnit: {
           type: "STRING",
-          description: "Estimated serving unit (e.g. piece, plate, cup, bowl, g, ml, serving).",
+          description: "The unit matching servingSize. " +
+            "For countable items use 'piece' (bread slices, eggs, etc.). " +
+            "For liquids use 'ml' or 'cup'. For bulk/weight use 'grams'. " +
+            "For bowl-served items (dal, soup, rice) use 'bowl'. " +
+            "Must be one of: piece, grams, ml, cup, bowl, scoop, serving.",
         },
         items: {
           type: "ARRAY",
@@ -107,7 +115,8 @@ export const analyzeMeal = onCall({
             properties: {
               name: {
                 type: "STRING",
-                description: "Name of the ingredient/item (e.g. Rice, Chicken, Dal).",
+                description: "Name of the ingredient/item " +
+                  "(e.g. Rice, Chicken, Dal).",
               },
               servingSize: {
                 type: "NUMBER",
@@ -115,7 +124,8 @@ export const analyzeMeal = onCall({
               },
               servingUnit: {
                 type: "STRING",
-                description: "Serving unit for this specific item (e.g. cup, piece, g).",
+                description: "Serving unit for this specific item " +
+                  "(e.g. cup, piece, g).",
               },
               calories: {
                 type: "INTEGER",
@@ -192,9 +202,15 @@ export const analyzeMeal = onCall({
           },
         },
         {
-          text: "Analyze this food image carefully. You MUST identify the specific types of food present and count the number of distinct food items or portions visible (e.g., count the number of dosas, slices of bread, eggs, rotis, etc.). " +
-            "Use this exact count for the 'servingSize' (for example, if there are 2 distinct dosas on the plate, set 'servingSize' to 2 and 'servingUnit' to 'piece'). " +
-            "Estimate name, calories, protein, carbs, fat, servingSize, and servingUnit. " +
+          text: "Analyze this food image carefully. You MUST identify " +
+            "the specific types of food present and count the number " +
+            "of distinct food items or portions visible " +
+            "(e.g., count the number of dosas, slices of bread, eggs, etc.). " +
+            "Use this exact count for 'servingSize' (for example, " +
+            "if there are 2 distinct dosas on the plate, set " +
+            "'servingSize' to 2 and 'servingUnit' to 'piece'). " +
+            "Estimate name, calories, protein, carbs, fat, servingSize, " +
+            "and servingUnit. " +
             "Reference USDA FoodData Central (FDC) and " +
             "ICMR-NIN (National Institute of Nutrition, India) / IFCT " +
             "guidelines for standard portion sizes and nutritional " +
@@ -216,9 +232,11 @@ export const analyzeMeal = onCall({
       contents = [
         {
           text: "Analyze this meal: " +
-            `"${desc}". Estimate name, calories, protein, carbs, fat, servingSize, and servingUnit. ` +
-            "Extract the exact quantity and unit described in the text to determine servingSize and servingUnit " +
-            "(e.g., for '2 slices of bread', servingSize must be 2 and servingUnit must be 'piece'). " +
+            `"${desc}". Estimate name, calories, protein, carbs, fat, ` +
+            "servingSize, and servingUnit. " +
+            "Extract the exact quantity and unit described in the text to " +
+            "determine servingSize and servingUnit (e.g., for '2 slices of " +
+            "bread', servingSize must be 2 and servingUnit must be 'piece'). " +
             "Reference USDA FoodData Central (FDC) and ICMR-NIN " +
             "(National Institute of Nutrition, India) / IFCT guidelines " +
             "for standard portion sizes and nutritional values to ensure " +
@@ -258,7 +276,8 @@ export const analyzeMeal = onCall({
       protein: Number(parsed.protein) || 0,
       carbs: Number(parsed.carbs) || 0,
       fat: Number(parsed.fat) || 0,
-      servingSize: parsed.servingSize !== undefined ? Number(parsed.servingSize) : null,
+      servingSize: parsed.servingSize !== undefined ?
+        Number(parsed.servingSize) : null,
       servingUnit: parsed.servingUnit || null,
       items: parsed.items || [],
     };
@@ -478,7 +497,11 @@ function buildFoodPrompt(payloadStr: string): string {
     "2. grade: A/B/C/D/E",
     "3. verdict: max 12 words",
     "4. insights: 3-5, start with ❌, ⚠, ✅",
-    "5. decodedIngredients: Decode ALL ingredients present in the product, providing their safety status (Safe, Caution, or Avoid), standard meaning/category, and a short 1-sentence description (max 12 words) for each. Do not omit any ingredients; the user needs to see the complete individual ingredient breakdown.",
+    "5. decodedIngredients: Decode ALL ingredients present in the product, " +
+      "providing their safety status (Safe, Caution, or Avoid), standard " +
+      "meaning/category, and a short 1-sentence description " +
+      "(max 12 words) for each. Do not omit any ingredients; the user " +
+      "needs to see the complete individual ingredient breakdown.",
     "6. allergyWarnings: list allergen warnings (e.g. " +
       "nuts, dairy, soy, gluten, wheat, egg).",
     "7. alternatives: 3 real Indian products (e.g. " +
@@ -501,7 +524,11 @@ function buildSupplementPrompt(
     "2. grade: A/B/C/D/E",
     "3. verdict: max 12 words",
     "4. insights: 3-5, start with ❌, ⚠, ✅",
-    "5. decodedIngredients: Decode ALL ingredients present in the product, providing their safety status (Safe, Caution, or Avoid), standard meaning/category, and a short 1-sentence description (max 12 words) for each. Do not omit any ingredients; the user needs to see the complete individual ingredient breakdown.",
+    "5. decodedIngredients: Decode ALL ingredients present in the product, " +
+      "providing their safety status (Safe, Caution, or Avoid), standard " +
+      "meaning/category, and a short 1-sentence description " +
+      "(max 12 words) for each. Do not omit any ingredients; the user " +
+      "needs to see the complete individual ingredient breakdown.",
     "6. allergyWarnings: list allergen warnings (nuts, " +
       "dairy, soy, gluten, etc).",
     "7. alternatives: 3 real Indian products (Nutrabay, " +
@@ -524,7 +551,11 @@ function buildSkincarePrompt(
     "2. grade: A/B/C/D/E",
     "3. verdict: max 12 words",
     "4. insights: 3-5, start with ❌, ⚠, ✅",
-    "5. decodedIngredients: Decode ALL ingredients present in the product, providing their safety status (Safe, Caution, or Avoid), standard meaning/category, and a short 1-sentence description (max 12 words) for each. Do not omit any ingredients; the user needs to see the complete individual ingredient breakdown.",
+    "5. decodedIngredients: Decode ALL ingredients present in the product, " +
+      "providing their safety status (Safe, Caution, or Avoid), standard " +
+      "meaning/category, and a short 1-sentence description " +
+      "(max 12 words) for each. Do not omit any ingredients; the user " +
+      "needs to see the complete individual ingredient breakdown.",
     "6. allergyWarnings: list contact allergens or " +
       "irritants warnings (e.g. linalool, limonene, essential oils).",
     "7. alternatives: 3 real Indian products (Minimalist, " +
