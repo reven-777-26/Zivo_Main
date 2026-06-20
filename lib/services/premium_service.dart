@@ -1,9 +1,57 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
+import 'package:intl/intl.dart';
 import 'firebase_service.dart';
+import 'storage_service.dart';
 
 class PremiumService {
+  /// Returns the trial start date/time. If it doesn't exist, initializes it to now.
+  static DateTime getTrialStartDate() {
+    final startMs = StorageService.getTrialStartTime();
+    if (startMs == null) {
+      final now = DateTime.now();
+      StorageService.saveTrialStartTime(now.millisecondsSinceEpoch);
+      return now;
+    }
+    return DateTime.fromMillisecondsSinceEpoch(startMs);
+  }
+
+  /// Checks if the user is currently in their 3-day trial period.
+  static bool hasTrialAccess() {
+    final startDate = getTrialStartDate();
+    final difference = DateTime.now().difference(startDate);
+    return difference.inDays < 3;
+  }
+
+  /// Checks if the user has access to a specific premium feature.
+  static bool hasFeatureAccess(String feature) {
+    if (isPremiumNotifier.value) {
+      return true;
+    }
+    return hasTrialAccess();
+  }
+
+  /// Checks if the user can perform a scan.
+  static bool canPerformAiScan() {
+    final todayStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
+    final dailyCount = StorageService.getDailyAiScans(todayStr);
+
+    if (isPremiumNotifier.value) {
+      return dailyCount < 50;
+    } else {
+      // Free trial daily limit
+      if (!hasTrialAccess()) return false;
+      return dailyCount < 20;
+    }
+  }
+
+  /// Increments daily scan counts.
+  static Future<void> trackAiScanConsumed() async {
+    final todayStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
+    await StorageService.incrementDailyAiScans(todayStr);
+  }
+
   // Public RevenueCat API Keys
   static const _googleApiKey = 'test_lcoJeqNUsQqlAnqFdRvrTBVWama';
   static const _appleApiKey = 'test_lcoJeqNUsQqlAnqFdRvrTBVWama';

@@ -40,10 +40,16 @@ class _PremiumPaywallScreenState extends State<PremiumPaywallScreen> {
   }
 
   Future<void> _handlePurchase() async {
-    if (_selectedPackage == null) return;
     setState(() => _isPurchasing = true);
-
-    final success = await PremiumService.purchasePackage(_selectedPackage!);
+    bool success = false;
+    if (_selectedPackage != null) {
+      success = await PremiumService.purchasePackage(_selectedPackage!);
+    } else {
+      // Mock purchase in sandbox/test mode
+      await Future.delayed(const Duration(seconds: 1));
+      PremiumService.isPremiumNotifier.value = true;
+      success = true;
+    }
     setState(() => _isPurchasing = false);
 
     if (mounted) {
@@ -203,18 +209,33 @@ class _PremiumPaywallScreenState extends State<PremiumPaywallScreen> {
                           child: Column(
                             children: const [
                               _BenefitRow(
-                                title: "Unlimited AI Food & Barcode Scans",
-                                subtitle: "No daily restrictions on AI image or barcode parsing.",
+                                title: "AI Scans (Up to 50/day)",
+                                subtitle: "Track meals and search product databases with anti-abuse limits.",
                               ),
-                              Divider(height: 24, color: Colors.white12),
+                              Divider(height: 18, color: Colors.white12),
                               _BenefitRow(
-                                title: "Personalized Physique Analysis",
-                                subtitle: "Track progress with AI-powered skin and pose assessments.",
+                                title: "Full Food Log System",
+                                subtitle: "Log meals using Photo, Barcode, Voice, Describe, and Presets.",
                               ),
-                              Divider(height: 24, color: Colors.white12),
+                              Divider(height: 18, color: Colors.white12),
                               _BenefitRow(
-                                title: "Advanced PDF Reports",
-                                subtitle: "Export professional logs and summaries for your coach.",
+                                title: "Zivo Analyser",
+                                subtitle: "Advanced product barcode lookup and health warnings.",
+                              ),
+                              Divider(height: 18, color: Colors.white12),
+                              _BenefitRow(
+                                title: "Workout Physique & Analytics",
+                                subtitle: "Track body progress check-ins and exercise analytics.",
+                              ),
+                              Divider(height: 18, color: Colors.white12),
+                              _BenefitRow(
+                                title: "Stats & AI Insights",
+                                subtitle: "Access long-term charts and customized coaching warnings.",
+                              ),
+                              Divider(height: 18, color: Colors.white12),
+                              _BenefitRow(
+                                title: "Daily Consistency Streaks",
+                                subtitle: "Unlock daily consistency calendar grid and streak bottom sheets.",
                               ),
                             ],
                           ),
@@ -362,8 +383,8 @@ class _PremiumPaywallScreenState extends State<PremiumPaywallScreen> {
   Widget _buildMockPackages() {
     // Return custom mockup package options when sandbox is offline / not configured
     final mockPlans = [
-      {"id": "monthly", "title": "Monthly Premium", "price": "\$4.99 / mo", "desc": "Billed monthly, cancel anytime"},
-      {"id": "yearly", "title": "Yearly Premium (Save 40%)", "price": "\$34.99 / yr", "desc": "Billed annually, 7-day free trial"},
+      {"id": "monthly", "title": "Monthly Premium", "price": "₹169 / mo", "desc": "Billed monthly, cancel anytime"},
+      {"id": "yearly", "title": "Yearly Premium (Save 55%)", "price": "₹899 / yr", "desc": "Billed annually, 7-day free trial"},
     ];
     
     return Column(

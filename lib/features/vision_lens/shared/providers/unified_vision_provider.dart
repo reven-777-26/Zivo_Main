@@ -4,8 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../utils/image_picker_helper.dart';
 import '../services/vision_storage_service.dart';
 import '../services/unified_vision_service.dart';
-import '../../../../services/scanner/ai_analysis_service.dart';
 import '../../../../services/firebase_service.dart';
+import '../../../../services/premium_service.dart';
 
 class UnifiedVisionState {
   final AsyncValue<UnifiedProductReport?> currentReport;
@@ -126,6 +126,21 @@ class UnifiedVisionNotifier extends StateNotifier<UnifiedVisionState> {
 
     // 2. Query open database registries sequentially (OpenFoodFacts, then OpenBeautyFacts)
     state = state.copyWith(progressMessage: 'Searching product databases...');
+    
+    // Check daily scan limits before calling network APIs
+    if (!PremiumService.canPerformAiScan()) {
+      state = state.copyWith(
+        isScanning: false,
+        currentReport: AsyncValue.error(
+          PremiumService.isPremiumNotifier.value
+              ? 'Daily limit of 50 AI scans reached to prevent abuse. Try again tomorrow!'
+              : 'Trial daily limit of 20 AI scans reached. Upgrade to Zivofit Premium for more!',
+          StackTrace.current,
+        ),
+      );
+      return;
+    }
+
     final registryData = await UnifiedVisionService.lookupProductApis(cleanBarcode);
 
     if (registryData == null) {
@@ -142,6 +157,7 @@ class UnifiedVisionNotifier extends StateNotifier<UnifiedVisionState> {
 
         await VisionStorageService.cacheProduct(report.category, cleanBarcode, report.toJson());
         FirebaseService.saveVisionHistoryCloud(report.category, cleanBarcode, report.toJson());
+        await PremiumService.trackAiScanConsumed();
         state = state.copyWith(
           isScanning: false,
           currentReport: AsyncValue.data(report),
@@ -178,6 +194,7 @@ class UnifiedVisionNotifier extends StateNotifier<UnifiedVisionState> {
 
       await VisionStorageService.cacheProduct(category, cleanBarcode, report.toJson());
       FirebaseService.saveVisionHistoryCloud(category, cleanBarcode, report.toJson());
+      await PremiumService.trackAiScanConsumed();
       state = state.copyWith(
         isScanning: false,
         currentReport: AsyncValue.data(report),
@@ -199,6 +216,7 @@ class UnifiedVisionNotifier extends StateNotifier<UnifiedVisionState> {
 
         await VisionStorageService.cacheProduct(category, cleanBarcode, report.toJson());
         FirebaseService.saveVisionHistoryCloud(category, cleanBarcode, report.toJson());
+        await PremiumService.trackAiScanConsumed();
         state = state.copyWith(
           isScanning: false,
           currentReport: AsyncValue.data(report),
@@ -274,6 +292,20 @@ class UnifiedVisionNotifier extends StateNotifier<UnifiedVisionState> {
           return;
         }
       } catch (_) {}
+    }
+
+    // Check daily scan limits before calling network APIs
+    if (!PremiumService.canPerformAiScan()) {
+      state = state.copyWith(
+        isScanning: false,
+        currentReport: AsyncValue.error(
+          PremiumService.isPremiumNotifier.value
+              ? 'Daily limit of 50 AI scans reached to prevent abuse. Try again tomorrow!'
+              : 'Trial daily limit of 20 AI scans reached. Upgrade to Zivofit Premium for more!',
+          StackTrace.current,
+        ),
+      );
+      return;
     }
 
     // 3. Use AI to identify the product from the image
@@ -387,6 +419,7 @@ class UnifiedVisionNotifier extends StateNotifier<UnifiedVisionState> {
       await VisionStorageService.cacheProduct(report.category, imgHashKey, report.toJson());
       await VisionStorageService.cacheProduct(report.category, finalSlugKey, report.toJson());
       FirebaseService.saveVisionHistoryCloud(report.category, imgHashKey, report.toJson());
+      await PremiumService.trackAiScanConsumed();
 
       state = state.copyWith(
         isScanning: false,

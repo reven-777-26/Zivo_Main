@@ -14,8 +14,9 @@ import '../../services/scanner/ai_analysis_service.dart';
 import '../../services/firebase_service.dart';
 import 'food_history_screen.dart';
 import 'food_logger_dialog.dart';
-import '../vision_lens/vision_lens/screens/unified_scanner_dialog.dart';
 import '../../models/workout_log.dart';
+import 'package:go_router/go_router.dart';
+import '../../services/premium_service.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -419,6 +420,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           children: [
             GestureDetector(
               onTap: () {
+                if (!PremiumService.hasFeatureAccess('daily_streaks')) {
+                  context.push('/premium');
+                  return;
+                }
                 final workoutsList = ref.read(workoutHistoryProvider);
                 _showStreakDetailsBottomSheet(context, workoutsList);
               },
@@ -1997,7 +2002,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
     // Horizontal grid scroll container with pinch-to-zoom support and monthly hit test button blocks
     return GestureDetector(
-      onTap: () => _showStreakDetailsBottomSheet(context, workouts),
+      onTap: () {
+        if (!PremiumService.hasFeatureAccess('daily_streaks')) {
+          context.push('/premium');
+          return;
+        }
+        _showStreakDetailsBottomSheet(context, workouts);
+      },
       child: GlassCard(
         width: double.infinity,
         padding: const EdgeInsets.all(16),
@@ -2128,7 +2139,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                             final List<int> cols = group['columns'];
 
                             return GestureDetector(
-                              onTap: () => _showMonthPickerBottomSheet(context, y, m, workouts),
+                              onTap: () {
+                                if (!PremiumService.hasFeatureAccess('daily_streaks')) {
+                                  context.push('/premium');
+                                  return;
+                                }
+                                _showMonthPickerBottomSheet(context, y, m, workouts);
+                              },
                               behavior: HitTestBehavior.opaque,
                               child: Row(
                                 children: cols.map((colIndex) {
@@ -2792,6 +2809,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               label: 'Zivo analyser',
               icon: Icons.center_focus_strong_rounded,
               onTap: () {
+                if (!PremiumService.hasFeatureAccess('zivo_analyser')) {
+                  context.push('/premium');
+                  return;
+                }
                 showDialog(
                   context: context,
                   builder: (context) => const UnifiedVisionScannerDialog(),
@@ -4788,6 +4809,22 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               required String queryText,
               required String? imageBase64,
             }) async {
+              if (!PremiumService.canPerformAiScan()) {
+                if (ctx.mounted) {
+                  setState(() {
+                    isScanning = false;
+                  });
+                  ScaffoldMessenger.of(ctx).showSnackBar(
+                    SnackBar(
+                      content: Text(PremiumService.isPremiumNotifier.value
+                          ? "Daily limit of 50 AI scans reached to prevent abuse. Try again tomorrow!"
+                          : "Trial daily limit of 20 AI scans reached. Upgrade to Zivofit Premium for more!"),
+                      backgroundColor: AppTheme.accentCoral,
+                    ),
+                  );
+                }
+                return;
+              }
               setState(() {
                 isScanning = true;
                 scanStatusText = 'Checking Hive & matching profiles...';
@@ -4821,6 +4858,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     }
                   });
                 }
+                await PremiumService.trackAiScanConsumed();
               } catch (e) {
                 debugPrint("Zivo Nutrient Ingestion pipeline failed: $e");
                 if (ctx.mounted) {

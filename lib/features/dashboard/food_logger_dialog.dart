@@ -19,6 +19,8 @@ import '../../services/scanner/ai_analysis_service.dart';
 import '../../services/firebase_service.dart';
 import 'food_log_loading_widget.dart';
 import '../../services/audio_service.dart';
+import 'package:go_router/go_router.dart';
+import '../../services/premium_service.dart';
 
 class BreakdownItem {
   String name;
@@ -249,7 +251,8 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 6, vsync: this, initialIndex: widget.initialTab);
+    final initialIdx = PremiumService.hasFeatureAccess('food_log') ? widget.initialTab : 4;
+    _tabController = TabController(length: 6, vsync: this, initialIndex: initialIdx);
     _tabController.addListener(_handleTabSelection);
     _reviewServingSizeController.addListener(_onServingSizeChanged);
     _initSpeech();
@@ -433,6 +436,16 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
   }
 
   void _handleTabSelection() {
+    if (_tabController.index != 4 && !PremiumService.hasFeatureAccess('food_log')) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _tabController.index = 4; // Switch back to Manual tab
+          context.push('/premium');
+        }
+      });
+      return;
+    }
+
     if (_tabController.index == 1) {
       if (_cameraController == null) {
         _initializeCamera();
@@ -1407,9 +1420,24 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
     return {'size': size, 'unit': unit};
   }
 
-  // Barcode API Integration
   Future<void> _runBarcodeScan(String barcode, {bool keepImage = false}) async {
     if (barcode.trim().isEmpty) return;
+    if (!PremiumService.canPerformAiScan()) {
+      setState(() {
+        _isLoading = false;
+      });
+      if (PremiumService.isPremiumNotifier.value) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Daily limit of 50 AI scans reached to prevent abuse. Try again tomorrow!"),
+            backgroundColor: AppTheme.accentCoral,
+          ),
+        );
+      } else {
+        context.push('/premium');
+      }
+      return;
+    }
     setState(() {
       _isLoading = true;
       _loadingText = "Querying OpenFoodFacts API...";
@@ -1472,6 +1500,7 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
             _initializeReviewControllers();
             _showReview = true;
           });
+          await PremiumService.trackAiScanConsumed();
         } else {
           setState(() {
             _isLoading = false;
@@ -1579,6 +1608,22 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
 
   // Gemini API Integration via Cloud Function
   Future<void> _runGeminiAnalysis(String type, String content) async {
+    if (!PremiumService.canPerformAiScan()) {
+      setState(() {
+        _isLoading = false;
+      });
+      if (PremiumService.isPremiumNotifier.value) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Daily limit of 50 AI scans reached to prevent abuse. Try again tomorrow!"),
+            backgroundColor: AppTheme.accentCoral,
+          ),
+        );
+      } else {
+        context.push('/premium');
+      }
+      return;
+    }
     _lastAnalysisType = type;
     _lastAnalysisContent = content;
     String optimizedContent = content;
@@ -1620,6 +1665,7 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
       }
 
       AudioService.playAiOutput();
+      await PremiumService.trackAiScanConsumed();
       setState(() {
         _isLoading = false;
         final rawItems = result['items'] as List?;

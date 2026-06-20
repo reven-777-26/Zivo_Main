@@ -15,9 +15,8 @@ import '../../services/widget_sync_service.dart';
 import 'package:intl/intl.dart';
 import 'dashboard_screen.dart';
 import 'workout_screen.dart';
-import '../vision_lens/vision_lens/screens/vision_lens_home_screen.dart';
-import 'progress_screen.dart';
 import '../../services/ai_backend_service.dart';
+import '../../services/premium_service.dart';
 import '../../core/health_math.dart';
 import '../../services/firebase_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -316,7 +315,7 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
                       Expanded(
                         child: GestureDetector(
                           onTap: () {
-                            ref.read(activeTabProvider.notifier).state = 2;
+                            _safeSetTab(2);
                           },
                           behavior: HitTestBehavior.opaque,
                           child: Column(
@@ -357,7 +356,7 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
               alignment: Alignment.topCenter,
               child: GestureDetector(
                 onTap: () {
-                  ref.read(activeTabProvider.notifier).state = 2;
+                  _safeSetTab(2);
                 },
                 child: Container(
                   width: 56,
@@ -389,6 +388,18 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
     );
   }
 
+  void _safeSetTab(int index) {
+    if (index == 2 && !PremiumService.hasFeatureAccess('zivo_analyser')) {
+      context.push('/premium');
+      return;
+    }
+    if (index == 3 && !PremiumService.hasFeatureAccess('stats_insights')) {
+      context.push('/premium');
+      return;
+    }
+    ref.read(activeTabProvider.notifier).state = index;
+  }
+
   Widget _buildNavItem(IconData icon, String label, int index, int currentIndex) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final isSelected = currentIndex == index;
@@ -407,7 +418,7 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
     return Expanded(
       child: GestureDetector(
         onTap: () {
-          ref.read(activeTabProvider.notifier).state = index;
+          _safeSetTab(index);
         },
         behavior: HitTestBehavior.opaque,
         child: Column(

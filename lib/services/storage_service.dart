@@ -104,6 +104,32 @@ class StorageService {
     }
   }
 
+  /// Retrieves the trial start time in milliseconds since epoch.
+  static int? getTrialStartTime() {
+    final raw = _reminderBox.get('trial_start_time');
+    if (raw == null) return null;
+    return raw['timestamp'] as int?;
+  }
+
+  /// Saves the trial start time in milliseconds since epoch.
+  static Future<void> saveTrialStartTime(int timestamp) async {
+    await _reminderBox.put('trial_start_time', {'timestamp': timestamp});
+  }
+
+  /// Retrieves daily AI scan count.
+  static int getDailyAiScans(String dateStr) {
+    final raw = _reminderBox.get('daily_ai_scans_$dateStr');
+    if (raw == null) return 0;
+    return raw['count'] as int? ?? 0;
+  }
+
+  /// Increments daily AI scan count.
+  static Future<void> incrementDailyAiScans(String dateStr) async {
+    final count = getDailyAiScans(dateStr);
+    await _reminderBox.put('daily_ai_scans_$dateStr', {'count': count + 1});
+  }
+
+
   /// Retrieves the profile picture base64 from Hive.
   static String? getProfilePicture() {
     final raw = _reminderBox.get('profile_picture');

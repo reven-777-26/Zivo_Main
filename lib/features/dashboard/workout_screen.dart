@@ -8,8 +8,9 @@ import '../../core/theme.dart';
 import '../../models/workout_log.dart';
 import '../../services/state_providers.dart';
 import '../../services/storage_service.dart';
-import '../../services/firebase_service.dart';
 import '../../utils/image_picker_helper.dart';
+import 'package:go_router/go_router.dart';
+import '../../services/premium_service.dart';
 
 import 'package:fl_chart/fl_chart.dart';
 
@@ -684,7 +685,13 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
     final isSelected = _activeWorkoutTab == index;
     return Expanded(
       child: GestureDetector(
-        onTap: () => setState(() => _activeWorkoutTab = index),
+        onTap: () {
+          if (index != 0 && !PremiumService.hasFeatureAccess('workout_logs')) {
+            context.push('/premium');
+            return;
+          }
+          setState(() => _activeWorkoutTab = index);
+        },
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           curve: Curves.easeInOut,
