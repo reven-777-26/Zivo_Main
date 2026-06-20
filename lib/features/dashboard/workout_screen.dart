@@ -2557,20 +2557,13 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: isDark ? const Color(0xFF141618) : Colors.white,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(20),
             border: Border.all(
               color: isPaused 
-                  ? AppTheme.accentOrange.withOpacity(0.4)
-                  : AppTheme.accentCyan.withOpacity(0.3),
-              width: 1.2,
+                  ? AppTheme.accentOrange.withOpacity(0.5)
+                  : AppTheme.accentEmerald.withOpacity(0.4),
+              width: 1.5,
             ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(isDark ? 0.2 : 0.05),
-                blurRadius: 8,
-                offset: const Offset(0, 4),
-              )
-            ],
           ),
           child: Column(
             children: [
@@ -2578,22 +2571,23 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
                 onTap: () => _showBigClockOverlay(context),
                 child: Row(
                   children: [
+                    // Animated glowing dot
                     Container(
-                      width: 8,
-                      height: 8,
+                      width: 9,
+                      height: 9,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: isPaused ? AppTheme.accentOrange : AppTheme.accentEmerald,
                         boxShadow: [
                           BoxShadow(
-                            color: (isPaused ? AppTheme.accentOrange : AppTheme.accentEmerald).withOpacity(0.5),
-                            blurRadius: 6,
+                            color: (isPaused ? AppTheme.accentOrange : AppTheme.accentEmerald).withOpacity(0.6),
+                            blurRadius: 8,
                             spreadRadius: 2,
                           )
                         ]
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 10),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2603,41 +2597,57 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
                             style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w900,
-                              letterSpacing: 0.5,
+                              letterSpacing: 1.0,
                               color: isPaused ? AppTheme.accentOrange : AppTheme.accentEmerald,
                             ),
                           ),
-                          const SizedBox(height: 2),
+                          const SizedBox(height: 1),
                           Text(
                             isPaused ? 'Tap to view fullscreen clock' : 'Tracking lockscreen & widget...',
                             style: TextStyle(
-                              fontSize: 11,
+                              fontSize: 10.5,
                               color: isDark ? const Color(0xFF868685) : AppTheme.textSecondary,
                             ),
                           ),
                         ],
                       ),
                     ),
-                    Text(
-                      timerStr,
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: -0.5,
-                        fontFeatures: const [FontFeature.tabularFigures()],
-                        color: isDark ? Colors.white : AppTheme.textPrimary,
+                    // Timer display
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? (isPaused ? AppTheme.accentOrange.withOpacity(0.08) : AppTheme.accentEmerald.withOpacity(0.08))
+                            : (isPaused ? AppTheme.accentOrange.withOpacity(0.06) : AppTheme.accentEmerald.withOpacity(0.06)),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        timerStr,
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: -0.5,
+                          fontFeatures: const [FontFeature.tabularFigures()],
+                          color: isPaused ? AppTheme.accentOrange : (isDark ? Colors.white : AppTheme.textPrimary),
+                        ),
                       ),
                     ),
-                    const SizedBox(width: 6),
+                    const SizedBox(width: 4),
                     Icon(
-                      Icons.arrow_forward_ios_rounded,
-                      size: 14,
+                      Icons.chevron_right_rounded,
+                      size: 16,
                       color: isDark ? const Color(0xFF868685) : AppTheme.textSecondary,
                     )
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 14),
+              // Divider
+              Divider(
+                height: 1,
+                color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFE8EBE6),
+              ),
+              const SizedBox(height: 14),
               Row(
                 children: [
                   Expanded(
@@ -2650,12 +2660,16 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
                         }
                       },
                       child: Container(
-                        height: 38,
+                        height: 40,
                         decoration: BoxDecoration(
-                          color: isDark ? Colors.white.withOpacity(0.02) : Colors.black.withOpacity(0.02),
-                          borderRadius: BorderRadius.circular(19),
+                          color: isPaused
+                              ? AppTheme.accentEmerald.withOpacity(0.12)
+                              : AppTheme.accentOrange.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(20),
                           border: Border.all(
-                            color: isPaused ? AppTheme.accentEmerald : AppTheme.accentOrange,
+                            color: isPaused
+                                ? AppTheme.accentEmerald.withOpacity(0.5)
+                                : AppTheme.accentOrange.withOpacity(0.5),
                             width: 1.0,
                           ),
                         ),
@@ -2665,14 +2679,14 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
                             Icon(
                               isPaused ? Icons.play_arrow_rounded : Icons.pause_rounded,
                               color: isPaused ? AppTheme.accentEmerald : AppTheme.accentOrange,
-                              size: 16,
+                              size: 18,
                             ),
-                            const SizedBox(width: 4),
+                            const SizedBox(width: 5),
                             Text(
                               isPaused ? "Resume" : "Pause",
                               style: TextStyle(
                                 color: isPaused ? AppTheme.accentEmerald : AppTheme.accentOrange,
-                                fontWeight: FontWeight.bold,
+                                fontWeight: FontWeight.w700,
                                 fontSize: 13,
                               ),
                             ),
@@ -2691,12 +2705,12 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
                         _showFinishWorkoutSheet(context);
                       },
                       child: Container(
-                        height: 38,
+                        height: 40,
                         decoration: BoxDecoration(
-                          color: isDark ? Colors.white.withOpacity(0.02) : Colors.black.withOpacity(0.02),
-                          borderRadius: BorderRadius.circular(19),
+                          color: AppTheme.accentCoral.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(20),
                           border: Border.all(
-                            color: AppTheme.accentCoral,
+                            color: AppTheme.accentCoral.withOpacity(0.5),
                             width: 1.0,
                           ),
                         ),
@@ -2708,12 +2722,12 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
                               color: AppTheme.accentCoral,
                               size: 16,
                             ),
-                            SizedBox(width: 4),
+                            SizedBox(width: 5),
                             Text(
                               "Stop / Finish",
                               style: TextStyle(
                                 color: AppTheme.accentCoral,
-                                fontWeight: FontWeight.bold,
+                                fontWeight: FontWeight.w700,
                                 fontSize: 13,
                               ),
                             ),
@@ -3401,50 +3415,68 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
         Row(
           children: [
             Expanded(
-              child: OutlinedButton.icon(
-                onPressed: () => _showAddExerciseDialog(context),
-                icon: Icon(
-                  Icons.add_rounded,
-                  color: isDark ? AppTheme.accentCyan : AppTheme.textPrimary,
-                  size: 18,
-                ),
-                label: Text(
-                  'Add Exercise',
-                  style: TextStyle(
-                    color: isDark ? AppTheme.accentCyan : AppTheme.textPrimary,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                style: OutlinedButton.styleFrom(
-                  backgroundColor: isDark ? const Color(0xFF141618) : Colors.white,
-                  side: BorderSide(
-                    color: isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder,
-                    width: 1.0,
-                  ),
-                  shape: RoundedRectangleBorder(
+              child: GestureDetector(
+                onTap: () => _showAddExerciseDialog(context),
+                child: Container(
+                  height: 46,
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF141618) : Colors.white,
                     borderRadius: BorderRadius.circular(24),
+                    border: Border.all(
+                      color: isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder,
+                      width: 1.0,
+                    ),
                   ),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        width: 22,
+                        height: 22,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: AppTheme.accentCyan.withOpacity(0.15),
+                        ),
+                        child: const Icon(Icons.add_rounded, color: AppTheme.accentCyan, size: 14),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Add Exercise',
+                        style: TextStyle(
+                          color: isDark ? Colors.white : AppTheme.textPrimary,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: ElevatedButton(
-                onPressed: () => _showFinishWorkoutSheet(context),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.accentCyan,
-                  foregroundColor: const Color(0xFF0E0F0C),
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
+              child: GestureDetector(
+                onTap: () => _showFinishWorkoutSheet(context),
+                child: Container(
+                  height: 46,
+                  decoration: BoxDecoration(
+                    color: AppTheme.accentCyan,
                     borderRadius: BorderRadius.circular(24),
                   ),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                ),
-                child: const Text(
-                  'Finish Workout',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.check_rounded, color: Color(0xFF0E0F0C), size: 18),
+                      SizedBox(width: 6),
+                      Text(
+                        'Finish Workout',
+                        style: TextStyle(
+                          color: Color(0xFF0E0F0C),
+                          fontWeight: FontWeight.w800,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
