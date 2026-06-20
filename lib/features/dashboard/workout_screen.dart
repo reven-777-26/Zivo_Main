@@ -644,19 +644,22 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
                     GestureDetector(
                       onTap: () => _showWorkoutHelpSheet(context),
                       child: Container(
-                        padding: const EdgeInsets.all(8),
+                        width: 30,
+                        height: 30,
                         decoration: BoxDecoration(
-                          color: isDark ? Colors.white.withOpacity(0.04) : Colors.black.withOpacity(0.03),
-                          borderRadius: BorderRadius.circular(10),
+                          color: const Color(0xFFD9FF00).withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(8),
                           border: Border.all(
-                            color: isDark ? const Color(0xFF323530) : AppTheme.glassBorder,
-                            width: 1,
+                            color: const Color(0xFFD9FF00),
+                            width: 1.0,
                           ),
                         ),
-                        child: Icon(
-                          Icons.help_outline_rounded,
-                          color: themeTextColor,
-                          size: 18,
+                        child: const Center(
+                          child: Icon(
+                            Icons.question_mark_rounded,
+                            color: Color(0xFFD9FF00),
+                            size: 16,
+                          ),
                         ),
                       ),
                     ),
