@@ -550,6 +550,129 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
     }
   }
 
+  Widget _buildHelpButton({required VoidCallback onTap, required bool isDark}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 30,
+        height: 30,
+        decoration: BoxDecoration(
+          color: const Color(0xFFD9FF00).withOpacity(0.12),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: const Color(0xFFD9FF00),
+            width: 1.0,
+          ),
+        ),
+        child: const Center(
+          child: Icon(
+            Icons.question_mark_rounded,
+            color: Color(0xFFD9FF00),
+            size: 16,
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showHelpBottomSheet({
+    required BuildContext context,
+    required String title,
+    required String content,
+    required bool isDark,
+  }) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return Container(
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1C1E1B) : Colors.white,
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(24),
+              topRight: Radius.circular(24),
+            ),
+            border: Border.all(
+              color: isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder,
+              width: 1,
+            ),
+          ),
+          padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 20),
+                  decoration: BoxDecoration(
+                    color: isDark ? Colors.white24 : Colors.black12,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFD9FF00).withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: const Color(0xFFD9FF00)),
+                    ),
+                    child: const Icon(
+                      Icons.question_mark_rounded,
+                      color: Color(0xFFD9FF00),
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w900,
+                      color: isDark ? Colors.white : AppTheme.textPrimary,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 18),
+              Text(
+                content,
+                style: TextStyle(
+                  fontSize: 13.5,
+                  height: 1.45,
+                  color: isDark ? Colors.white70 : AppTheme.textSecondary,
+                ),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFD9FF00),
+                    foregroundColor: Colors.black,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  child: const Text(
+                    "Got it",
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   void _updateTotalsFromBreakdown() {
     if (_reviewBreakdownItems.isEmpty) return;
     int totalCals = 0;
@@ -643,71 +766,15 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
                                   color: isDark ? Colors.white : AppTheme.textPrimary,
                                 ),
                               ),
-                              IconButton(
-                                icon: const Icon(Icons.question_mark_rounded, color: AppTheme.accentCyan, size: 20),
-                                padding: EdgeInsets.zero,
-                                constraints: const BoxConstraints(),
-                                onPressed: () {
-                                  showDialog(
+                              _buildHelpButton(
+                                isDark: isDark,
+                                onTap: () {
+                                  _showHelpBottomSheet(
                                     context: ctx,
-                                    builder: (infoCtx) => Dialog(
-                                      backgroundColor: Colors.transparent,
-                                      child: ClipRRect(
-                                        borderRadius: BorderRadius.circular(20),
-                                        child: BackdropFilter(
-                                          filter: ui.ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-                                          child: Container(
-                                            constraints: const BoxConstraints(maxWidth: 320),
-                                            padding: const EdgeInsets.all(20),
-                                            decoration: BoxDecoration(
-                                              color: isDark ? const Color(0xFF000000) : Colors.white.withOpacity(0.95),
-                                              borderRadius: BorderRadius.circular(20),
-                                              border: Border.all(
-                                                color: isDark ? const Color(0xFF323530) : AppTheme.glassBorder,
-                                              ),
-                                            ),
-                                            child: Column(
-                                              mainAxisSize: MainAxisSize.min,
-                                              crossAxisAlignment: CrossAxisAlignment.start,
-                                              children: [
-                                                Row(
-                                                  children: [
-                                                    const Icon(Icons.info_outline_rounded, color: AppTheme.accentCyan, size: 22),
-                                                    const SizedBox(width: 8),
-                                                    Text(
-                                                      "Breakdown Item Help",
-                                                      style: TextStyle(
-                                                        fontWeight: FontWeight.bold,
-                                                        fontSize: 16,
-                                                        color: isDark ? Colors.white : AppTheme.textPrimary,
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                                const SizedBox(height: 16),
-                                                Text(
-                                                  "Breakdown items let you log individual ingredients of a meal (e.g. eggs, oil, vegetables).\n\n"
-                                                  "Entering their specific portion size, unit, calories, and macros helps the app calculate the overall nutrition of the meal more accurately.",
-                                                  style: TextStyle(
-                                                    fontSize: 13,
-                                                    color: isDark ? Colors.white70 : AppTheme.textSecondary,
-                                                    height: 1.4,
-                                                  ),
-                                                ),
-                                                const SizedBox(height: 20),
-                                                Align(
-                                                  alignment: Alignment.centerRight,
-                                                  child: TextButton(
-                                                    onPressed: () => Navigator.pop(infoCtx),
-                                                    child: const Text("Got it", style: TextStyle(color: AppTheme.accentCyan, fontWeight: FontWeight.bold)),
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
+                                    isDark: isDark,
+                                    title: "Breakdown Item Help",
+                                    content: "Breakdown items let you log individual ingredients of a meal (e.g. eggs, oil, vegetables).\n\n"
+                                        "Entering their specific portion size, unit, calories, and macros helps the app calculate the overall nutrition of the meal more accurately.",
                                   );
                                 },
                               ),
@@ -1912,13 +1979,9 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                GestureDetector(
+                _buildHelpButton(
+                  isDark: isDark,
                   onTap: () => _showInstructionsBottomSheet(context, isDark),
-                  child: const Icon(
-                    Icons.question_mark_rounded,
-                    color: AppTheme.accentCyan,
-                    size: 22,
-                  ),
                 ),
                 const SizedBox(width: 8),
                 GestureDetector(
@@ -2883,71 +2946,17 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
                     ),
                   ),
                   const SizedBox(width: 6),
-                  GestureDetector(
+                   _buildHelpButton(
+                    isDark: isDark,
                     onTap: () {
-                      showDialog(
+                      _showHelpBottomSheet(
                         context: context,
-                        builder: (infoCtx) => Dialog(
-                          backgroundColor: Colors.transparent,
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(20),
-                            child: BackdropFilter(
-                              filter: ui.ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-                              child: Container(
-                                constraints: const BoxConstraints(maxWidth: 360),
-                                padding: const EdgeInsets.all(20),
-                                decoration: BoxDecoration(
-                                  color: isDark ? const Color(0xFF000000) : Colors.white.withOpacity(0.95),
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(
-                                    color: isDark ? const Color(0xFF323530) : AppTheme.glassBorder,
-                                  ),
-                                ),
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        const Icon(Icons.question_mark_rounded, color: AppTheme.accentCyan, size: 24),
-                                        const SizedBox(width: 8),
-                                        Text(
-                                          "Meal Breakdown Help",
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 18,
-                                            color: isDark ? Colors.white : AppTheme.textPrimary,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 16),
-                                    Text(
-                                      "Instead of guessing a meal's total calories, you can break it down into its separate ingredients (e.g., 'Chicken Biryani' into Rice, Chicken, Oil, etc.).\n\n"
-                                      "The app automatically sums the nutrition of these items to calculate the total calories and macros for your food log.",
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        color: isDark ? Colors.white70 : AppTheme.textSecondary,
-                                        height: 1.4,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 20),
-                                    Align(
-                                      alignment: Alignment.centerRight,
-                                      child: TextButton(
-                                        onPressed: () => Navigator.pop(infoCtx),
-                                        child: const Text("Got it", style: TextStyle(color: AppTheme.accentCyan, fontWeight: FontWeight.bold)),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
+                        isDark: isDark,
+                        title: "Meal Breakdown Help",
+                        content: "Instead of guessing a meal's total calories, you can break it down into its separate ingredients (e.g., 'Chicken Biryani' into Rice, Chicken, Oil, etc.).\n\n"
+                            "The app automatically sums the nutrition of these items to calculate the total calories and macros for your food log.",
                       );
                     },
-                    child: Icon(Icons.question_mark_rounded, color: AppTheme.accentCyan, size: 14),
                   ),
                   const SizedBox(width: 10),
                   SizedBox(
@@ -3896,28 +3905,17 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
                     ),
                   ),
                   const SizedBox(width: 6),
-                  GestureDetector(
+                  _buildHelpButton(
+                    isDark: isDark,
                     onTap: () {
-                      showDialog(
+                      _showHelpBottomSheet(
                         context: context,
-                        builder: (infoCtx) => AlertDialog(
-                          backgroundColor: isDark ? const Color(0xFF1C1E1B) : Colors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                          title: const Text("Meal Breakdown Help", style: TextStyle(fontWeight: FontWeight.bold)),
-                          content: const Text(
-                            "Instead of guessing a meal's total calories, you can break it down into its separate ingredients (e.g., 'Chicken Biryani' into Rice, Chicken, Oil, etc.).\n\n"
-                            "The app automatically sums the nutrition of these items to calculate the total calories and macros for your food log."
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(infoCtx),
-                              child: const Text("Got it", style: TextStyle(color: AppTheme.accentCyan)),
-                            )
-                          ],
-                        ),
+                        isDark: isDark,
+                        title: "Meal Breakdown Help",
+                        content: "Instead of guessing a meal's total calories, you can break it down into its separate ingredients (e.g., 'Chicken Biryani' into Rice, Chicken, Oil, etc.).\n\n"
+                            "The app automatically sums the nutrition of these items to calculate the total calories and macros for your food log.",
                       );
                     },
-                    child: Icon(Icons.help_outline_rounded, color: isDark ? Colors.white60 : Colors.black54, size: 14),
                   ),
                 ],
               ),
