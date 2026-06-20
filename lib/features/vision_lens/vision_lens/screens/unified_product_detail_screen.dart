@@ -450,71 +450,50 @@ class _UnifiedProductDetailScreenState extends ConsumerState<UnifiedProductDetai
                   const SizedBox(height: 14),
                   Container(
                     margin: const EdgeInsets.only(bottom: 24),
-                    child: Stack(
-                      children: [
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.fromLTRB(24, 20, 20, 20),
-                          decoration: BoxDecoration(
-                            color: AppTheme.accentCoral.withOpacity(0.05),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: AppTheme.accentCoral.withOpacity(0.15), width: 1.0),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: report.allergyWarnings.map((warning) => Container(
-                                  margin: const EdgeInsets.only(bottom: 8),
-                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                                  decoration: BoxDecoration(
-                                    color: (isDark ? Colors.white : AppTheme.textPrimary).withOpacity(0.03),
-                                    borderRadius: BorderRadius.circular(16),
-                                    border: Border.all(
-                                      color: (isDark ? Colors.white : AppTheme.textPrimary).withOpacity(0.05),
-                                      width: 1.0,
-                                    ),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Container(
-                                        width: 6,
-                                        height: 6,
-                                        decoration: const BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          color: AppTheme.accentCoral,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Expanded(
-                                        child: Text(
-                                          warning,
-                                          style: TextStyle(
-                                            color: isDark ? Colors.white : AppTheme.textPrimary,
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                )).toList(),
-                          ),
-                        ),
-                        Positioned(
-                          left: 0,
-                          top: 0,
-                          bottom: 0,
-                          child: Container(
-                            width: 4,
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: AppTheme.accentCoral.withOpacity(0.05),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: AppTheme.accentCoral.withOpacity(0.15), width: 1.0),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: report.allergyWarnings.map((warning) => Container(
+                            margin: const EdgeInsets.only(bottom: 8),
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                             decoration: BoxDecoration(
-                              color: AppTheme.accentCoral,
-                              borderRadius: const BorderRadius.only(
-                                topLeft: Radius.circular(16),
-                                bottomLeft: Radius.circular(16),
+                              color: (isDark ? Colors.white : AppTheme.textPrimary).withOpacity(0.03),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: (isDark ? Colors.white : AppTheme.textPrimary).withOpacity(0.05),
+                                width: 1.0,
                               ),
                             ),
-                          ),
-                        ),
-                      ],
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 6,
+                                  height: 6,
+                                  decoration: const BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: AppTheme.accentCoral,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    warning,
+                                    style: TextStyle(
+                                      color: isDark ? Colors.white : AppTheme.textPrimary,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )).toList(),
                     ),
                   ),
                 ],
@@ -547,58 +526,37 @@ class _UnifiedProductDetailScreenState extends ConsumerState<UnifiedProductDetai
                       return Container(
                         width: double.infinity,
                         margin: const EdgeInsets.only(bottom: 12),
-                        child: Stack(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                        decoration: BoxDecoration(
+                          color: color.withOpacity(0.04),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: color.withOpacity(0.15), width: 1.0),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            Container(
-                              padding: const EdgeInsets.fromLTRB(24, 14, 16, 14),
-                              decoration: BoxDecoration(
-                                color: color.withOpacity(0.04),
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(color: color.withOpacity(0.15), width: 1.0),
-                              ),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  if (emoji != null) ...[
-                                    Container(
-                                      padding: const EdgeInsets.all(8),
-                                      decoration: BoxDecoration(
-                                        color: color.withOpacity(0.12),
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: Text(
-                                        emoji,
-                                        style: const TextStyle(fontSize: 13),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 14),
-                                  ],
-                                  Expanded(
-                                    child: Text(
-                                      cleanText,
-                                      style: TextStyle(
-                                        color: isDark ? Colors.white : AppTheme.textPrimary,
-                                        fontSize: 13.5,
-                                        fontWeight: FontWeight.w700,
-                                        height: 1.4,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Positioned(
-                              left: 0,
-                              top: 0,
-                              bottom: 0,
-                              child: Container(
-                                width: 4,
+                            if (emoji != null) ...[
+                              Container(
+                                padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
-                                  color: color,
-                                  borderRadius: const BorderRadius.only(
-                                    topLeft: Radius.circular(16),
-                                    bottomLeft: Radius.circular(16),
-                                  ),
+                                  color: color.withOpacity(0.12),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Text(
+                                  emoji,
+                                  style: const TextStyle(fontSize: 13),
+                                ),
+                              ),
+                              const SizedBox(width: 14),
+                            ],
+                            Expanded(
+                              child: Text(
+                                cleanText,
+                                style: TextStyle(
+                                  color: isDark ? Colors.white : AppTheme.textPrimary,
+                                  fontSize: 13.5,
+                                  fontWeight: FontWeight.w700,
+                                  height: 1.4,
                                 ),
                               ),
                             ),
@@ -1154,7 +1112,7 @@ class _UnifiedProductDetailScreenState extends ConsumerState<UnifiedProductDetai
   }) {
     return LayoutBuilder(
       builder: (context, cardConstraints) {
-        final useVerticalLayout = cardConstraints.maxWidth < 220;
+        final useVerticalLayout = cardConstraints.maxWidth < 280;
 
         final badgeWidget = Container(
           constraints: BoxConstraints(
