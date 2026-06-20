@@ -6,6 +6,8 @@ import '../../services/premium_service.dart';
 import '../../services/state_providers.dart';
 import '../../services/storage_service.dart';
 
+import 'package:url_launcher/url_launcher.dart';
+
 class PremiumPaywallScreen extends StatefulWidget {
   const PremiumPaywallScreen({super.key});
 
@@ -110,6 +112,17 @@ class _PremiumPaywallScreenState extends State<PremiumPaywallScreen> {
           "No active subscriptions found to restore.",
         );
       }
+    }
+  }
+
+  Future<void> _launchTermsAndPrivacy() async {
+    final url = Uri.parse('https://zivofit.com/privacy');
+    try {
+      if (await canLaunchUrl(url)) {
+        await launchUrl(url, mode: LaunchMode.externalApplication);
+      }
+    } catch (e) {
+      debugPrint("Error launching terms and privacy: $e");
     }
   }
 
@@ -335,9 +348,12 @@ class _PremiumPaywallScreenState extends State<PremiumPaywallScreen> {
                               style: TextStyle(color: Colors.white54, fontSize: 13),
                             ),
                           ),
-                          const Text(
-                            "Terms & Privacy",
-                            style: TextStyle(color: Colors.white54, fontSize: 13),
+                          TextButton(
+                            onPressed: _launchTermsAndPrivacy,
+                            child: const Text(
+                              "Terms & Privacy",
+                              style: TextStyle(color: Colors.white54, fontSize: 13),
+                            ),
                           ),
                         ],
                       ),
