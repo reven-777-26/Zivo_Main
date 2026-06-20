@@ -1281,14 +1281,14 @@ class _ProfilePlaceholderScreenState
                             children: [
                               Icon(
                                 Icons.workspace_premium_rounded,
-                                color: Colors.white,
+                                color: Colors.black,
                                 size: 14,
                               ),
                               SizedBox(width: 6),
                               Text(
                                 'UPGRADE TO PREMIUM',
                                 style: TextStyle(
-                                  color: Colors.white,
+                                  color: Colors.black,
                                   fontSize: 10,
                                   fontWeight: FontWeight.w900,
                                   letterSpacing: 0.5,
