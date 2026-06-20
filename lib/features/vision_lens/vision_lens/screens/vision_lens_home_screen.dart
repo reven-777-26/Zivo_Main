@@ -1247,7 +1247,7 @@ class _VisionLensHomeScreenState extends ConsumerState<VisionLensHomeScreen> wit
         return isDark ? AppTheme.accentEmerald : const Color(0xFF054D28);
       case 'C':
       case 'D':
-        return isDark ? const Color(0xFFFFC091) : const Color(0xFFB86700);
+        return isDark ? const Color(0xFFFF9F0A) : const Color(0xFFD87000);
       case 'E':
         return AppTheme.accentCoral;
       default:

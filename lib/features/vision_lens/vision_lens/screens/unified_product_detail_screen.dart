@@ -31,7 +31,7 @@ class _UnifiedProductDetailScreenState extends ConsumerState<UnifiedProductDetai
         return isDark ? AppTheme.accentEmerald : const Color(0xFF054D28);
       case 'C':
       case 'D':
-        return isDark ? const Color(0xFFFFC091) : const Color(0xFFB86700);
+        return isDark ? const Color(0xFFFF9F0A) : const Color(0xFFD87000);
       case 'E':
         return AppTheme.accentCoral;
       default:
@@ -380,82 +380,64 @@ class _UnifiedProductDetailScreenState extends ConsumerState<UnifiedProductDetai
                         ),
                       ),
                       const SizedBox(height: 24),
-                      Stack(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.fromLTRB(24, 16, 16, 16),
-                            decoration: BoxDecoration(
-                              color: isDark ? const Color(0xFF141618) : Colors.black.withOpacity(0.02),
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder, width: 1.0),
-                            ),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                Container(
-                                  width: 48,
-                                  height: 48,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: gradeColor,
-                                  ),
-                                  alignment: Alignment.center,
-                                  child: Text(
-                                    report.healthGrade,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 22,
-                                      fontWeight: FontWeight.w900,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 16),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      const Text(
-                                        'VERDICT',
-                                        style: TextStyle(
-                                          color: AppTheme.textSecondary,
-                                          fontSize: 9,
-                                          fontWeight: FontWeight.w900,
-                                          letterSpacing: 1.5,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        report.verdict,
-                                        style: TextStyle(
-                                          color: isDark ? Colors.white.withOpacity(0.9) : AppTheme.textPrimary,
-                                          fontSize: 13.5,
-                                          fontWeight: FontWeight.w700,
-                                          height: 1.4,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Positioned(
-                            left: 0,
-                            top: 0,
-                            bottom: 0,
-                            child: Container(
-                              width: 4,
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0xFF141618) : Colors.black.withOpacity(0.02),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder, width: 1.0),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Container(
+                              width: 48,
+                              height: 48,
                               decoration: BoxDecoration(
-                                color: gradeColor,
-                                borderRadius: const BorderRadius.only(
-                                  topLeft: Radius.circular(16),
-                                  bottomLeft: Radius.circular(16),
+                                  shape: BoxShape.circle,
+                                  color: gradeColor.withOpacity(0.12),
+                                  border: Border.all(color: gradeColor.withOpacity(0.3), width: 1.5),
+                              ),
+                              alignment: Alignment.center,
+                              child: Text(
+                                report.healthGrade,
+                                style: TextStyle(
+                                  color: gradeColor,
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.w900,
                                 ),
                               ),
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Text(
+                                    'VERDICT',
+                                    style: TextStyle(
+                                      color: AppTheme.textSecondary,
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.w900,
+                                      letterSpacing: 1.5,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    report.verdict,
+                                    style: TextStyle(
+                                      color: isDark ? Colors.white.withOpacity(0.9) : AppTheme.textPrimary,
+                                      fontSize: 13.5,
+                                      fontWeight: FontWeight.w700,
+                                      height: 1.4,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
@@ -760,135 +742,117 @@ class _UnifiedProductDetailScreenState extends ConsumerState<UnifiedProductDetai
                             });
                           },
                           borderRadius: BorderRadius.circular(16),
-                          child: Stack(
-                            children: [
-                              Padding(
-                                padding: const EdgeInsets.fromLTRB(24, 16, 16, 16),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
                                   children: [
-                                    Row(
-                                      children: [
-                                        Container(
-                                          width: 32,
-                                          height: 32,
-                                          decoration: BoxDecoration(
-                                            shape: BoxShape.circle,
-                                            color: safetyColor,
-                                          ),
-                                          alignment: Alignment.center,
-                                          child: Text(
-                                            ing.safety.substring(0, 1).toUpperCase(),
-                                            style: const TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 14,
-                                              fontWeight: FontWeight.w900,
-                                            ),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 12),
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              Row(
-                                                children: [
-                                                  Expanded(
-                                                    child: Text(
-                                                      ing.name,
-                                                      style: TextStyle(
-                                                        color: isDark ? Colors.white : AppTheme.textPrimary,
-                                                        fontSize: 14,
-                                                        fontWeight: FontWeight.w900,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                  if (ing.sneakyNameFor != 'None')
-                                                    Container(
-                                                      margin: const EdgeInsets.only(left: 6),
-                                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                                      decoration: BoxDecoration(
-                                                        color: AppTheme.accentCoral.withOpacity(0.08),
-                                                        borderRadius: BorderRadius.circular(9999),
-                                                        border: Border.all(
-                                                          color: AppTheme.accentCoral.withOpacity(0.2),
-                                                          width: 1.0,
-                                                        ),
-                                                      ),
-                                                      child: Text(
-                                                        'Sneaky ${ing.sneakyNameFor}',
-                                                        style: const TextStyle(
-                                                          color: AppTheme.accentCoral,
-                                                          fontSize: 8,
-                                                          fontWeight: FontWeight.bold,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                ],
-                                              ),
-                                              const SizedBox(height: 2),
-                                              Text(
-                                                ing.meaning,
-                                                style: TextStyle(
-                                                  color: isDark ? Colors.white.withOpacity(0.5) : AppTheme.textSecondary,
-                                                  fontSize: 11.5,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                        const SizedBox(width: 12),
-                                        Center(
-                                          child: AnimatedRotation(
-                                            turns: isExpanded ? 0.5 : 0.0,
-                                            duration: const Duration(milliseconds: 200),
-                                            child: Icon(
-                                              Icons.keyboard_arrow_down_rounded,
-                                              color: isDark ? Colors.white70 : AppTheme.textSecondary,
-                                              size: 20,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    if (isExpanded) ...[
-                                      const SizedBox(height: 14),
-                                      Container(
-                                        width: double.infinity,
-                                        padding: const EdgeInsets.all(12),
-                                        decoration: BoxDecoration(
-                                          color: isDark ? Colors.black.withOpacity(0.2) : Colors.black.withOpacity(0.02),
-                                          borderRadius: BorderRadius.circular(12),
-                                        ),
-                                        child: Text(
-                                          ing.description,
-                                          style: TextStyle(
-                                            color: isDark ? Colors.white.withOpacity(0.8) : AppTheme.textSecondary,
-                                            fontSize: 12.5,
-                                            height: 1.45,
-                                          ),
+                                    Container(
+                                      width: 32,
+                                      height: 32,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: safetyColor.withOpacity(0.12),
+                                        border: Border.all(color: safetyColor.withOpacity(0.3), width: 1.5),
+                                      ),
+                                      alignment: Alignment.center,
+                                      child: Text(
+                                        ing.safety.substring(0, 1).toUpperCase(),
+                                        style: TextStyle(
+                                          color: safetyColor,
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w900,
                                         ),
                                       ),
-                                    ],
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              Expanded(
+                                                child: Text(
+                                                  ing.name,
+                                                  style: TextStyle(
+                                                    color: isDark ? Colors.white : AppTheme.textPrimary,
+                                                    fontSize: 14,
+                                                    fontWeight: FontWeight.w900,
+                                                  ),
+                                                ),
+                                              ),
+                                              if (ing.sneakyNameFor != 'None')
+                                                Container(
+                                                  margin: const EdgeInsets.only(left: 6),
+                                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                                  decoration: BoxDecoration(
+                                                    color: AppTheme.accentCoral.withOpacity(0.08),
+                                                    borderRadius: BorderRadius.circular(9999),
+                                                    border: Border.all(
+                                                      color: AppTheme.accentCoral.withOpacity(0.2),
+                                                      width: 1.0,
+                                                    ),
+                                                  ),
+                                                  child: Text(
+                                                    'Sneaky ${ing.sneakyNameFor}',
+                                                    style: const TextStyle(
+                                                      color: AppTheme.accentCoral,
+                                                      fontSize: 8,
+                                                      fontWeight: FontWeight.bold,
+                                                    ),
+                                                  ),
+                                                ),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            ing.meaning,
+                                            style: TextStyle(
+                                              color: isDark ? Colors.white.withOpacity(0.5) : AppTheme.textSecondary,
+                                              fontSize: 11.5,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Center(
+                                      child: AnimatedRotation(
+                                        turns: isExpanded ? 0.5 : 0.0,
+                                        duration: const Duration(milliseconds: 200),
+                                        child: Icon(
+                                          Icons.keyboard_arrow_down_rounded,
+                                          color: isDark ? Colors.white70 : AppTheme.textSecondary,
+                                          size: 20,
+                                        ),
+                                      ),
+                                    ),
                                   ],
                                 ),
-                              ),
-                              Positioned(
-                                left: 0,
-                                top: 0,
-                                bottom: 0,
-                                child: Container(
-                                  width: 4,
-                                  decoration: BoxDecoration(
-                                    color: safetyColor,
-                                    borderRadius: const BorderRadius.only(
-                                      topLeft: Radius.circular(16),
-                                      bottomLeft: Radius.circular(16),
+                                if (isExpanded) ...[
+                                  const SizedBox(height: 14),
+                                  Container(
+                                    width: double.infinity,
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: isDark ? Colors.black.withOpacity(0.2) : Colors.black.withOpacity(0.02),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Text(
+                                      ing.description,
+                                      style: TextStyle(
+                                        color: isDark ? Colors.white.withOpacity(0.8) : AppTheme.textSecondary,
+                                        fontSize: 12.5,
+                                        height: 1.45,
+                                      ),
                                     ),
                                   ),
-                                ),
-                              ),
-                            ],
+                                ],
+                              ],
+                            ),
                           ),
                         ),
                       );
@@ -1286,47 +1250,28 @@ class _UnifiedProductDetailScreenState extends ConsumerState<UnifiedProductDetai
           );
         }
 
-        return Stack(
-          children: [
-            Container(
-              padding: const EdgeInsets.fromLTRB(24, 18, 18, 18),
-              decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF141618) : Colors.black.withOpacity(0.015),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder, width: 1.0),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  topRow,
-                  const SizedBox(height: 12),
-                  Text(
-                    description,
-                    style: TextStyle(
-                      color: isDark ? Colors.white.withOpacity(0.7) : AppTheme.textSecondary,
-                      fontSize: 12.5,
-                      height: 1.45,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Positioned(
-              left: 0,
-              top: 0,
-              bottom: 0,
-              child: Container(
-                width: 4,
-                decoration: BoxDecoration(
-                  color: accentColor,
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(16),
-                    bottomLeft: Radius.circular(16),
-                  ),
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF141618) : Colors.black.withOpacity(0.015),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder, width: 1.0),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              topRow,
+              const SizedBox(height: 12),
+              Text(
+                description,
+                style: TextStyle(
+                  color: isDark ? Colors.white.withOpacity(0.7) : AppTheme.textSecondary,
+                  fontSize: 12.5,
+                  height: 1.45,
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         );
       },
     );
