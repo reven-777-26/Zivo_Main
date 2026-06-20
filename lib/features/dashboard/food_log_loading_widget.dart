@@ -71,133 +71,135 @@ class _FoodLogLoadingWidgetState extends State<FoodLogLoadingWidget> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          // 1. Sonar style loader (style: 2)
-          const ZivoLoader(
-            size: 54,
-            style: 2,
-            strokeWidth: 2.2,
-          ),
-          const SizedBox(height: 16),
-          
-          // 2. Active Step Indicator Card
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            width: 240,
-            decoration: BoxDecoration(
-              color: isDark ? Colors.white.withOpacity(0.04) : Colors.black.withOpacity(0.02),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.04),
-                width: 1.0,
-              ),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // 1. Sonar style loader (style: 2)
+            const ZivoLoader(
+              size: 54,
+              style: 2,
+              strokeWidth: 2.2,
             ),
-            child: Column(
-              children: [
-                AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 300),
-                  layoutBuilder: (Widget? currentChild, List<Widget> previousChildren) {
-                    return Stack(
-                      alignment: Alignment.center,
-                      children: <Widget>[
-                        ...previousChildren,
-                        if (currentChild != null) currentChild,
-                      ],
-                    );
-                  },
-                  child: SizedBox(
-                    key: ValueKey<int>(_currentStep),
-                    width: double.infinity,
-                    child: Text(
-                      _steps[_currentStep],
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                        color: isDark ? Colors.white : AppTheme.textPrimary,
-                      ),
-                    ),
-                  ),
+            const SizedBox(height: 16),
+            
+            // 2. Active Step Indicator Card
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              width: 240,
+              decoration: BoxDecoration(
+                color: isDark ? Colors.white.withOpacity(0.04) : Colors.black.withOpacity(0.02),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.04),
+                  width: 1.0,
                 ),
-                const SizedBox(height: 8),
-                // Progress Bar Indicator
-                Container(
-                  width: 180,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: isDark ? Colors.white24 : Colors.black12,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                  child: Stack(
-                    children: [
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 1400),
-                        width: 180 * ((_currentStep + 1) / _steps.length),
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFD9FF00),
-                          borderRadius: BorderRadius.circular(2),
+              ),
+              child: Column(
+                children: [
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    layoutBuilder: (Widget? currentChild, List<Widget> previousChildren) {
+                      return Stack(
+                        alignment: Alignment.center,
+                        children: <Widget>[
+                          ...previousChildren,
+                          if (currentChild != null) currentChild,
+                        ],
+                      );
+                    },
+                    child: SizedBox(
+                      key: ValueKey<int>(_currentStep),
+                      width: double.infinity,
+                      child: Text(
+                        _steps[_currentStep],
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: isDark ? Colors.white : AppTheme.textPrimary,
                         ),
                       ),
-                    ],
+                    ),
                   ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 18),
-
-          // 3. Rotating Facts section
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            constraints: const BoxConstraints(minHeight: 40),
-            child: Column(
-              children: [
-                Text(
-                  "DID YOU KNOW?",
-                  style: TextStyle(
-                    fontSize: 10,
-                    letterSpacing: 1.2,
-                    fontWeight: FontWeight.w900,
-                    color: isDark ? const Color(0xFFD9FF00) : AppTheme.accentCyan,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 400),
-                  layoutBuilder: (Widget? currentChild, List<Widget> previousChildren) {
-                    return Stack(
-                      alignment: Alignment.topCenter,
-                      children: <Widget>[
-                        ...previousChildren,
-                        if (currentChild != null) currentChild,
+                  const SizedBox(height: 8),
+                  // Progress Bar Indicator
+                  Container(
+                    width: 180,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: isDark ? Colors.white24 : Colors.black12,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                    child: Stack(
+                      children: [
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 1400),
+                          width: 180 * ((_currentStep + 1) / _steps.length),
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFD9FF00),
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
                       ],
-                    );
-                  },
-                  transitionBuilder: (Widget child, Animation<double> animation) {
-                    return FadeTransition(opacity: animation, child: child);
-                  },
-                  child: SizedBox(
-                    key: ValueKey<int>(_currentFact),
-                    width: double.infinity,
-                    child: Text(
-                      _facts[_currentFact],
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 13,
-                        height: 1.4,
-                        color: isDark ? Colors.white70 : AppTheme.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 18),
+  
+            // 3. Rotating Facts section
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              constraints: const BoxConstraints(minHeight: 40),
+              child: Column(
+                children: [
+                  Text(
+                    "DID YOU KNOW?",
+                    style: TextStyle(
+                      fontSize: 10,
+                      letterSpacing: 1.2,
+                      fontWeight: FontWeight.w900,
+                      color: isDark ? const Color(0xFFD9FF00) : AppTheme.accentCyan,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 400),
+                    layoutBuilder: (Widget? currentChild, List<Widget> previousChildren) {
+                      return Stack(
+                        alignment: Alignment.topCenter,
+                        children: <Widget>[
+                          ...previousChildren,
+                          if (currentChild != null) currentChild,
+                        ],
+                      );
+                    },
+                    transitionBuilder: (Widget child, Animation<double> animation) {
+                      return FadeTransition(opacity: animation, child: child);
+                    },
+                    child: SizedBox(
+                      key: ValueKey<int>(_currentFact),
+                      width: double.infinity,
+                      child: Text(
+                        _facts[_currentFact],
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 13,
+                          height: 1.4,
+                          color: isDark ? Colors.white70 : AppTheme.textSecondary,
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

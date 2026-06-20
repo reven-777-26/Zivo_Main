@@ -1864,8 +1864,13 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
                     duration: const Duration(milliseconds: 250),
                     curve: Curves.easeInOut,
                     constraints: BoxConstraints(
-                      maxWidth: _isLoading ? 310 : 500,
-                      maxHeight: _isLoading ? 340 : MediaQuery.of(context).size.height * 0.85,
+                      maxWidth: _isLoading
+                          ? (MediaQuery.of(context).size.width - 40).clamp(280.0, 310.0)
+                          : 500,
+                      minHeight: _isLoading ? 340 : 0,
+                      maxHeight: _isLoading
+                          ? MediaQuery.of(context).size.height * 0.8
+                          : MediaQuery.of(context).size.height * 0.85,
                     ),
                     decoration: BoxDecoration(
                       color: isDark

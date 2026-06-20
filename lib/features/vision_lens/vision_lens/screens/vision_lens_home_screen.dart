@@ -320,8 +320,12 @@ class _VisionLensHomeScreenState extends ConsumerState<VisionLensHomeScreen> wit
               onWillPop: () async => false,
               child: Center(
                 child: Container(
-                  padding: const EdgeInsets.all(32),
-                  margin: const EdgeInsets.symmetric(horizontal: 40),
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                  margin: const EdgeInsets.symmetric(horizontal: 24),
+                  constraints: BoxConstraints(
+                    maxWidth: (MediaQuery.of(context).size.width - 48).clamp(280.0, 330.0),
+                    maxHeight: MediaQuery.of(context).size.height * 0.8,
+                  ),
                   decoration: BoxDecoration(
                     color: isDark ? const Color(0xFF141618) : AppTheme.glassBackground,
                     borderRadius: BorderRadius.circular(24),

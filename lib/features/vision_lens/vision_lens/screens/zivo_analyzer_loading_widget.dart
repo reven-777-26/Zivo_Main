@@ -134,198 +134,204 @@ class _ZivoAnalyzerLoadingWidgetState extends State<ZivoAnalyzerLoadingWidget> {
     final factIndex = _currentFact % activeFactsList.length;
 
     // Use absolute layout sizes to prevent glitchy jumps when layout content size fluctuates
-    return SizedBox(
-      width: 280,
-      height: 330,
+    return Container(
+      constraints: const BoxConstraints(
+        maxWidth: 320,
+      ),
       child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // 1. Sonar style loader (style: 2)
-            const ZivoLoader(
-              size: 54,
-              style: 2,
-              strokeWidth: 2.2,
-            ),
-            const SizedBox(height: 20),
-
-            // 2. Category detected indicator (conditionally shown, keeping space stable)
-            AnimatedSize(
-              duration: const Duration(milliseconds: 200),
-              curve: Curves.easeInOut,
-              child: categoryHeader.isNotEmpty
-                  ? Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      margin: const EdgeInsets.only(bottom: 16),
-                      decoration: BoxDecoration(
-                        color: isDark ? const Color(0xFF141618) : Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: isDark ? const Color(0xFF2C2C2E) : Colors.black.withOpacity(0.06),
-                          width: 1.0,
-                        ),
-                      ),
-                      child: Column(
-                        children: [
-                          Text(
-                            categoryHeader,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFFD9FF00),
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            categorySubtitle,
-                            style: TextStyle(
-                              fontSize: 10,
-                              color: isDark ? Colors.white60 : AppTheme.textSecondary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                  : const SizedBox.shrink(),
-            ),
-
-            // 3. Step Progression Card - match the food log card style exactly (SS1 & SS2)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              width: 260,
-              decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF141618) : Colors.white,
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(
-                  color: isDark ? const Color(0xFF2C2C2E) : Colors.black.withOpacity(0.06),
-                  width: 1.0,
-                ),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // 1. Sonar style loader (style: 2)
+              const ZivoLoader(
+                size: 54,
+                style: 2,
+                strokeWidth: 2.2,
               ),
-              child: Column(
-                children: [
-                  SizedBox(
-                    height: 20,
-                    child: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 300),
-                      layoutBuilder: (Widget? currentChild, List<Widget> previousChildren) {
-                        return Stack(
-                          alignment: Alignment.center,
-                          children: <Widget>[
-                            ...previousChildren,
-                            if (currentChild != null) currentChild,
+              const SizedBox(height: 20),
+
+              // 2. Category detected indicator (conditionally shown, keeping space stable)
+              AnimatedSize(
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeInOut,
+                child: categoryHeader.isNotEmpty
+                    ? Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        margin: const EdgeInsets.only(bottom: 16),
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0xFF141618) : Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: isDark ? const Color(0xFF2C2C2E) : Colors.black.withOpacity(0.06),
+                            width: 1.0,
+                          ),
+                        ),
+                        child: Column(
+                          children: [
+                            Text(
+                              categoryHeader,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFFD9FF00),
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              categorySubtitle,
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: isDark ? Colors.white60 : AppTheme.textSecondary,
+                              ),
+                            ),
                           ],
-                        );
-                      },
-                      child: SizedBox(
-                        key: ValueKey<int>(_currentStep),
-                        width: double.infinity,
-                        child: Text(
-                          _steps[_currentStep],
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                            color: isDark ? Colors.white : AppTheme.textPrimary,
+                        ),
+                      )
+                    : const SizedBox.shrink(),
+              ),
+
+              // 3. Step Progression Card
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF141618) : Colors.white,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(
+                    color: isDark ? const Color(0xFF2C2C2E) : Colors.black.withOpacity(0.06),
+                    width: 1.0,
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(minHeight: 24),
+                      child: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 300),
+                        layoutBuilder: (Widget? currentChild, List<Widget> previousChildren) {
+                          return Stack(
+                            alignment: Alignment.center,
+                            children: <Widget>[
+                              ...previousChildren,
+                              if (currentChild != null) currentChild,
+                            ],
+                          );
+                        },
+                        child: Container(
+                          key: ValueKey<int>(_currentStep),
+                          width: double.infinity,
+                          alignment: Alignment.center,
+                          child: Text(
+                            _steps[_currentStep],
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              color: isDark ? Colors.white : AppTheme.textPrimary,
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  // Progress Bar
-                  Container(
-                    width: 200,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: isDark ? Colors.white24 : Colors.black12,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                    child: Stack(
-                      children: [
-                        AnimatedContainer(
-                          duration: const Duration(milliseconds: 1400),
-                          width: 200 * ((_currentStep + 1) / _steps.length),
+                    const SizedBox(height: 8),
+                    // Progress Bar
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        final barWidth = constraints.maxWidth > 200.0 ? 200.0 : constraints.maxWidth;
+                        return Container(
+                          width: barWidth,
                           height: 4,
                           decoration: BoxDecoration(
-                            color: const Color(0xFFD9FF00),
+                            color: isDark ? Colors.white24 : Colors.black12,
                             borderRadius: BorderRadius.circular(2),
                           ),
-                        ),
-                      ],
+                          child: Stack(
+                            children: [
+                              AnimatedContainer(
+                                duration: const Duration(milliseconds: 1400),
+                                width: barWidth * ((_currentStep + 1) / _steps.length),
+                                height: 4,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFD9FF00),
+                                  borderRadius: BorderRadius.circular(2),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
                     ),
-                  ),
-                  if (widget.progressMessage.isNotEmpty && !widget.progressMessage.startsWith("AI is analyzing")) ...[
-                    const SizedBox(height: 8),
+                    if (widget.progressMessage.isNotEmpty && !widget.progressMessage.startsWith("AI is analyzing")) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        widget.progressMessage,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: isDark ? Colors.white38 : Colors.black38,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // 4. Rotating Facts Section
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Column(
+                  children: [
                     Text(
-                      widget.progressMessage,
-                      textAlign: TextAlign.center,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                      "DID YOU KNOW?",
                       style: TextStyle(
                         fontSize: 10,
-                        color: isDark ? Colors.white38 : Colors.black38,
-                        fontStyle: FontStyle.italic,
+                        letterSpacing: 1.2,
+                        fontWeight: FontWeight.w900,
+                        color: isDark ? const Color(0xFFD9FF00) : AppTheme.accentCyan,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(minHeight: 52),
+                      child: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 400),
+                        layoutBuilder: (Widget? currentChild, List<Widget> previousChildren) {
+                          return Stack(
+                            alignment: Alignment.topCenter,
+                            children: <Widget>[
+                              ...previousChildren,
+                              if (currentChild != null) currentChild,
+                            ],
+                          );
+                        },
+                        transitionBuilder: (Widget child, Animation<double> animation) {
+                          return FadeTransition(opacity: animation, child: child);
+                        },
+                        child: Container(
+                          key: ValueKey<String>(activeFactsList[factIndex]),
+                          width: double.infinity,
+                          alignment: Alignment.topCenter,
+                          child: Text(
+                            activeFactsList[factIndex],
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 12,
+                              height: 1.4,
+                              color: isDark ? Colors.white70 : AppTheme.textSecondary,
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                   ],
-                ],
+                ),
               ),
-            ),
-            const SizedBox(height: 20),
-
-            // 4. Rotating Facts Section
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Column(
-                children: [
-                  Text(
-                    "DID YOU KNOW?",
-                    style: TextStyle(
-                      fontSize: 10,
-                      letterSpacing: 1.2,
-                      fontWeight: FontWeight.w900,
-                      color: isDark ? const Color(0xFFD9FF00) : AppTheme.accentCyan,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  SizedBox(
-                    height: 40,
-                    child: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 400),
-                      layoutBuilder: (Widget? currentChild, List<Widget> previousChildren) {
-                        return Stack(
-                          alignment: Alignment.topCenter,
-                          children: <Widget>[
-                            ...previousChildren,
-                            if (currentChild != null) currentChild,
-                          ],
-                        );
-                      },
-                      transitionBuilder: (Widget child, Animation<double> animation) {
-                        return FadeTransition(opacity: animation, child: child);
-                      },
-                      child: SizedBox(
-                        key: ValueKey<String>(activeFactsList[factIndex]),
-                        width: double.infinity,
-                        child: Text(
-                          activeFactsList[factIndex],
-                          textAlign: TextAlign.center,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 12,
-                            height: 1.4,
-                            color: isDark ? Colors.white70 : AppTheme.textSecondary,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

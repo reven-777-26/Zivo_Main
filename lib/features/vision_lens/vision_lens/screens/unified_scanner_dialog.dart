@@ -303,10 +303,13 @@ class _UnifiedVisionScannerDialogState extends ConsumerState<UnifiedVisionScanne
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 250),
               curve: Curves.easeInOut,
-              width: isScanning ? 300 : 480,
-              height: isScanning ? 350 : null, // Let scanner auto-wrap, keep loading box fixed
+              width: isScanning
+                  ? (MediaQuery.of(context).size.width - 40).clamp(280.0, 330.0)
+                  : 480,
+              height: null,
               constraints: BoxConstraints(
-                maxHeight: isScanning ? 350 : MediaQuery.of(context).size.height * 0.8,
+                minHeight: isScanning ? 350 : 0,
+                maxHeight: MediaQuery.of(context).size.height * 0.8,
               ),
               decoration: BoxDecoration(
                 color: isDark
