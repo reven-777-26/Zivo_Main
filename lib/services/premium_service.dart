@@ -8,8 +8,13 @@ import 'storage_service.dart';
 class PremiumService {
   /// Returns the trial start date/time. If it doesn't exist, initializes it to now.
   static DateTime getTrialStartDate() {
-    // Force the trial to have started 5 days ago (so it is expired)
-    return DateTime.now().subtract(const Duration(days: 5));
+    final saved = StorageService.getTrialStartTime();
+    if (saved != null) {
+      return DateTime.fromMillisecondsSinceEpoch(saved);
+    }
+    final now = DateTime.now();
+    StorageService.saveTrialStartTime(now.millisecondsSinceEpoch);
+    return now;
   }
 
 

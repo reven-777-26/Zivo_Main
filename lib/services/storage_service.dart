@@ -1337,4 +1337,14 @@ class StorageService {
   static Future<void> savePremiumPlanType(String planType) async {
     await _reminderBox.put('premium_plan_type', {'val': planType});
   }
+
+  static int? getTrialStartTime() {
+    final raw = _reminderBox.get('trial_start_time');
+    if (raw == null) return null;
+    return raw['val'] as int?;
+  }
+
+  static Future<void> saveTrialStartTime(int timestamp) async {
+    await _reminderBox.put('trial_start_time', {'val': timestamp});
+  }
 }
