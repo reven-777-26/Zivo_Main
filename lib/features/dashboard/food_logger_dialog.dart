@@ -148,6 +148,8 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
 
   // Photo flow states
   String? _selectedImageBase64;
+  String _lastAnalysisType = 'image';
+  String _lastAnalysisContent = '';
 
   // Voice flow states
   final stt.SpeechToText _speech = stt.SpeechToText();
@@ -508,8 +510,16 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
           TextEditingController(text: _selectedFood!.fat.toString());
 
       // Smart Parse serving size and unit!
-      final parsed = _parseServingInfo(_selectedFood!.foodName);
-      final double initialSize = _selectedFood!.servingSize ?? parsed['size'];
+      String queryText = _selectedFood!.foodName;
+      if (_lastAnalysisType != 'image' && _lastAnalysisContent.isNotEmpty) {
+        queryText = _lastAnalysisContent;
+      }
+      final parsed = _parseServingInfo(queryText);
+      final double parsedSize = parsed['size'];
+      double initialSize = _selectedFood!.servingSize ?? parsedSize;
+      if (parsedSize > 1.0 && (_selectedFood!.servingSize == null || _selectedFood!.servingSize == 1.0)) {
+        initialSize = parsedSize;
+      }
       final String rawUnit = _selectedFood!.servingUnit ?? parsed['unit'];
       final String initialUnit = _normalizeServingUnit(rawUnit);
 
@@ -1276,10 +1286,33 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
     }
 
     // 2. Detect size
+    final wordNumbers = {
+      'one': 1.0,
+      'two': 2.0,
+      'three': 3.0,
+      'four': 4.0,
+      'five': 5.0,
+      'six': 6.0,
+      'seven': 7.0,
+      'eight': 8.0,
+      'nine': 9.0,
+      'ten': 10.0,
+      'a': 1.0,
+      'an': 1.0,
+    };
+
     final numReg = RegExp(r'\b(\d+(\.\d+)?)\b');
     final match = numReg.firstMatch(cleanText);
     if (match != null) {
       size = double.tryParse(match.group(1)!) ?? 1.0;
+    } else {
+      final words = cleanText.split(RegExp(r'[^a-zA-Z]'));
+      for (final word in words) {
+        if (wordNumbers.containsKey(word)) {
+          size = wordNumbers[word]!;
+          break;
+        }
+      }
     }
 
     return {'size': size, 'unit': unit};
@@ -1457,6 +1490,8 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
 
   // Gemini API Integration via Cloud Function
   Future<void> _runGeminiAnalysis(String type, String content) async {
+    _lastAnalysisType = type;
+    _lastAnalysisContent = content;
     String optimizedContent = content;
     if (type == 'image') {
       setState(() {
