@@ -66,10 +66,6 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       AudioService.playAppOpen();
-      showWebNotification(
-        '💪 Zivo Active & Ready!',
-        'Push reminders and notification systems are fully integrated. Stay on track!',
-      );
       _checkWidgetSync();
       
       // Perform a one-time sync on launch to catch any offline edits from the previous session
@@ -1648,116 +1644,6 @@ class _ProfilePlaceholderScreenState
                 ],
               ),
             ),
-
-            // ── 5. APPEARANCE ACCORDION ──
-            _buildAccordionSection(
-              title: '🎨  Appearance',
-              sectionKey: 'appearance',
-              content: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Dark mode toggle
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Obsidian Dark Mode',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 15,
-                              color: Colors.white,
-                            ),
-                          ),
-                          SizedBox(height: 2),
-                          Text(
-                            'Premium velvet midnight aesthetic',
-                            style: TextStyle(
-                              color: AppTheme.textSecondary,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      ),
-                      Switch(
-                        value: isDark,
-                        activeColor: accentColor,
-                        onChanged: (val) {
-                          ref.read(themeModeProvider.notifier).state =
-                              val ? ThemeMode.dark : ThemeMode.light;
-                        },
-                      ),
-                    ],
-                  ),
-                  const Divider(color: AppTheme.glassBorder, height: 24),
-
-                  // Accent Color Picker
-                  const Text(
-                    'ACCENT COLOR',
-                    style: TextStyle(
-                      color: AppTheme.textSecondary,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.0,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  _buildAccentColorPicker(),
-                  const SizedBox(height: 16),
-                  const Divider(color: AppTheme.glassBorder, height: 24),
-
-                  // Custom Background selector
-                  () {
-                    final customBg = ref.watch(customBackgroundProvider);
-                    final hasBg = customBg != null && customBg.isNotEmpty;
-                    return GestureDetector(
-                      onTap: () {
-                        if (hasBg) {
-                          showModalBottomSheet(
-                            context: context,
-                            backgroundColor: isDark ? const Color(0xFF121214) : Colors.white,
-                            shape: const RoundedRectangleBorder(
-                              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-                            ),
-                            builder: (context) {
-                              return SafeArea(
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    ListTile(
-                                      leading: Icon(Icons.wallpaper_rounded, color: accentColor),
-                                      title: Text(
-                                        'Change Wallpaper',
-                                        style: TextStyle(
-                                          color: isDark ? Colors.white : AppTheme.textPrimary,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                      onTap: () {
-                                        Navigator.pop(context);
-                                        ImagePickerHelper.pickImage((base64, name, filePath) {
-                                          ref.read(customBackgroundProvider.notifier).state = base64;
-                                          StorageService.saveCustomBackground(base64);
-                                          FirebaseService.saveCustomBackgroundCloud(base64);
-                                        });
-                                      },
-                                    ),
-                                    ListTile(
-                                      leading: const Icon(Icons.delete_rounded, color: AppTheme.accentCoral),
-                                      title: const Text(
-                                        'Remove Wallpaper',
-                                        style: TextStyle(
-                                          color: AppTheme.accentCoral,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                      onTap: () {
-                                        Navigator.pop(context);
-                                        ref.read(customBackgroundProvider.notifier).state = null;
-                                        StorageService.saveCustomBackground(null);
-                                        FirebaseService.saveCustomBackgroundCloud(null);
                                       },
                                     ),
                                     ListTile(

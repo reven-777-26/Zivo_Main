@@ -5711,7 +5711,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                       child: Text(
                                         'AURA AI HEALTH INSIGHTS',
                                         style: TextStyle(
-                                          color: AppTheme.accentOrange,
+                                          color: Color(0xFFD9FF00), // Lime Green color
                                           fontSize: 10,
                                           fontWeight: FontWeight.bold,
                                           letterSpacing: 1.5,
@@ -5720,7 +5720,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                     ),
                                     ...displayAura.map((notif) {
                                       IconData icon = Icons.lightbulb_rounded;
-                                      Color color = AppTheme.accentOrange;
+                                      Color color = AppTheme.accentCyan; // Replaced accentOrange fallback with Cyan
 
                                       if (notif.title.contains('Metabolic')) {
                                         icon = Icons.bolt_rounded;
