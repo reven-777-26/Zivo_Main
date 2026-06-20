@@ -1568,11 +1568,42 @@ class _VisionLensHomeScreenState extends ConsumerState<VisionLensHomeScreen> wit
     String selectedMealKey = initialMealKey;
     bool isEditing = isDayEnded ? false : startInEditMode;
 
+    final String? imageUrl = item['imageUrl'];
+    final bool hasRealImage = imageUrl != null &&
+        imageUrl.isNotEmpty &&
+        !imageUrl.contains('aida-public') &&
+        !imageUrl.contains('photo-1546069901-ba9599a7e63c');
+
     return showDialog(
       context: context,
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setState) {
+            Widget buildMiniMacroIndicator(String label, String value, Color color) {
+              return Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    "$label:",
+                    style: const TextStyle(
+                      color: AppTheme.textSecondary,
+                      fontSize: 9,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(width: 2),
+                  Text(
+                    value,
+                    style: TextStyle(
+                      color: color,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
+              );
+            }
+
             final categories = [
               {'name': 'Breakfast', 'key': 'breakfast_cal', 'icon': Icons.egg_rounded},
               {'name': 'Lunch', 'key': 'lunch_cal', 'icon': Icons.restaurant_rounded},
@@ -1590,10 +1621,10 @@ class _VisionLensHomeScreenState extends ConsumerState<VisionLensHomeScreen> wit
                   filter: ui.ImageFilter.blur(sigmaX: 20, sigmaY: 20),
                   child: Container(
                     decoration: BoxDecoration(
-                      color: isDark ? const Color(0xEC1C1E1B) : Colors.white,
+                      color: isDark ? const Color(0xFF0E0F0C) : Colors.white,
                       borderRadius: BorderRadius.circular(24),
                       border: Border.all(
-                        color: isDark ? const Color(0xFF323530) : AppTheme.glassBorder,
+                        color: isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder,
                         width: 1.0,
                       ),
                     ),
@@ -1602,18 +1633,19 @@ class _VisionLensHomeScreenState extends ConsumerState<VisionLensHomeScreen> wit
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        // Header Row: Close Button & Category
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             if (!isEditing)
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                 decoration: BoxDecoration(
-                                  color: AppTheme.accentPurple.withOpacity(0.08),
+                                  color: AppTheme.accentCyan.withOpacity(0.06),
                                   borderRadius: BorderRadius.circular(20),
                                   border: Border.all(
-                                    color: AppTheme.accentPurple.withOpacity(0.3),
-                                    width: 1.2,
+                                    color: AppTheme.accentCyan.withOpacity(0.3),
+                                    width: 1.0,
                                   ),
                                 ),
                                 child: Text(
@@ -1621,10 +1653,10 @@ class _VisionLensHomeScreenState extends ConsumerState<VisionLensHomeScreen> wit
                                       ? 'EATING OUT'
                                       : selectedMealKey.replaceAll('_cal', '').replaceAll('_', ' ').toUpperCase(),
                                   style: const TextStyle(
-                                    color: AppTheme.accentPurple,
+                                    color: AppTheme.accentCyan,
                                     fontWeight: FontWeight.w900,
-                                    fontSize: 10,
-                                    letterSpacing: 0.8,
+                                    fontSize: 9,
+                                    letterSpacing: 0.5,
                                   ),
                                 ),
                               )
@@ -1632,12 +1664,13 @@ class _VisionLensHomeScreenState extends ConsumerState<VisionLensHomeScreen> wit
                               const Text(
                                 'EDIT ENTRY',
                                 style: TextStyle(
-                                  color: AppTheme.accentPurple,
+                                  color: AppTheme.accentCyan,
                                   fontWeight: FontWeight.w900,
                                   fontSize: 11,
                                   letterSpacing: 1.0,
                                 ),
                               ),
+                            // Close button
                             GestureDetector(
                               onTap: () => Navigator.of(context).pop(),
                               child: Container(
@@ -1720,6 +1753,7 @@ class _VisionLensHomeScreenState extends ConsumerState<VisionLensHomeScreen> wit
                           const SizedBox(height: 16),
                         ],
 
+                        // Meal Name
                         if (!isEditing)
                           Text(
                             nameController.text,
@@ -1746,25 +1780,26 @@ class _VisionLensHomeScreenState extends ConsumerState<VisionLensHomeScreen> wit
                             style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
                             decoration: InputDecoration(
                               filled: true,
-                              fillColor: Colors.white.withOpacity(0.02),
+                              fillColor: isDark ? const Color(0xFF121214) : Colors.black.withOpacity(0.02),
                               contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                               border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(14),
-                                borderSide: BorderSide(color: Colors.white.withOpacity(0.08)),
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(color: isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder),
                               ),
                               enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(14),
-                                borderSide: BorderSide(color: Colors.white.withOpacity(0.08)),
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(color: isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder),
                               ),
                               focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(14),
-                                borderSide: const BorderSide(color: AppTheme.accentCyan),
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(color: AppTheme.accentCyan, width: 1.5),
                               ),
                             ),
                           ),
                         ],
                         const SizedBox(height: 8),
 
+                        // Time indicator row
                         if (!isEditing)
                           Row(
                             children: [
@@ -1785,39 +1820,22 @@ class _VisionLensHomeScreenState extends ConsumerState<VisionLensHomeScreen> wit
                             ],
                           ),
 
-                        if (item['imageUrl'] != null && (item['imageUrl'] as String).isNotEmpty) ...[
+                        if (hasRealImage) ...[
                           const SizedBox(height: 16),
                           ClipRRect(
                             borderRadius: BorderRadius.circular(16),
-                            child: Container(
-                              width: double.infinity,
-                              height: 140,
-                              decoration: BoxDecoration(
-                                color: isDark ? const Color(0xFF1E1C1F) : const Color(0xFFF5F5F7),
-                                border: Border.all(
-                                  color: Colors.white.withOpacity(0.06),
-                                ),
-                              ),
-                              child: () {
-                                final imgStr = item['imageUrl'] as String;
-                                if (imgStr.startsWith('http')) {
-                                  return Image.network(
-                                    imgStr,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (context, error, stackTrace) {
-                                      return Container(
-                                        color: Colors.white.withOpacity(0.015),
-                                        child: Center(
-                                          child: Icon(
-                                            Icons.restaurant_rounded,
-                                            color: Colors.white.withOpacity(0.2),
-                                            size: 32,
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                  );
-                                }
+                            child: () {
+                              final imgStr = imageUrl;
+                              Widget? imageWidget;
+                              if (imgStr.startsWith('http')) {
+                                imageWidget = Image.network(
+                                  imgStr,
+                                  fit: BoxFit.cover,
+                                  height: 160,
+                                  width: double.infinity,
+                                  errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
+                                );
+                              } else {
                                 try {
                                   String cleaned = imgStr;
                                   final commaIndex = cleaned.indexOf(',');
@@ -1825,49 +1843,33 @@ class _VisionLensHomeScreenState extends ConsumerState<VisionLensHomeScreen> wit
                                     cleaned = cleaned.substring(commaIndex + 1);
                                   }
                                   cleaned = cleaned.replaceAll(RegExp(r'\s+'), '');
-                                  return Image.memory(
+                                  imageWidget = Image.memory(
                                     base64Decode(cleaned),
                                     fit: BoxFit.cover,
-                                    errorBuilder: (context, error, stackTrace) {
-                                      return Container(
-                                        color: Colors.white.withOpacity(0.015),
-                                        child: Center(
-                                          child: Icon(
-                                            Icons.restaurant_rounded,
-                                            color: Colors.white.withOpacity(0.2),
-                                            size: 32,
-                                          ),
-                                        ),
-                                      );
-                                    },
+                                    height: 160,
+                                    width: double.infinity,
+                                    errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
                                   );
                                 } catch (e) {
-                                  return Container(
-                                    color: Colors.white.withOpacity(0.015),
-                                    child: Center(
-                                      child: Icon(
-                                        Icons.restaurant_rounded,
-                                        color: Colors.white.withOpacity(0.2),
-                                        size: 32,
-                                      ),
-                                    ),
-                                  );
+                                  imageWidget = const SizedBox.shrink();
                                 }
-                              }(),
-                            ),
+                              }
+                              return imageWidget;
+                            }(),
                           ),
                         ],
                         const SizedBox(height: 20),
 
+                        // Calories bento box
                         if (!isEditing)
                           Container(
                             width: double.infinity,
                             padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
                             decoration: BoxDecoration(
-                              color: Colors.orange.withOpacity(0.06),
+                              color: isDark ? AppTheme.accentCyan.withOpacity(0.04) : const Color(0xFFE2F6D5),
                               borderRadius: BorderRadius.circular(20),
                               border: Border.all(
-                                color: Colors.orange.withOpacity(0.25),
+                                color: isDark ? AppTheme.accentCyan.withOpacity(0.2) : const Color(0xFFC5EDAB),
                                 width: 1.2,
                               ),
                             ),
@@ -1879,22 +1881,22 @@ class _VisionLensHomeScreenState extends ConsumerState<VisionLensHomeScreen> wit
                                     Container(
                                       padding: const EdgeInsets.all(8),
                                       decoration: BoxDecoration(
-                                        color: Colors.orange.withOpacity(0.12),
+                                        color: isDark ? AppTheme.accentCyan.withOpacity(0.1) : const Color(0xFFC5EDAB),
                                         borderRadius: BorderRadius.circular(10),
                                       ),
-                                      child: const Text(
-                                        '🔥',
-                                        style: TextStyle(fontSize: 20),
+                                      child: const Center(
+                                        widthFactor: 1.0,
+                                        child: Text('🔥', style: TextStyle(fontSize: 20)),
                                       ),
                                     ),
                                     const SizedBox(width: 12),
                                     Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: const [
+                                      children: [
                                         Text(
                                           'CALORIES',
                                           style: TextStyle(
-                                            color: AppTheme.textSecondary,
+                                            color: isDark ? AppTheme.accentCyan : const Color(0xFF054D28),
                                             fontSize: 9,
                                             fontWeight: FontWeight.w900,
                                             letterSpacing: 0.8,
@@ -1903,7 +1905,7 @@ class _VisionLensHomeScreenState extends ConsumerState<VisionLensHomeScreen> wit
                                         Text(
                                           'Energy Output',
                                           style: TextStyle(
-                                            color: AppTheme.textSecondary,
+                                            color: isDark ? AppTheme.textSecondary : const Color(0xFF054D28),
                                             fontSize: 10,
                                             fontWeight: FontWeight.w500,
                                           ),
@@ -1914,8 +1916,8 @@ class _VisionLensHomeScreenState extends ConsumerState<VisionLensHomeScreen> wit
                                 ),
                                 Text(
                                   '${calController.text} kcal',
-                                  style: const TextStyle(
-                                    color: Colors.white,
+                                  style: TextStyle(
+                                    color: isDark ? Colors.white : AppTheme.textPrimary,
                                     fontSize: 18,
                                     fontWeight: FontWeight.w900,
                                   ),
@@ -1940,27 +1942,28 @@ class _VisionLensHomeScreenState extends ConsumerState<VisionLensHomeScreen> wit
                             style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
                             decoration: InputDecoration(
                               filled: true,
-                              fillColor: Colors.white.withOpacity(0.02),
+                              fillColor: isDark ? const Color(0xFF121214) : Colors.black.withOpacity(0.02),
                               contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                               suffixText: ' kcal',
                               suffixStyle: const TextStyle(color: AppTheme.textSecondary, fontSize: 12),
                               border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(14),
-                                borderSide: BorderSide(color: Colors.white.withOpacity(0.08)),
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(color: isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder),
                               ),
                               enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(14),
-                                borderSide: BorderSide(color: Colors.white.withOpacity(0.08)),
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(color: isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder),
                               ),
                               focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(14),
-                                borderSide: const BorderSide(color: AppTheme.accentCyan),
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(color: AppTheme.accentCyan, width: 1.5),
                               ),
                             ),
                           ),
                         ],
                         const SizedBox(height: 12),
 
+                        // Macros Splits
                         if (!isEditing)
                           Row(
                             children: [
@@ -1993,8 +1996,135 @@ class _VisionLensHomeScreenState extends ConsumerState<VisionLensHomeScreen> wit
                           ),
                         ],
 
+                        if (!isEditing && item['items'] != null && (item['items'] as List).isNotEmpty) ...[
+                          const SizedBox(height: 18),
+                          const Text(
+                            'MEAL BREAKDOWN',
+                            style: TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 1.0,
+                              color: AppTheme.textSecondary,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: isDark ? const Color(0xFF0C0D0B) : Colors.black.withOpacity(0.01),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: isDark ? const Color(0xFF232521) : AppTheme.glassBorder,
+                                width: 1.0,
+                              ),
+                            ),
+                            child: ListView.separated(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              itemCount: (item['items'] as List).length,
+                              separatorBuilder: (context, index) => Divider(
+                                color: isDark ? Colors.white.withOpacity(0.04) : Colors.black.withOpacity(0.04),
+                                height: 12,
+                              ),
+                              itemBuilder: (context, index) {
+                                final rawItem = (item['items'] as List)[index];
+                                final name = rawItem['name'] ?? rawItem['foodName'] ?? 'Ingredient';
+                                final sizeVal = rawItem['servingSize'] != null ? (rawItem['servingSize'] as num).toDouble() : 1.0;
+                                final sizeStr = sizeVal % 1 == 0 ? sizeVal.toInt().toString() : sizeVal.toString();
+                                final unit = rawItem['servingUnit'] ?? 'piece';
+                                final cal = rawItem['calories'] ?? 0;
+                                final prot = rawItem['protein'] ?? 0;
+                                final carb = rawItem['carbs'] ?? 0;
+                                final fat = rawItem['fat'] ?? 0;
+                                return Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 4.0),
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                        width: 6,
+                                        height: 6,
+                                        decoration: const BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: AppTheme.accentCyan,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Row(
+                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                              children: [
+                                                Text(
+                                                  name,
+                                                  style: TextStyle(
+                                                    color: isDark ? Colors.white : AppTheme.textPrimary,
+                                                    fontSize: 13,
+                                                    fontWeight: FontWeight.bold,
+                                                    letterSpacing: -0.2,
+                                                  ),
+                                                ),
+                                                Container(
+                                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                                  decoration: BoxDecoration(
+                                                    color: AppTheme.accentCyan.withOpacity(0.08),
+                                                    borderRadius: BorderRadius.circular(6),
+                                                  ),
+                                                  child: Text(
+                                                    "$sizeStr $unit",
+                                                    style: const TextStyle(
+                                                      color: AppTheme.accentCyan,
+                                                      fontSize: 10,
+                                                      fontWeight: FontWeight.w800,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Row(
+                                              children: [
+                                                Text(
+                                                  "$cal kcal",
+                                                  style: TextStyle(
+                                                    color: isDark ? Colors.white70 : Colors.black87,
+                                                    fontSize: 11,
+                                                    fontWeight: FontWeight.w800,
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 8),
+                                                Container(
+                                                  width: 3,
+                                                  height: 3,
+                                                  decoration: BoxDecoration(
+                                                    shape: BoxShape.circle,
+                                                    color: isDark ? Colors.white24 : Colors.black12,
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 8),
+                                                buildMiniMacroIndicator('P', '${prot}g', AppTheme.accentOrange),
+                                                const SizedBox(width: 8),
+                                                buildMiniMacroIndicator('C', '${carb}g', AppTheme.accentCyan),
+                                                const SizedBox(width: 8),
+                                                buildMiniMacroIndicator('F', '${fat}g', AppTheme.accentCoral),
+                                              ],
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        ],
+
                         const SizedBox(height: 24),
 
+                        // Buttons section
                         if (isDayEnded)
                           Container(
                             width: double.infinity,
@@ -2068,14 +2198,15 @@ class _VisionLensHomeScreenState extends ConsumerState<VisionLensHomeScreen> wit
                                     }
                                     Navigator.of(context).pop();
                                   },
-                                  child: Container(
-                                    height: 46,
+                                  child: AnimatedContainer(
+                                    duration: const Duration(milliseconds: 200),
+                                    height: 48,
                                     decoration: BoxDecoration(
-                                      color: isDark ? const Color(0xFF1E1C1F) : const Color(0xFFF5F5F7),
-                                      borderRadius: BorderRadius.circular(14),
+                                      color: isDark ? AppTheme.accentCoral.withOpacity(0.06) : Colors.red.withOpacity(0.03),
+                                      borderRadius: BorderRadius.circular(24),
                                       border: Border.all(
-                                        color: isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.06),
-                                        width: 1.0,
+                                        color: AppTheme.accentCoral.withOpacity(0.3),
+                                        width: 1.2,
                                       ),
                                     ),
                                     child: const Center(
@@ -2107,10 +2238,17 @@ class _VisionLensHomeScreenState extends ConsumerState<VisionLensHomeScreen> wit
                                     });
                                   },
                                   child: Container(
-                                    height: 46,
+                                    height: 48,
                                     decoration: BoxDecoration(
                                       color: AppTheme.accentCyan,
-                                      borderRadius: BorderRadius.circular(14),
+                                      borderRadius: BorderRadius.circular(24),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: AppTheme.accentCyan.withOpacity(0.2),
+                                          blurRadius: 10,
+                                          offset: const Offset(0, 3),
+                                        ),
+                                      ],
                                     ),
                                     child: const Center(
                                       child: Row(
@@ -2123,7 +2261,7 @@ class _VisionLensHomeScreenState extends ConsumerState<VisionLensHomeScreen> wit
                                             style: TextStyle(
                                               color: Colors.black,
                                               fontSize: 13,
-                                              fontWeight: FontWeight.bold,
+                                              fontWeight: FontWeight.w900,
                                             ),
                                           ),
                                         ],
@@ -2145,6 +2283,7 @@ class _VisionLensHomeScreenState extends ConsumerState<VisionLensHomeScreen> wit
                                     } else {
                                       setState(() {
                                         isEditing = false;
+                                        // Reset fields
                                         nameController.text = initialName;
                                         calController.text = initialCalories.toString();
                                         proteinController.text = initialProtein.toString();
@@ -2154,13 +2293,14 @@ class _VisionLensHomeScreenState extends ConsumerState<VisionLensHomeScreen> wit
                                       });
                                     }
                                   },
-                                  child: Container(
-                                    height: 46,
+                                  child: AnimatedContainer(
+                                    duration: const Duration(milliseconds: 200),
+                                    height: 48,
                                     decoration: BoxDecoration(
-                                      color: Colors.white.withOpacity(0.04),
-                                      borderRadius: BorderRadius.circular(14),
+                                      color: isDark ? Colors.white.withOpacity(0.04) : Colors.black.withOpacity(0.03),
+                                      borderRadius: BorderRadius.circular(24),
                                       border: Border.all(
-                                        color: Colors.white.withOpacity(0.08),
+                                        color: isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.06),
                                         width: 1.2,
                                       ),
                                     ),
@@ -2208,16 +2348,19 @@ class _VisionLensHomeScreenState extends ConsumerState<VisionLensHomeScreen> wit
                                     }
 
                                     if (updateIndex != -1) {
+                                      // 1. Subtract original values from daily totals
                                       updatedMetrics[initialMealKey] = ((updatedMetrics[initialMealKey] ?? 0) - initialCalories).clamp(0, 999999);
                                       updatedMetrics['protein'] = ((updatedMetrics['protein'] ?? 0) - initialProtein).clamp(0, 999999);
                                       updatedMetrics['carbs'] = ((updatedMetrics['carbs'] ?? 0) - initialCarbs).clamp(0, 999999);
                                       updatedMetrics['fat'] = ((updatedMetrics['fat'] ?? 0) - initialFat).clamp(0, 999999);
 
+                                      // 2. Add new values to daily totals
                                       updatedMetrics[selectedMealKey] = ((updatedMetrics[selectedMealKey] ?? 0) + newCal).clamp(0, 999999);
                                       updatedMetrics['protein'] = ((updatedMetrics['protein'] ?? 0) + newProt).clamp(0, 999999);
                                       updatedMetrics['carbs'] = ((updatedMetrics['carbs'] ?? 0) + newCarb).clamp(0, 999999);
                                       updatedMetrics['fat'] = ((updatedMetrics['fat'] ?? 0) + newFat).clamp(0, 999999);
 
+                                      // 3. Update logged item entry
                                       final String newMealLabel = selectedMealKey == 'outside_food_cal'
                                           ? 'EATING OUT'
                                           : selectedMealKey.replaceAll('_cal', '').replaceAll('_', ' ').toUpperCase();
@@ -2245,10 +2388,10 @@ class _VisionLensHomeScreenState extends ConsumerState<VisionLensHomeScreen> wit
                                     Navigator.of(context).pop();
                                   },
                                   child: Container(
-                                    height: 46,
+                                    height: 48,
                                     decoration: BoxDecoration(
                                       gradient: AppTheme.primaryGradient,
-                                      borderRadius: BorderRadius.circular(14),
+                                      borderRadius: BorderRadius.circular(24),
                                       boxShadow: [
                                         BoxShadow(
                                           color: AppTheme.accentCyan.withOpacity(0.15),
@@ -2263,7 +2406,7 @@ class _VisionLensHomeScreenState extends ConsumerState<VisionLensHomeScreen> wit
                                         style: TextStyle(
                                           color: Colors.black,
                                           fontSize: 13,
-                                          fontWeight: FontWeight.bold,
+                                          fontWeight: FontWeight.w900,
                                         ),
                                       ),
                                     ),

@@ -1463,6 +1463,24 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                         color: textMutedColor,
                                       ),
                                     ),
+                                    if (item['items'] != null && (item['items'] as List).isNotEmpty) ...[
+                                      const SizedBox(height: 4),
+                                      ...(item['items'] as List).map((bi) {
+                                        final sizeVal = bi['servingSize'] != null ? (bi['servingSize'] as num).toDouble() : 1.0;
+                                        final sizeStr = sizeVal % 1 == 0 ? sizeVal.toInt().toString() : sizeVal.toString();
+                                        return Padding(
+                                          padding: const EdgeInsets.only(left: 6.0, top: 2.0),
+                                          child: Text(
+                                            "• ${bi['name']} ($sizeStr ${bi['servingUnit'] ?? 'piece'}): ${bi['calories']} kcal",
+                                            style: TextStyle(
+                                              fontSize: 9.5,
+                                              color: textMutedColor.withOpacity(0.8),
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        );
+                                      }).toList(),
+                                    ],
                                   ],
                                 ),
                               ),
@@ -3011,11 +3029,42 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     String selectedMealKey = initialMealKey;
     bool isEditing = isDayEnded ? false : startInEditMode;
 
+    final String? imageUrl = item['imageUrl'];
+    final bool hasRealImage = imageUrl != null &&
+        imageUrl.isNotEmpty &&
+        !imageUrl.contains('aida-public') &&
+        !imageUrl.contains('photo-1546069901-ba9599a7e63c');
+
     return showDialog(
       context: context,
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setState) {
+            Widget buildMiniMacroIndicator(String label, String value, Color color) {
+              return Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    "$label:",
+                    style: const TextStyle(
+                      color: AppTheme.textSecondary,
+                      fontSize: 9,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(width: 2),
+                  Text(
+                    value,
+                    style: TextStyle(
+                      color: color,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
+              );
+            }
+
             final categories = [
               {'name': 'Breakfast', 'key': 'breakfast_cal', 'icon': Icons.egg_rounded},
               {'name': 'Lunch', 'key': 'lunch_cal', 'icon': Icons.restaurant_rounded},
@@ -3033,10 +3082,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
                   child: Container(
                     decoration: BoxDecoration(
-                      color: isDark ? const Color(0xEC1C1E1B) : Colors.white,
-                      borderRadius: BorderRadius.circular(24), // rounded.xl (24px)
+                      color: isDark ? const Color(0xFF0E0F0C) : Colors.white,
+                      borderRadius: BorderRadius.circular(24),
                       border: Border.all(
-                        color: isDark ? const Color(0xFF323530) : AppTheme.glassBorder,
+                        color: isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder,
                         width: 1.0,
                       ),
                     ),
@@ -3045,19 +3094,19 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Header Row: Close Button & Category (or Category selector in edit mode)
+                        // Header Row: Close Button & Category
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             if (!isEditing)
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                 decoration: BoxDecoration(
-                                  color: AppTheme.accentPurple.withOpacity(0.08),
+                                  color: AppTheme.accentCyan.withOpacity(0.06),
                                   borderRadius: BorderRadius.circular(20),
                                   border: Border.all(
-                                    color: AppTheme.accentPurple.withOpacity(0.3),
-                                    width: 1.2,
+                                    color: AppTheme.accentCyan.withOpacity(0.3),
+                                    width: 1.0,
                                   ),
                                 ),
                                 child: Text(
@@ -3065,10 +3114,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                       ? 'EATING OUT'
                                       : selectedMealKey.replaceAll('_cal', '').replaceAll('_', ' ').toUpperCase(),
                                   style: const TextStyle(
-                                    color: AppTheme.accentPurple,
+                                    color: AppTheme.accentCyan,
                                     fontWeight: FontWeight.w900,
-                                    fontSize: 10,
-                                    letterSpacing: 0.8,
+                                    fontSize: 9,
+                                    letterSpacing: 0.5,
                                   ),
                                 ),
                               )
@@ -3076,7 +3125,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                               const Text(
                                 'EDIT ENTRY',
                                 style: TextStyle(
-                                  color: AppTheme.accentPurple,
+                                  color: AppTheme.accentCyan,
                                   fontWeight: FontWeight.w900,
                                   fontSize: 11,
                                   letterSpacing: 1.0,
@@ -3165,7 +3214,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           const SizedBox(height: 16),
                         ],
 
-                        // Meal Name (Text or TextField)
+                        // Meal Name
                         if (!isEditing)
                           Text(
                             nameController.text,
@@ -3192,26 +3241,26 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                             style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
                             decoration: InputDecoration(
                               filled: true,
-                              fillColor: Colors.white.withOpacity(0.02),
+                              fillColor: isDark ? const Color(0xFF121214) : Colors.black.withOpacity(0.02),
                               contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                               border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(14),
-                                borderSide: BorderSide(color: Colors.white.withOpacity(0.08)),
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(color: isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder),
                               ),
                               enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(14),
-                                borderSide: BorderSide(color: Colors.white.withOpacity(0.08)),
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(color: isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder),
                               ),
                               focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(14),
-                                borderSide: const BorderSide(color: AppTheme.accentCyan),
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(color: AppTheme.accentCyan, width: 1.5),
                               ),
                             ),
                           ),
                         ],
                         const SizedBox(height: 8),
 
-                        // Time indicator row (only show if not editing)
+                        // Time indicator row
                         if (!isEditing)
                           Row(
                             children: [
@@ -3232,39 +3281,22 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                             ],
                           ),
 
-                        if (item['imageUrl'] != null && (item['imageUrl'] as String).isNotEmpty) ...[
+                        if (hasRealImage) ...[
                           const SizedBox(height: 16),
                           ClipRRect(
                             borderRadius: BorderRadius.circular(16),
-                            child: Container(
-                              width: double.infinity,
-                              height: 140,
-                              decoration: BoxDecoration(
-                                color: isDark ? const Color(0xFF1E1C1F) : const Color(0xFFF5F5F7),
-                                border: Border.all(
-                                  color: Colors.white.withOpacity(0.06),
-                                ),
-                              ),
-                              child: () {
-                                final imgStr = item['imageUrl'] as String;
-                                if (imgStr.startsWith('http')) {
-                                  return Image.network(
-                                    imgStr,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (context, error, stackTrace) {
-                                      return Container(
-                                        color: Colors.white.withOpacity(0.015),
-                                        child: Center(
-                                          child: Icon(
-                                            Icons.restaurant_rounded,
-                                            color: Colors.white.withOpacity(0.2),
-                                            size: 32,
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                  );
-                                }
+                            child: () {
+                              final imgStr = imageUrl;
+                              Widget? imageWidget;
+                              if (imgStr.startsWith('http')) {
+                                imageWidget = Image.network(
+                                  imgStr,
+                                  fit: BoxFit.cover,
+                                  height: 160,
+                                  width: double.infinity,
+                                  errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
+                                );
+                              } else {
                                 try {
                                   String cleaned = imgStr;
                                   final commaIndex = cleaned.indexOf(',');
@@ -3272,50 +3304,33 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                     cleaned = cleaned.substring(commaIndex + 1);
                                   }
                                   cleaned = cleaned.replaceAll(RegExp(r'\s+'), '');
-                                  return Image.memory(
+                                  imageWidget = Image.memory(
                                     base64Decode(cleaned),
                                     fit: BoxFit.cover,
-                                    errorBuilder: (context, error, stackTrace) {
-                                      return Container(
-                                        color: Colors.white.withOpacity(0.015),
-                                        child: Center(
-                                          child: Icon(
-                                            Icons.restaurant_rounded,
-                                            color: Colors.white.withOpacity(0.2),
-                                            size: 32,
-                                          ),
-                                        ),
-                                      );
-                                    },
+                                    height: 160,
+                                    width: double.infinity,
+                                    errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
                                   );
                                 } catch (e) {
-                                  return Container(
-                                    color: Colors.white.withOpacity(0.015),
-                                    child: Center(
-                                      child: Icon(
-                                        Icons.restaurant_rounded,
-                                        color: Colors.white.withOpacity(0.2),
-                                        size: 32,
-                                      ),
-                                    ),
-                                  );
+                                  imageWidget = const SizedBox.shrink();
                                 }
-                              }(),
-                            ),
+                              }
+                              return imageWidget;
+                            }(),
                           ),
                         ],
                         const SizedBox(height: 20),
 
-                        // Bento-Grid of Calories (or TextField in edit mode)
+                        // Calories bento box
                         if (!isEditing)
                           Container(
                             width: double.infinity,
                             padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
                             decoration: BoxDecoration(
-                              color: Colors.orange.withOpacity(0.06),
+                              color: isDark ? AppTheme.accentCyan.withOpacity(0.04) : const Color(0xFFE2F6D5),
                               borderRadius: BorderRadius.circular(20),
                               border: Border.all(
-                                color: Colors.orange.withOpacity(0.25),
+                                color: isDark ? AppTheme.accentCyan.withOpacity(0.2) : const Color(0xFFC5EDAB),
                                 width: 1.2,
                               ),
                             ),
@@ -3327,22 +3342,22 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                     Container(
                                       padding: const EdgeInsets.all(8),
                                       decoration: BoxDecoration(
-                                        color: Colors.orange.withOpacity(0.12),
+                                        color: isDark ? AppTheme.accentCyan.withOpacity(0.1) : const Color(0xFFC5EDAB),
                                         borderRadius: BorderRadius.circular(10),
                                       ),
-                                      child: const Text(
-                                        '🔥',
-                                        style: TextStyle(fontSize: 20),
+                                      child: const Center(
+                                        widthFactor: 1.0,
+                                        child: Text('🔥', style: TextStyle(fontSize: 20)),
                                       ),
                                     ),
                                     const SizedBox(width: 12),
                                     Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: const [
+                                      children: [
                                         Text(
                                           'CALORIES',
                                           style: TextStyle(
-                                            color: AppTheme.textSecondary,
+                                            color: isDark ? AppTheme.accentCyan : const Color(0xFF054D28),
                                             fontSize: 9,
                                             fontWeight: FontWeight.w900,
                                             letterSpacing: 0.8,
@@ -3351,7 +3366,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                         Text(
                                           'Energy Output',
                                           style: TextStyle(
-                                            color: AppTheme.textSecondary,
+                                            color: isDark ? AppTheme.textSecondary : const Color(0xFF054D28),
                                             fontSize: 10,
                                             fontWeight: FontWeight.w500,
                                           ),
@@ -3362,8 +3377,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                 ),
                                 Text(
                                   '${calController.text} kcal',
-                                  style: const TextStyle(
-                                    color: Colors.white,
+                                  style: TextStyle(
+                                    color: isDark ? Colors.white : AppTheme.textPrimary,
                                     fontSize: 18,
                                     fontWeight: FontWeight.w900,
                                   ),
@@ -3388,21 +3403,21 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                             style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
                             decoration: InputDecoration(
                               filled: true,
-                              fillColor: Colors.white.withOpacity(0.02),
+                              fillColor: isDark ? const Color(0xFF121214) : Colors.black.withOpacity(0.02),
                               contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                               suffixText: ' kcal',
                               suffixStyle: const TextStyle(color: AppTheme.textSecondary, fontSize: 12),
                               border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(14),
-                                borderSide: BorderSide(color: Colors.white.withOpacity(0.08)),
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(color: isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder),
                               ),
                               enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(14),
-                                borderSide: BorderSide(color: Colors.white.withOpacity(0.08)),
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(color: isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder),
                               ),
                               focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(14),
-                                borderSide: const BorderSide(color: AppTheme.accentCyan),
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(color: AppTheme.accentCyan, width: 1.5),
                               ),
                             ),
                           ),
@@ -3439,6 +3454,132 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                               const SizedBox(width: 8),
                               Expanded(child: _buildMiniEditField("Fat", fatController)),
                             ],
+                          ),
+                        ],
+
+                        if (!isEditing && item['items'] != null && (item['items'] as List).isNotEmpty) ...[
+                          const SizedBox(height: 18),
+                          const Text(
+                            'MEAL BREAKDOWN',
+                            style: TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 1.0,
+                              color: AppTheme.textSecondary,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: isDark ? const Color(0xFF0C0D0B) : Colors.black.withOpacity(0.01),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: isDark ? const Color(0xFF232521) : AppTheme.glassBorder,
+                                width: 1.0,
+                              ),
+                            ),
+                            child: ListView.separated(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              itemCount: (item['items'] as List).length,
+                              separatorBuilder: (context, index) => Divider(
+                                color: isDark ? Colors.white.withOpacity(0.04) : Colors.black.withOpacity(0.04),
+                                height: 12,
+                              ),
+                              itemBuilder: (context, index) {
+                                final rawItem = (item['items'] as List)[index];
+                                final name = rawItem['name'] ?? rawItem['foodName'] ?? 'Ingredient';
+                                final sizeVal = rawItem['servingSize'] != null ? (rawItem['servingSize'] as num).toDouble() : 1.0;
+                                final sizeStr = sizeVal % 1 == 0 ? sizeVal.toInt().toString() : sizeVal.toString();
+                                final unit = rawItem['servingUnit'] ?? 'piece';
+                                final cal = rawItem['calories'] ?? 0;
+                                final prot = rawItem['protein'] ?? 0;
+                                final carb = rawItem['carbs'] ?? 0;
+                                final fat = rawItem['fat'] ?? 0;
+                                return Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 4.0),
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                        width: 6,
+                                        height: 6,
+                                        decoration: const BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: AppTheme.accentCyan,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Row(
+                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                              children: [
+                                                Text(
+                                                  name,
+                                                  style: TextStyle(
+                                                    color: isDark ? Colors.white : AppTheme.textPrimary,
+                                                    fontSize: 13,
+                                                    fontWeight: FontWeight.bold,
+                                                    letterSpacing: -0.2,
+                                                  ),
+                                                ),
+                                                Container(
+                                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                                  decoration: BoxDecoration(
+                                                    color: AppTheme.accentCyan.withOpacity(0.08),
+                                                    borderRadius: BorderRadius.circular(6),
+                                                  ),
+                                                  child: Text(
+                                                    "$sizeStr $unit",
+                                                    style: const TextStyle(
+                                                      color: AppTheme.accentCyan,
+                                                      fontSize: 10,
+                                                      fontWeight: FontWeight.w800,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Row(
+                                              children: [
+                                                Text(
+                                                  "$cal kcal",
+                                                  style: TextStyle(
+                                                    color: isDark ? Colors.white70 : Colors.black87,
+                                                    fontSize: 11,
+                                                    fontWeight: FontWeight.w800,
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 8),
+                                                Container(
+                                                  width: 3,
+                                                  height: 3,
+                                                  decoration: BoxDecoration(
+                                                    shape: BoxShape.circle,
+                                                    color: isDark ? Colors.white24 : Colors.black12,
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 8),
+                                                buildMiniMacroIndicator('P', '${prot}g', AppTheme.accentOrange),
+                                                const SizedBox(width: 8),
+                                                buildMiniMacroIndicator('C', '${carb}g', AppTheme.accentCyan),
+                                                const SizedBox(width: 8),
+                                                buildMiniMacroIndicator('F', '${fat}g', AppTheme.accentCoral),
+                                              ],
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            ),
                           ),
                         ],
 
@@ -3518,14 +3659,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                     }
                                     Navigator.of(context).pop();
                                   },
-                                  child: Container(
-                                    height: 46,
+                                  child: AnimatedContainer(
+                                    duration: const Duration(milliseconds: 200),
+                                    height: 48,
                                     decoration: BoxDecoration(
-                                      color: isDark ? const Color(0xFF1E1C1F) : const Color(0xFFF5F5F7),
-                                      borderRadius: BorderRadius.circular(14),
+                                      color: isDark ? AppTheme.accentCoral.withOpacity(0.06) : Colors.red.withOpacity(0.03),
+                                      borderRadius: BorderRadius.circular(24),
                                       border: Border.all(
-                                        color: isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.06),
-                                        width: 1.0,
+                                        color: AppTheme.accentCoral.withOpacity(0.3),
+                                        width: 1.2,
                                       ),
                                     ),
                                     child: const Center(
@@ -3557,10 +3699,17 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                     });
                                   },
                                   child: Container(
-                                    height: 46,
+                                    height: 48,
                                     decoration: BoxDecoration(
                                       color: AppTheme.accentCyan,
-                                      borderRadius: BorderRadius.circular(14),
+                                      borderRadius: BorderRadius.circular(24),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: AppTheme.accentCyan.withOpacity(0.2),
+                                          blurRadius: 10,
+                                          offset: const Offset(0, 3),
+                                        ),
+                                      ],
                                     ),
                                     child: const Center(
                                       child: Row(
@@ -3573,7 +3722,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                             style: TextStyle(
                                               color: Colors.black,
                                               fontSize: 13,
-                                              fontWeight: FontWeight.bold,
+                                              fontWeight: FontWeight.w900,
                                             ),
                                           ),
                                         ],
@@ -3605,13 +3754,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                       });
                                     }
                                   },
-                                  child: Container(
-                                    height: 46,
+                                  child: AnimatedContainer(
+                                    duration: const Duration(milliseconds: 200),
+                                    height: 48,
                                     decoration: BoxDecoration(
-                                      color: Colors.white.withOpacity(0.04),
-                                      borderRadius: BorderRadius.circular(14),
+                                      color: isDark ? Colors.white.withOpacity(0.04) : Colors.black.withOpacity(0.03),
+                                      borderRadius: BorderRadius.circular(24),
                                       border: Border.all(
-                                        color: Colors.white.withOpacity(0.08),
+                                        color: isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.06),
                                         width: 1.2,
                                       ),
                                     ),
@@ -3699,10 +3849,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                     Navigator.of(context).pop();
                                   },
                                   child: Container(
-                                    height: 46,
+                                    height: 48,
                                     decoration: BoxDecoration(
                                       gradient: AppTheme.primaryGradient,
-                                      borderRadius: BorderRadius.circular(14),
+                                      borderRadius: BorderRadius.circular(24),
                                       boxShadow: [
                                         BoxShadow(
                                           color: AppTheme.accentCyan.withOpacity(0.15),
@@ -3717,7 +3867,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                         style: TextStyle(
                                           color: Colors.black,
                                           fontSize: 13,
-                                          fontWeight: FontWeight.bold,
+                                          fontWeight: FontWeight.w900,
                                         ),
                                       ),
                                     ),

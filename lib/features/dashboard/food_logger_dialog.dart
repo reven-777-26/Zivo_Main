@@ -16,16 +16,21 @@ import '../../services/storage_service.dart';
 import '../../utils/image_picker_helper.dart';
 import '../../services/scanner/native_barcode_scanner.dart';
 import '../../services/scanner/ai_analysis_service.dart';
+import '../../services/firebase_service.dart';
 
-class StandardFood {
-  String foodName;
+class BreakdownItem {
+  String name;
+  double servingSize;
+  String servingUnit;
   int calories;
   int protein;
   int carbs;
   int fat;
 
-  StandardFood({
-    required this.foodName,
+  BreakdownItem({
+    required this.name,
+    required this.servingSize,
+    required this.servingUnit,
     required this.calories,
     required this.protein,
     required this.carbs,
@@ -33,11 +38,58 @@ class StandardFood {
   });
 
   Map<String, dynamic> toJson() => {
+        'name': name,
+        'servingSize': servingSize,
+        'servingUnit': servingUnit,
+        'calories': calories,
+        'protein': protein,
+        'carbs': carbs,
+        'fat': fat,
+      };
+
+  factory BreakdownItem.fromJson(Map<String, dynamic> json) {
+    return BreakdownItem(
+      name: json['name'] ?? json['foodName'] ?? 'Ingredient',
+      servingSize: json['servingSize'] != null ? (json['servingSize'] as num).toDouble() : 1.0,
+      servingUnit: json['servingUnit'] ?? 'piece',
+      calories: (json['calories'] ?? 0).toInt(),
+      protein: (json['protein'] ?? 0).toInt(),
+      carbs: (json['carbs'] ?? 0).toInt(),
+      fat: (json['fat'] ?? 0).toInt(),
+    );
+  }
+}
+
+class StandardFood {
+  String foodName;
+  int calories;
+  int protein;
+  int carbs;
+  int fat;
+  double? servingSize;
+  String? servingUnit;
+  List<BreakdownItem> items;
+
+  StandardFood({
+    required this.foodName,
+    required this.calories,
+    required this.protein,
+    required this.carbs,
+    required this.fat,
+    this.servingSize,
+    this.servingUnit,
+    List<BreakdownItem>? items,
+  }) : items = items ?? [];
+
+  Map<String, dynamic> toJson() => {
         'foodName': foodName,
         'calories': calories,
         'protein': protein,
         'carbs': carbs,
         'fat': fat,
+        if (servingSize != null) 'servingSize': servingSize,
+        if (servingUnit != null) 'servingUnit': servingUnit,
+        'items': items.map((e) => e.toJson()).toList(),
       };
 }
 
@@ -125,6 +177,8 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
   late TextEditingController _reviewFatController;
   final TextEditingController _reviewServingSizeController = TextEditingController(text: "1");
   String _reviewSelectedServingUnit = 'serving';
+  List<BreakdownItem> _reviewBreakdownItems = [];
+  List<BreakdownItem> _manualBreakdownItems = [];
 
   // Manual flow controllers
   final TextEditingController _manualNameController = TextEditingController();
@@ -406,8 +460,8 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
 
       // Smart Parse serving size and unit!
       final parsed = _parseServingInfo(_selectedFood!.foodName);
-      final double initialSize = parsed['size'];
-      final String initialUnit = parsed['unit'];
+      final double initialSize = _selectedFood!.servingSize ?? parsed['size'];
+      final String initialUnit = _selectedFood!.servingUnit ?? parsed['unit'];
 
       _isAutoScaling = true;
       _reviewServingSizeController.text = initialSize % 1 == 0 
@@ -416,13 +470,718 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
       _reviewSelectedServingUnit = initialUnit;
       _isAutoScaling = false;
 
+      // Copy breakdown items
+      _reviewBreakdownItems = List<BreakdownItem>.from(_selectedFood!.items);
+
       // Initialize baselines
       _baselineServingSize = initialSize > 0 ? initialSize : 1.0;
       _baselineCal = _selectedFood!.calories;
       _baselineProtein = _selectedFood!.protein;
       _baselineCarbs = _selectedFood!.carbs;
       _baselineFat = _selectedFood!.fat;
+      
+      // Auto-recalculate totals if items were loaded
+      if (_reviewBreakdownItems.isNotEmpty) {
+        _updateTotalsFromBreakdown();
+      }
     }
+  }
+
+  void _updateTotalsFromBreakdown() {
+    if (_reviewBreakdownItems.isEmpty) return;
+    int totalCals = 0;
+    int totalProtein = 0;
+    int totalCarbs = 0;
+    int totalFat = 0;
+    for (final item in _reviewBreakdownItems) {
+      totalCals += item.calories;
+      totalProtein += item.protein;
+      totalCarbs += item.carbs;
+      totalFat += item.fat;
+    }
+    setState(() {
+      _reviewCalController.text = totalCals.toString();
+      _reviewProteinController.text = totalProtein.toString();
+      _reviewCarbsController.text = totalCarbs.toString();
+      _reviewFatController.text = totalFat.toString();
+    });
+  }
+
+  void _updateManualTotalsFromBreakdown() {
+    if (_manualBreakdownItems.isEmpty) return;
+    int totalCals = 0;
+    int totalProtein = 0;
+    int totalCarbs = 0;
+    int totalFat = 0;
+    for (final item in _manualBreakdownItems) {
+      totalCals += item.calories;
+      totalProtein += item.protein;
+      totalCarbs += item.carbs;
+      totalFat += item.fat;
+    }
+    setState(() {
+      _manualCalController.text = totalCals.toString();
+      _manualProteinController.text = totalProtein.toString();
+      _manualCarbsController.text = totalCarbs.toString();
+      _manualFatController.text = totalFat.toString();
+    });
+  }
+
+  void _showEditBreakdownItemDialog(BreakdownItem? item, int? index, {bool isManual = false}) {
+    final nameCtrl = TextEditingController(text: item?.name ?? '');
+    final sizeCtrl = TextEditingController(text: item != null ? (item.servingSize % 1 == 0 ? item.servingSize.toInt().toString() : item.servingSize.toString()) : '1');
+    final calCtrl = TextEditingController(text: item?.calories.toString() ?? '0');
+    final proCtrl = TextEditingController(text: item?.protein.toString() ?? '0');
+    final carbCtrl = TextEditingController(text: item?.carbs.toString() ?? '0');
+    final fatCtrl = TextEditingController(text: item?.fat.toString() ?? '0');
+
+    final dialogUnits = List<String>.from(_servingUnits);
+    String selectedUnit = item?.servingUnit ?? 'piece';
+    if (!dialogUnits.contains(selectedUnit)) {
+      dialogUnits.add(selectedUnit);
+    }
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        final isDark = Theme.of(ctx).brightness == Brightness.dark;
+        final title = item == null ? "Add Breakdown Item" : "Edit Item";
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(24),
+            child: BackdropFilter(
+              filter: ui.ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+              child: StatefulBuilder(
+                builder: (context, dialogSetState) {
+                  return Container(
+                    constraints: const BoxConstraints(maxWidth: 400),
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF1C1E1B) : Colors.white,
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(
+                        color: isDark ? const Color(0xFF323530) : AppTheme.glassBorder,
+                      ),
+                    ),
+                    child: SingleChildScrollView(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                title,
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w900,
+                                  color: isDark ? Colors.white : AppTheme.textPrimary,
+                                ),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.question_mark_rounded, color: AppTheme.accentCyan, size: 20),
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
+                                onPressed: () {
+                                  showDialog(
+                                    context: ctx,
+                                    builder: (infoCtx) => Dialog(
+                                      backgroundColor: Colors.transparent,
+                                      child: ClipRRect(
+                                        borderRadius: BorderRadius.circular(20),
+                                        child: BackdropFilter(
+                                          filter: ui.ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+                                          child: Container(
+                                            constraints: const BoxConstraints(maxWidth: 320),
+                                            padding: const EdgeInsets.all(20),
+                                            decoration: BoxDecoration(
+                                              color: isDark ? const Color(0xFF000000) : Colors.white.withOpacity(0.95),
+                                              borderRadius: BorderRadius.circular(20),
+                                              border: Border.all(
+                                                color: isDark ? const Color(0xFF323530) : AppTheme.glassBorder,
+                                              ),
+                                            ),
+                                            child: Column(
+                                              mainAxisSize: MainAxisSize.min,
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Row(
+                                                  children: [
+                                                    const Icon(Icons.info_outline_rounded, color: AppTheme.accentCyan, size: 22),
+                                                    const SizedBox(width: 8),
+                                                    Text(
+                                                      "Breakdown Item Help",
+                                                      style: TextStyle(
+                                                        fontWeight: FontWeight.bold,
+                                                        fontSize: 16,
+                                                        color: isDark ? Colors.white : AppTheme.textPrimary,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                                const SizedBox(height: 16),
+                                                Text(
+                                                  "Breakdown items let you log individual ingredients of a meal (e.g. eggs, oil, vegetables).\n\n"
+                                                  "Entering their specific portion size, unit, calories, and macros helps the app calculate the overall nutrition of the meal more accurately.",
+                                                  style: TextStyle(
+                                                    fontSize: 13,
+                                                    color: isDark ? Colors.white70 : AppTheme.textSecondary,
+                                                    height: 1.4,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 20),
+                                                Align(
+                                                  alignment: Alignment.centerRight,
+                                                  child: TextButton(
+                                                    onPressed: () => Navigator.pop(infoCtx),
+                                                    child: const Text("Got it", style: TextStyle(color: AppTheme.accentCyan, fontWeight: FontWeight.bold)),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          TextField(
+                            controller: nameCtrl,
+                            decoration: InputDecoration(
+                              labelText: "Item Name",
+                              hintText: "e.g. Scrambled Eggs",
+                              labelStyle: const TextStyle(color: AppTheme.textSecondary),
+                              enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: isDark ? Colors.white24 : Colors.black12)),
+                              focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: AppTheme.accentCyan)),
+                            ),
+                            style: TextStyle(color: isDark ? Colors.white : Colors.black),
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Expanded(
+                                child: TextField(
+                                  controller: sizeCtrl,
+                                  decoration: InputDecoration(
+                                    labelText: "Size",
+                                    labelStyle: const TextStyle(color: AppTheme.textSecondary),
+                                    enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: isDark ? Colors.white24 : Colors.black12)),
+                                    focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: AppTheme.accentCyan)),
+                                  ),
+                                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                  style: TextStyle(color: isDark ? Colors.white : Colors.black),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: DropdownButtonFormField<String>(
+                                  value: selectedUnit,
+                                  dropdownColor: isDark ? const Color(0xFF1C1E1B) : Colors.white,
+                                  style: TextStyle(
+                                    color: isDark ? Colors.white : Colors.black,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                  ),
+                                  decoration: InputDecoration(
+                                    labelText: "Unit",
+                                    labelStyle: const TextStyle(color: AppTheme.textSecondary),
+                                    enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: isDark ? Colors.white24 : Colors.black12)),
+                                    focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: AppTheme.accentCyan)),
+                                  ),
+                                  icon: const Icon(Icons.keyboard_arrow_down_rounded, color: AppTheme.accentCyan),
+                                  items: dialogUnits.map((String val) {
+                                    return DropdownMenuItem<String>(
+                                      value: val,
+                                      child: Text(val),
+                                    );
+                                  }).toList(),
+                                  onChanged: (String? newVal) {
+                                    if (newVal != null) {
+                                      dialogSetState(() {
+                                        selectedUnit = newVal;
+                                      });
+                                    }
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          TextField(
+                            controller: calCtrl,
+                            decoration: InputDecoration(
+                              labelText: "Calories (kcal)",
+                              labelStyle: const TextStyle(color: AppTheme.textSecondary),
+                              enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: isDark ? Colors.white24 : Colors.black12)),
+                              focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: AppTheme.accentCyan)),
+                            ),
+                            keyboardType: TextInputType.number,
+                            style: TextStyle(color: isDark ? Colors.white : Colors.black),
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: TextField(
+                                  controller: proCtrl,
+                                  decoration: InputDecoration(
+                                    labelText: "Protein (g)",
+                                    labelStyle: const TextStyle(color: AppTheme.textSecondary),
+                                    enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: isDark ? Colors.white24 : Colors.black12)),
+                                    focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: AppTheme.accentCyan)),
+                                  ),
+                                  keyboardType: TextInputType.number,
+                                  style: TextStyle(color: isDark ? Colors.white : Colors.black),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: TextField(
+                                  controller: carbCtrl,
+                                  decoration: InputDecoration(
+                                    labelText: "Carbs (g)",
+                                    labelStyle: const TextStyle(color: AppTheme.textSecondary),
+                                    enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: isDark ? Colors.white24 : Colors.black12)),
+                                    focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: AppTheme.accentCyan)),
+                                  ),
+                                  keyboardType: TextInputType.number,
+                                  style: TextStyle(color: isDark ? Colors.white : Colors.black),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: TextField(
+                                  controller: fatCtrl,
+                                  decoration: InputDecoration(
+                                    labelText: "Fat (g)",
+                                    labelStyle: const TextStyle(color: AppTheme.textSecondary),
+                                    enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: isDark ? Colors.white24 : Colors.black12)),
+                                    focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: AppTheme.accentCyan)),
+                                  ),
+                                  keyboardType: TextInputType.number,
+                                  style: TextStyle(color: isDark ? Colors.white : Colors.black),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 24),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(ctx),
+                                child: const Text("Cancel", style: TextStyle(color: AppTheme.textSecondary)),
+                              ),
+                              const SizedBox(width: 12),
+                              ElevatedButton(
+                                onPressed: () {
+                                  final nameVal = nameCtrl.text.trim();
+                                  if (nameVal.isEmpty) return;
+                                  final sizeVal = double.tryParse(sizeCtrl.text) ?? 1.0;
+                                  final calVal = int.tryParse(calCtrl.text) ?? 0;
+                                  final proVal = int.tryParse(proCtrl.text) ?? 0;
+                                  final carbVal = int.tryParse(carbCtrl.text) ?? 0;
+                                  final fatVal = int.tryParse(fatCtrl.text) ?? 0;
+
+                                  final newItem = BreakdownItem(
+                                    name: nameVal,
+                                    servingSize: sizeVal,
+                                    servingUnit: selectedUnit,
+                                    calories: calVal,
+                                    protein: proVal,
+                                    carbs: carbVal,
+                                    fat: fatVal,
+                                  );
+
+                                  setState(() {
+                                    if (isManual) {
+                                      if (item != null && index != null) {
+                                        _manualBreakdownItems[index] = newItem;
+                                      } else {
+                                        _manualBreakdownItems.add(newItem);
+                                      }
+                                    } else {
+                                      if (item != null && index != null) {
+                                        _reviewBreakdownItems[index] = newItem;
+                                      } else {
+                                        _reviewBreakdownItems.add(newItem);
+                                      }
+                                    }
+                                  });
+                                  if (isManual) {
+                                    _updateManualTotalsFromBreakdown();
+                                  } else {
+                                    _updateTotalsFromBreakdown();
+                                  }
+                                  Navigator.pop(ctx);
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppTheme.accentCyan,
+                                  foregroundColor: Colors.black,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                ),
+                                child: const Text("Save", style: TextStyle(fontWeight: FontWeight.bold)),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showInstructionsBottomSheet(BuildContext context, bool isDark) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return Container(
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF0E0F0C) : Colors.white,
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(28),
+              topRight: Radius.circular(28),
+            ),
+            border: Border.all(
+              color: isDark ? const Color(0xFF323530) : AppTheme.glassBorder,
+              width: 1,
+            ),
+          ),
+          padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 48,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 20),
+                  decoration: BoxDecoration(
+                    color: isDark ? Colors.white24 : Colors.black12,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              Row(
+                children: [
+                  const Icon(Icons.help_outline_rounded, color: AppTheme.accentCyan, size: 26),
+                  const SizedBox(width: 10),
+                  Text(
+                    "Food Log Instructions",
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w900,
+                      color: isDark ? Colors.white : AppTheme.textPrimary,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 18),
+              Text(
+                "Track your nutrition using 6 flexible methods:",
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white70 : AppTheme.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 14),
+              Flexible(
+                child: SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      _buildInstructionItem(
+                        icon: Icons.camera_alt_rounded,
+                        title: "1. Photo Scan",
+                        desc: "Capture or upload a meal photo. AI automatically logs the ingredients, serving sizes, calories, and macros.",
+                        isDark: isDark,
+                      ),
+                      _buildInstructionItem(
+                        icon: Icons.qr_code_scanner_rounded,
+                        title: "2. Barcode Scanner",
+                        desc: "Scan a barcode to instantly fetch and log product nutritional facts from OpenFoodFacts.",
+                        isDark: isDark,
+                      ),
+                      _buildInstructionItem(
+                        icon: Icons.mic_rounded,
+                        title: "3. Voice Logger",
+                        desc: "Log food by speaking naturally (e.g., '1 bowl of oatmeal with milk'). AI parses the speech to populate your log.",
+                        isDark: isDark,
+                      ),
+                      _buildInstructionItem(
+                        icon: Icons.edit_note_rounded,
+                        title: "4. Natural Language Description",
+                        desc: "Type out a description of your meal and let the AI estimate the calories and macros dynamically.",
+                        isDark: isDark,
+                      ),
+                      _buildInstructionItem(
+                        icon: Icons.post_add_rounded,
+                        title: "5. Manual Entry & Breakdown",
+                        desc: "Directly enter meal details, or list specific ingredients under breakdown to calculate total macros automatically.",
+                        isDark: isDark,
+                      ),
+                      _buildInstructionItem(
+                        icon: Icons.bookmarks_rounded,
+                        title: "6. Presets",
+                        desc: "Save your favorite meals as custom presets and log them instantly with a single tap.",
+                        isDark: isDark,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.accentCyan,
+                    foregroundColor: Colors.black,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                  child: const Text("Got it, Let's Log!", style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15)),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildInstructionItem({
+    required IconData icon,
+    required String title,
+    required String desc,
+    required bool isDark,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: isDark ? Colors.white.withOpacity(0.04) : Colors.black.withOpacity(0.03),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: AppTheme.accentCyan, size: 20),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : AppTheme.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  desc,
+                  style: TextStyle(
+                    fontSize: 12,
+                    height: 1.35,
+                    color: isDark ? Colors.white60 : AppTheme.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showEditPresetDialog(Map<String, dynamic> preset) {
+    final oldName = preset['name'] ?? 'Unnamed Preset';
+    final nameCtrl = TextEditingController(text: oldName);
+    final calCtrl = TextEditingController(text: (preset['calories'] ?? 0).toString());
+    final proCtrl = TextEditingController(text: (preset['protein'] ?? 0).toString());
+    final carbCtrl = TextEditingController(text: (preset['carbs'] ?? 0).toString());
+    final fatCtrl = TextEditingController(text: (preset['fat'] ?? 0).toString());
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        final isDark = Theme.of(ctx).brightness == Brightness.dark;
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(24),
+            child: BackdropFilter(
+              filter: ui.ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+              child: Container(
+                constraints: const BoxConstraints(maxWidth: 400),
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF0E0F0C) : Colors.white,
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(
+                    color: isDark ? const Color(0xFF323530) : AppTheme.glassBorder,
+                  ),
+                ),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Edit Saved Preset",
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w900,
+                          color: isDark ? Colors.white : AppTheme.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      TextField(
+                        controller: nameCtrl,
+                        decoration: InputDecoration(
+                          labelText: "Preset Name",
+                          labelStyle: const TextStyle(color: AppTheme.textSecondary),
+                          enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: isDark ? Colors.white24 : Colors.black12)),
+                          focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: AppTheme.accentCyan)),
+                        ),
+                        style: TextStyle(color: isDark ? Colors.white : Colors.black),
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: calCtrl,
+                        decoration: InputDecoration(
+                          labelText: "Calories (kcal)",
+                          labelStyle: const TextStyle(color: AppTheme.textSecondary),
+                          enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: isDark ? Colors.white24 : Colors.black12)),
+                          focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: AppTheme.accentCyan)),
+                        ),
+                        keyboardType: TextInputType.number,
+                        style: TextStyle(color: isDark ? Colors.white : Colors.black),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: proCtrl,
+                              decoration: InputDecoration(
+                                labelText: "Protein (g)",
+                                labelStyle: const TextStyle(color: AppTheme.textSecondary),
+                                enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: isDark ? Colors.white24 : Colors.black12)),
+                                focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: AppTheme.accentCyan)),
+                              ),
+                              keyboardType: TextInputType.number,
+                              style: TextStyle(color: isDark ? Colors.white : Colors.black),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: TextField(
+                              controller: carbCtrl,
+                              decoration: InputDecoration(
+                                labelText: "Carbs (g)",
+                                labelStyle: const TextStyle(color: AppTheme.textSecondary),
+                                enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: isDark ? Colors.white24 : Colors.black12)),
+                                focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: AppTheme.accentCyan)),
+                              ),
+                              keyboardType: TextInputType.number,
+                              style: TextStyle(color: isDark ? Colors.white : Colors.black),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: TextField(
+                              controller: fatCtrl,
+                              decoration: InputDecoration(
+                                labelText: "Fat (g)",
+                                labelStyle: const TextStyle(color: AppTheme.textSecondary),
+                                enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: isDark ? Colors.white24 : Colors.black12)),
+                                focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: AppTheme.accentCyan)),
+                              ),
+                              keyboardType: TextInputType.number,
+                              style: TextStyle(color: isDark ? Colors.white : Colors.black),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(ctx),
+                            child: const Text("Cancel", style: TextStyle(color: AppTheme.textSecondary)),
+                          ),
+                          const SizedBox(width: 12),
+                          ElevatedButton(
+                            onPressed: () async {
+                              final newName = nameCtrl.text.trim();
+                              if (newName.isEmpty) return;
+
+                              final newCals = int.tryParse(calCtrl.text) ?? 0;
+                              final newPro = int.tryParse(proCtrl.text) ?? 0;
+                              final newCarb = int.tryParse(carbCtrl.text) ?? 0;
+                              final newFat = int.tryParse(fatCtrl.text) ?? 0;
+
+                              if (oldName.toLowerCase() != newName.toLowerCase()) {
+                                await StorageService.deleteFoodPreset(oldName);
+                              }
+
+                              await StorageService.saveFoodPreset({
+                                'name': newName,
+                                'calories': newCals,
+                                'protein': newPro,
+                                'carbs': newCarb,
+                                'fat': newFat,
+                                'items': preset['items'] ?? [],
+                              });
+                              FirebaseService.saveFoodPresetsCloud(StorageService.getFoodPresets());
+
+                              if (mounted) {
+                                setState(() {});
+                              }
+                              Navigator.pop(ctx);
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppTheme.accentCyan,
+                              foregroundColor: Colors.black,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                            child: const Text("Save Changes", style: TextStyle(fontWeight: FontWeight.bold)),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
 
   void _onServingSizeChanged() {
@@ -688,12 +1447,19 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
 
       setState(() {
         _isLoading = false;
+        final rawItems = result['items'] as List?;
+        final parsedItems = rawItems != null
+            ? rawItems.map((e) => BreakdownItem.fromJson(Map<String, dynamic>.from(e as Map))).toList()
+            : <BreakdownItem>[];
         _selectedFood = StandardFood(
           foodName: result['foodName'] ?? 'Unknown Meal',
           calories: (result['calories'] ?? 0).toInt(),
           protein: (result['protein'] ?? 0).toInt(),
           carbs: (result['carbs'] ?? 0).toInt(),
           fat: (result['fat'] ?? 0).toInt(),
+          servingSize: result['servingSize'] != null ? (result['servingSize'] as num).toDouble() : null,
+          servingUnit: result['servingUnit']?.toString(),
+          items: parsedItems,
         );
         _initializeReviewControllers();
         _showReview = true;
@@ -912,29 +1678,32 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
       insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(24),
-        child: Container(
-          constraints: BoxConstraints(
-            maxWidth: 500,
-            maxHeight: MediaQuery.of(context).size.height * 0.85,
-          ),
-          decoration: BoxDecoration(
-            color: isDark
-                ? const Color(0xFF1C1E1B)
-                : AppTheme.glassBackground,
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(
-              color: isDark
-                  ? const Color(0xFF323530)
-                  : AppTheme.glassBorder,
-              width: 1.0,
+        child: BackdropFilter(
+          filter: ui.ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+          child: Container(
+            constraints: BoxConstraints(
+              maxWidth: 500,
+              maxHeight: MediaQuery.of(context).size.height * 0.85,
             ),
+            decoration: BoxDecoration(
+              color: isDark
+                  ? const Color(0xFF0E0F0C)
+                  : Colors.white.withOpacity(0.9),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: isDark
+                    ? const Color(0xFF323530)
+                    : AppTheme.glassBorder,
+                width: 1.0,
+              ),
+            ),
+            padding: const EdgeInsets.all(24),
+            child: _isLoading
+                ? _buildLoadingState(isDark)
+                : _showReview
+                    ? _buildReviewScreen(isDark)
+                    : _buildMethodChooser(isDark),
           ),
-          padding: const EdgeInsets.all(24),
-          child: _isLoading
-              ? _buildLoadingState(isDark)
-              : _showReview
-                  ? _buildReviewScreen(isDark)
-                  : _buildMethodChooser(isDark),
         ),
       ),
     );
@@ -1050,22 +1819,36 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
                 ),
               ],
             ),
-            GestureDetector(
-              onTap: () => Navigator.of(context).pop(),
-              child: Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? Colors.white.withOpacity(0.04)
-                      : Colors.black.withOpacity(0.04),
-                  shape: BoxShape.circle,
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                GestureDetector(
+                  onTap: () => _showInstructionsBottomSheet(context, isDark),
+                  child: const Icon(
+                    Icons.question_mark_rounded,
+                    color: AppTheme.accentCyan,
+                    size: 22,
+                  ),
                 ),
-                child: const Icon(
-                  Icons.close_rounded,
-                  color: AppTheme.textSecondary,
-                  size: 18,
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: () => Navigator.of(context).pop(),
+                  child: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? Colors.white.withOpacity(0.04)
+                          : Colors.black.withOpacity(0.04),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.close_rounded,
+                      color: AppTheme.textSecondary,
+                      size: 18,
+                    ),
+                  ),
                 ),
-              ),
+              ],
             ),
           ],
         ),
@@ -1073,13 +1856,13 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
 
         // Custom Tab Bar styling
         Container(
-          height: 44,
+          height: 58,
           padding: const EdgeInsets.all(2),
           decoration: BoxDecoration(
             color: isDark
                 ? Colors.white.withOpacity(0.03)
                 : Colors.black.withOpacity(0.03),
-            borderRadius: BorderRadius.circular(9999),
+            borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: isDark
                   ? const Color(0xFF323530)
@@ -1090,19 +1873,74 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
             controller: _tabController,
             indicator: BoxDecoration(
               color: AppTheme.accentCyan,
-              borderRadius: BorderRadius.circular(9999),
+              borderRadius: BorderRadius.circular(12),
             ),
             labelColor: AppTheme.textPrimary,
             unselectedLabelColor: isDark ? const Color(0xFF868685) : AppTheme.textSecondary,
             indicatorSize: TabBarIndicatorSize.tab,
             dividerColor: Colors.transparent,
+            labelPadding: EdgeInsets.zero,
             tabs: const [
-              Tab(icon: Icon(Icons.camera_alt_rounded, size: 18)),
-              Tab(icon: Icon(Icons.qr_code_scanner_rounded, size: 18)),
-              Tab(icon: Icon(Icons.mic_rounded, size: 18)),
-              Tab(icon: Icon(Icons.edit_note_rounded, size: 18)),
-              Tab(icon: Icon(Icons.post_add_rounded, size: 18)),
-              Tab(icon: Icon(Icons.bookmarks_rounded, size: 18)),
+              Tab(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.camera_alt_rounded, size: 18),
+                    SizedBox(height: 2),
+                    Text("Photo", style: TextStyle(fontSize: 8.5, fontWeight: FontWeight.bold, letterSpacing: -0.2)),
+                  ],
+                ),
+              ),
+              Tab(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.qr_code_scanner_rounded, size: 18),
+                    SizedBox(height: 2),
+                    Text("Barcode", style: TextStyle(fontSize: 8.5, fontWeight: FontWeight.bold, letterSpacing: -0.2)),
+                  ],
+                ),
+              ),
+              Tab(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.mic_rounded, size: 18),
+                    SizedBox(height: 2),
+                    Text("Voice", style: TextStyle(fontSize: 8.5, fontWeight: FontWeight.bold, letterSpacing: -0.2)),
+                  ],
+                ),
+              ),
+              Tab(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.edit_note_rounded, size: 18),
+                    SizedBox(height: 2),
+                    Text("Describe", style: TextStyle(fontSize: 8.5, fontWeight: FontWeight.bold, letterSpacing: -0.2)),
+                  ],
+                ),
+              ),
+              Tab(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.post_add_rounded, size: 18),
+                    SizedBox(height: 2),
+                    Text("Manual", style: TextStyle(fontSize: 8.5, fontWeight: FontWeight.bold, letterSpacing: -0.2)),
+                  ],
+                ),
+              ),
+              Tab(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.bookmarks_rounded, size: 18),
+                    SizedBox(height: 2),
+                    Text("Presets", style: TextStyle(fontSize: 8.5, fontWeight: FontWeight.bold, letterSpacing: -0.2)),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
@@ -1939,6 +2777,198 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
           ),
           const SizedBox(height: 14),
 
+          // Meal Breakdown Section
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  const Text(
+                    'MEAL BREAKDOWN',
+                    style: TextStyle(
+                      fontSize: 9,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.0,
+                      color: AppTheme.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  GestureDetector(
+                    onTap: () {
+                      showDialog(
+                        context: context,
+                        builder: (infoCtx) => Dialog(
+                          backgroundColor: Colors.transparent,
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(20),
+                            child: BackdropFilter(
+                              filter: ui.ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+                              child: Container(
+                                constraints: const BoxConstraints(maxWidth: 360),
+                                padding: const EdgeInsets.all(20),
+                                decoration: BoxDecoration(
+                                  color: isDark ? const Color(0xFF000000) : Colors.white.withOpacity(0.95),
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(
+                                    color: isDark ? const Color(0xFF323530) : AppTheme.glassBorder,
+                                  ),
+                                ),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        const Icon(Icons.question_mark_rounded, color: AppTheme.accentCyan, size: 24),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          "Meal Breakdown Help",
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 18,
+                                            color: isDark ? Colors.white : AppTheme.textPrimary,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 16),
+                                    Text(
+                                      "Instead of guessing a meal's total calories, you can break it down into its separate ingredients (e.g., 'Chicken Biryani' into Rice, Chicken, Oil, etc.).\n\n"
+                                      "The app automatically sums the nutrition of these items to calculate the total calories and macros for your food log.",
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: isDark ? Colors.white70 : AppTheme.textSecondary,
+                                        height: 1.4,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 20),
+                                    Align(
+                                      alignment: Alignment.centerRight,
+                                      child: TextButton(
+                                        onPressed: () => Navigator.pop(infoCtx),
+                                        child: const Text("Got it", style: TextStyle(color: AppTheme.accentCyan, fontWeight: FontWeight.bold)),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                    child: Icon(Icons.question_mark_rounded, color: AppTheme.accentCyan, size: 14),
+                  ),
+                ],
+              ),
+              GestureDetector(
+                onTap: () => _showEditBreakdownItemDialog(null, null, isManual: true),
+                child: const Row(
+                  children: [
+                    Icon(Icons.add_circle_outline_rounded, color: AppTheme.accentCyan, size: 14),
+                    SizedBox(width: 4),
+                    Text(
+                      "Add Item",
+                      style: TextStyle(
+                        color: AppTheme.accentCyan,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: isDark ? Colors.white.withOpacity(0.01) : Colors.black.withOpacity(0.01),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: isDark ? AppTheme.glassBorder : Colors.black.withOpacity(0.05),
+                width: 1.0,
+              ),
+            ),
+            child: _manualBreakdownItems.isEmpty
+                ? const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 12),
+                    child: Center(
+                      child: Text(
+                        "No breakdown items yet.\n\nExample: A 'Chicken Salad' meal can be broken down into 'Grilled Chicken (150g)', 'Lettuce (1 cup)', and 'Olive Oil (1 tbsp)' to calculate precise calories automatically.",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: AppTheme.textSecondary,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  )
+                : Column(
+                    children: [
+                      ListView.separated(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: _manualBreakdownItems.length,
+                        separatorBuilder: (context, index) => Divider(
+                          color: isDark ? Colors.white.withOpacity(0.04) : Colors.black.withOpacity(0.04),
+                          height: 12,
+                        ),
+                        itemBuilder: (context, index) {
+                          final item = _manualBreakdownItems[index];
+                          return Row(
+                            children: [
+                              Expanded(
+                                child: GestureDetector(
+                                  onTap: () => _showEditBreakdownItemDialog(item, index, isManual: true),
+                                  behavior: HitTestBehavior.opaque,
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        item.name,
+                                        style: TextStyle(
+                                          color: isDark ? Colors.white : AppTheme.textPrimary,
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        "${item.servingSize % 1 == 0 ? item.servingSize.toInt().toString() : item.servingSize.toString()} ${item.servingUnit} • ${item.calories} kcal • P: ${item.protein}g C: ${item.carbs}g F: ${item.fat}g",
+                                        style: const TextStyle(
+                                          color: AppTheme.textSecondary,
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.delete_outline_rounded, color: AppTheme.accentCoral, size: 18),
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
+                                onPressed: () {
+                                  setState(() {
+                                    _manualBreakdownItems.removeAt(index);
+                                  });
+                                  _updateManualTotalsFromBreakdown();
+                                },
+                              ),
+                            ],
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+          ),
+          const SizedBox(height: 14),
+
           // Serving Size & Unit Row
           Row(
             children: [
@@ -2025,9 +3055,9 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
                             }).toList(),
                             onChanged: (String? val) {
                               if (val != null) {
-                                setState(() {
-                                  _selectedServingUnit = val;
-                                });
+                                  setState(() {
+                                    _selectedServingUnit = val;
+                                  });
                               }
                             },
                           ),
@@ -2299,7 +3329,9 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
                       'protein': int.tryParse(_manualProteinController.text) ?? 0,
                       'carbs': int.tryParse(_manualCarbsController.text) ?? 0,
                       'fat': int.tryParse(_manualFatController.text) ?? 0,
+                      'items': _manualBreakdownItems.map((e) => e.toJson()).toList(),
                     });
+                    FirebaseService.saveFoodPresetsCloud(StorageService.getFoodPresets());
 
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
@@ -2308,24 +3340,31 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
                       ),
                     );
                   },
-                  child: Container(
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
                     height: 52,
                     decoration: BoxDecoration(
-                      color: Colors.transparent,
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: AppTheme.accentCyan, width: 1.5),
+                      color: isDark
+                          ? AppTheme.accentCyan.withOpacity(0.06)
+                          : Colors.black.withOpacity(0.03),
+                      borderRadius: BorderRadius.circular(26),
+                      border: Border.all(
+                        color: AppTheme.accentCyan.withOpacity(0.4),
+                        width: 1.5,
+                      ),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.bookmark_add_rounded, color: isDark ? Colors.white : AppTheme.textPrimary, size: 18),
-                        const SizedBox(width: 6),
+                        Icon(Icons.bookmark_add_rounded, color: isDark ? AppTheme.accentCyan : AppTheme.textPrimary, size: 18),
+                        const SizedBox(width: 8),
                         Text(
                           "Save Preset",
                           style: TextStyle(
-                            color: isDark ? Colors.white : AppTheme.textPrimary,
+                            color: isDark ? AppTheme.accentCyan : AppTheme.textPrimary,
                             fontSize: 15,
                             fontWeight: FontWeight.bold,
+                            letterSpacing: 0.2,
                           ),
                         ),
                       ],
@@ -2337,6 +3376,24 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
               Expanded(
                 child: GestureDetector(
                   onTap: () {
+                    // Sync totals from breakdown items if present before saving
+                    if (_manualBreakdownItems.isNotEmpty) {
+                      int totalCals = 0;
+                      int totalProtein = 0;
+                      int totalCarbs = 0;
+                      int totalFat = 0;
+                      for (final item in _manualBreakdownItems) {
+                        totalCals += item.calories;
+                        totalProtein += item.protein;
+                        totalCarbs += item.carbs;
+                        totalFat += item.fat;
+                      }
+                      _manualCalController.text = totalCals.toString();
+                      _manualProteinController.text = totalProtein.toString();
+                      _manualCarbsController.text = totalCarbs.toString();
+                      _manualFatController.text = totalFat.toString();
+                    }
+
                     final String name = _manualNameController.text.trim().isNotEmpty ? _manualNameController.text.trim() : "Manual Meal";
                     final int cal = int.tryParse(_manualCalController.text) ?? 0;
                     final int prot = int.tryParse(_manualProteinController.text) ?? 0;
@@ -2356,6 +3413,7 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
                           carbs: carb,
                           fat: fat,
                           foodName: finalName,
+                          breakdownItems: _manualBreakdownItems.map((e) => e.toJson()).toList(),
                         );
 
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -2383,6 +3441,7 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
                     _manualFatController.clear();
                     _manualServingSizeController.text = "1";
                     _selectedServingUnit = 'serving';
+                    _manualBreakdownItems.clear();
 
                     Navigator.of(context).pop();
                   },
@@ -2390,15 +3449,23 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
                     height: 52,
                     decoration: BoxDecoration(
                       color: AppTheme.accentCyan,
-                      borderRadius: BorderRadius.circular(24),
+                      borderRadius: BorderRadius.circular(26),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppTheme.accentCyan.withOpacity(0.2),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
                     ),
                     child: const Center(
                       child: Text(
                         "Log Meal",
                         style: TextStyle(
-                          color: AppTheme.textPrimary,
+                          color: Colors.black,
                           fontSize: 16,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.2,
                         ),
                       ),
                     ),
@@ -2652,6 +3719,155 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
                 borderSide: const BorderSide(color: AppTheme.accentCyan),
               ),
             ),
+          ),
+          const SizedBox(height: 14),
+
+          // Meal Breakdown Section
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  const Text(
+                    'MEAL BREAKDOWN',
+                    style: TextStyle(
+                      fontSize: 9,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.0,
+                      color: AppTheme.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  GestureDetector(
+                    onTap: () {
+                      showDialog(
+                        context: context,
+                        builder: (infoCtx) => AlertDialog(
+                          backgroundColor: isDark ? const Color(0xFF1C1E1B) : Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          title: const Text("Meal Breakdown Help", style: TextStyle(fontWeight: FontWeight.bold)),
+                          content: const Text(
+                            "Instead of guessing a meal's total calories, you can break it down into its separate ingredients (e.g., 'Chicken Biryani' into Rice, Chicken, Oil, etc.).\n\n"
+                            "The app automatically sums the nutrition of these items to calculate the total calories and macros for your food log."
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(infoCtx),
+                              child: const Text("Got it", style: TextStyle(color: AppTheme.accentCyan)),
+                            )
+                          ],
+                        ),
+                      );
+                    },
+                    child: Icon(Icons.help_outline_rounded, color: isDark ? Colors.white60 : Colors.black54, size: 14),
+                  ),
+                ],
+              ),
+              GestureDetector(
+                onTap: () => _showEditBreakdownItemDialog(null, null),
+                child: const Row(
+                  children: [
+                    Icon(Icons.add_circle_outline_rounded, color: AppTheme.accentCyan, size: 14),
+                    SizedBox(width: 4),
+                    Text(
+                      "Add Item",
+                      style: TextStyle(
+                        color: AppTheme.accentCyan,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: isDark ? Colors.white.withOpacity(0.01) : Colors.black.withOpacity(0.01),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: isDark ? AppTheme.glassBorder : Colors.black.withOpacity(0.05),
+                width: 1.0,
+              ),
+            ),
+            child: _reviewBreakdownItems.isEmpty
+                ? const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 12),
+                    child: Center(
+                      child: Text(
+                        "No breakdown items yet.\n\nExample: A 'Chicken Salad' meal can be broken down into 'Grilled Chicken (150g)', 'Lettuce (1 cup)', and 'Olive Oil (1 tbsp)' to calculate precise calories automatically.",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: AppTheme.textSecondary,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  )
+                : Column(
+                    children: [
+                      ListView.separated(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: _reviewBreakdownItems.length,
+                        separatorBuilder: (context, index) => Divider(
+                          color: isDark ? Colors.white.withOpacity(0.04) : Colors.black.withOpacity(0.04),
+                          height: 12,
+                        ),
+                        itemBuilder: (context, index) {
+                          final item = _reviewBreakdownItems[index];
+                          return Row(
+                            children: [
+                              Expanded(
+                                child: GestureDetector(
+                                  onTap: () => _showEditBreakdownItemDialog(item, index),
+                                  behavior: HitTestBehavior.opaque,
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        item.name,
+                                        style: TextStyle(
+                                          color: isDark ? Colors.white : AppTheme.textPrimary,
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        "${item.servingSize % 1 == 0 ? item.servingSize.toInt().toString() : item.servingSize.toString()} ${item.servingUnit} • ${item.calories} kcal • P: ${item.protein}g C: ${item.carbs}g F: ${item.fat}g",
+                                        style: const TextStyle(
+                                          color: AppTheme.textSecondary,
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.delete_outline_rounded, color: AppTheme.accentCoral, size: 18),
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
+                                onPressed: () {
+                                  setState(() {
+                                    _reviewBreakdownItems.removeAt(index);
+                                  });
+                                  _updateTotalsFromBreakdown();
+                                },
+                              ),
+                            ],
+                          );
+                        },
+                      ),
+                    ],
+                  ),
           ),
           const SizedBox(height: 14),
 
@@ -3051,6 +4267,7 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
                       'carbs': int.tryParse(_reviewCarbsController.text) ?? 0,
                       'fat': int.tryParse(_reviewFatController.text) ?? 0,
                     });
+                    FirebaseService.saveFoodPresetsCloud(StorageService.getFoodPresets());
 
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
@@ -3059,24 +4276,31 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
                       ),
                     );
                   },
-                  child: Container(
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
                     height: 52,
                     decoration: BoxDecoration(
-                      color: Colors.transparent,
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: AppTheme.accentCyan, width: 1.5),
+                      color: isDark
+                          ? AppTheme.accentCyan.withOpacity(0.06)
+                          : Colors.black.withOpacity(0.03),
+                      borderRadius: BorderRadius.circular(26),
+                      border: Border.all(
+                        color: AppTheme.accentCyan.withOpacity(0.4),
+                        width: 1.5,
+                      ),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.bookmark_add_rounded, color: isDark ? Colors.white : AppTheme.textPrimary, size: 18),
-                        const SizedBox(width: 6),
+                        Icon(Icons.bookmark_add_rounded, color: isDark ? AppTheme.accentCyan : AppTheme.textPrimary, size: 18),
+                        const SizedBox(width: 8),
                         Text(
                           "Save Preset",
                           style: TextStyle(
-                            color: isDark ? Colors.white : AppTheme.textPrimary,
+                            color: isDark ? AppTheme.accentCyan : AppTheme.textPrimary,
                             fontSize: 15,
                             fontWeight: FontWeight.bold,
+                            letterSpacing: 0.2,
                           ),
                         ),
                       ],
@@ -3088,6 +4312,24 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
               Expanded(
                 child: GestureDetector(
                   onTap: () {
+                    // Sync totals from breakdown items if present before saving
+                    if (_reviewBreakdownItems.isNotEmpty) {
+                      int totalCals = 0;
+                      int totalProtein = 0;
+                      int totalCarbs = 0;
+                      int totalFat = 0;
+                      for (final item in _reviewBreakdownItems) {
+                        totalCals += item.calories;
+                        totalProtein += item.protein;
+                        totalCarbs += item.carbs;
+                        totalFat += item.fat;
+                      }
+                      _reviewCalController.text = totalCals.toString();
+                      _reviewProteinController.text = totalProtein.toString();
+                      _reviewCarbsController.text = totalCarbs.toString();
+                      _reviewFatController.text = totalFat.toString();
+                    }
+
                     // Assemble the updated Standard Food Object from review TextFields
                     final String name = _reviewNameController.text.trim().isNotEmpty
                         ? _reviewNameController.text.trim()
@@ -3103,6 +4345,9 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
                       protein: int.tryParse(_reviewProteinController.text) ?? 0,
                       carbs: int.tryParse(_reviewCarbsController.text) ?? 0,
                       fat: int.tryParse(_reviewFatController.text) ?? 0,
+                      servingSize: double.tryParse(sizeText),
+                      servingUnit: _reviewSelectedServingUnit,
+                      items: _reviewBreakdownItems,
                     );
 
                     debugPrint("Logged Food Object: ${jsonEncode(finalFood.toJson())}");
@@ -3118,6 +4363,7 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
                           fat: finalFood.fat,
                           foodName: finalFood.foodName,
                           imageUrl: _selectedImageBase64,
+                          breakdownItems: finalFood.items.map((e) => e.toJson()).toList(),
                         );
 
                     // Display confirmation snackbar/toast via ScaffoldMessenger
@@ -3307,12 +4553,21 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
                               Navigator.of(context).pop();
                             },
                           ),
+                          // Edit Button
+                          IconButton(
+                            icon: const Icon(Icons.edit_rounded, color: AppTheme.accentCyan, size: 20),
+                            tooltip: "Edit Preset",
+                            onPressed: () {
+                              _showEditPresetDialog(preset);
+                            },
+                          ),
                           // Delete Button
                           IconButton(
                             icon: const Icon(Icons.delete_outline_rounded, color: AppTheme.accentCoral, size: 20),
                             tooltip: "Delete Preset",
                             onPressed: () async {
                               await StorageService.deleteFoodPreset(name);
+                              FirebaseService.saveFoodPresetsCloud(StorageService.getFoodPresets());
                               setState(() {}); // refresh list
                             },
                           ),

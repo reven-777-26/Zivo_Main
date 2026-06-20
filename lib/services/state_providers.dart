@@ -319,6 +319,7 @@ class DailyMetricsNotifier extends StateNotifier<Map<String, dynamic>> {
     required int fat,
     String? foodName,
     String? imageUrl,
+    List<Map<String, dynamic>>? breakdownItems,
   }) async {
     debugPrint("STATE PROVIDER: logMeal called for $foodName with imageUrl length: ${imageUrl?.length ?? 0}");
     final metrics = StorageService.getDailyMetrics(dateStr);
@@ -372,25 +373,13 @@ class DailyMetricsNotifier extends StateNotifier<Map<String, dynamic>> {
         'meal': mealLabel,
         'time': timestamp,
         if (finalImageUrl != null) 'imageUrl': finalImageUrl,
+        if (breakdownItems != null) 'items': breakdownItems,
       });
       metrics['logged_items'] = items;
     }
 
     await StorageService.saveDailyMetrics(dateStr, metrics);
     await FirebaseService.saveDailyMetricsCloud(dateStr, metrics);
-
-    if (foodName != null && foodName.trim().isNotEmpty) {
-      unawaited(
-        FirebaseService.saveToGlobalTrainingData(
-          foodName: foodName,
-          calories: calories,
-          protein: protein,
-          carbs: carbs,
-          fat: fat,
-          imageUrl: finalImageUrl,
-        ),
-      );
-    }
 
     // Refresh state
     state = metrics;

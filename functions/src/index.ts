@@ -91,6 +91,60 @@ export const analyzeMeal = onCall({
           type: "INTEGER",
           description: "Estimated fat in g.",
         },
+        servingSize: {
+          type: "NUMBER",
+          description: "Estimated serving size (e.g. 1, 1.5, 200).",
+        },
+        servingUnit: {
+          type: "STRING",
+          description: "Estimated serving unit (e.g. piece, plate, cup, bowl, g, ml, serving).",
+        },
+        items: {
+          type: "ARRAY",
+          description: "The list of items/ingredients that make up this meal.",
+          items: {
+            type: "OBJECT",
+            properties: {
+              name: {
+                type: "STRING",
+                description: "Name of the ingredient/item (e.g. Rice, Chicken, Dal).",
+              },
+              servingSize: {
+                type: "NUMBER",
+                description: "Serving size for this specific item.",
+              },
+              servingUnit: {
+                type: "STRING",
+                description: "Serving unit for this specific item (e.g. cup, piece, g).",
+              },
+              calories: {
+                type: "INTEGER",
+                description: "Calories for this specific item.",
+              },
+              protein: {
+                type: "INTEGER",
+                description: "Protein in g for this specific item.",
+              },
+              carbs: {
+                type: "INTEGER",
+                description: "Carbs in g for this specific item.",
+              },
+              fat: {
+                type: "INTEGER",
+                description: "Fat in g for this specific item.",
+              },
+            },
+            required: [
+              "name",
+              "servingSize",
+              "servingUnit",
+              "calories",
+              "protein",
+              "carbs",
+              "fat",
+            ],
+          },
+        },
       },
       required: [
         "foodName",
@@ -98,6 +152,9 @@ export const analyzeMeal = onCall({
         "protein",
         "carbs",
         "fat",
+        "servingSize",
+        "servingUnit",
+        "items",
       ],
     };
     if (data.type === "barcode_image") {
@@ -197,6 +254,9 @@ export const analyzeMeal = onCall({
       protein: Number(parsed.protein) || 0,
       carbs: Number(parsed.carbs) || 0,
       fat: Number(parsed.fat) || 0,
+      servingSize: parsed.servingSize !== undefined ? Number(parsed.servingSize) : null,
+      servingUnit: parsed.servingUnit || null,
+      items: parsed.items || [],
     };
   } catch (error: unknown) {
     logger.error("analyzeMeal error:", error);

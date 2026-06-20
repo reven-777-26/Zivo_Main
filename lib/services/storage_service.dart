@@ -192,6 +192,11 @@ class StorageService {
     await _reminderBox.put('food_presets', {'list': list});
   }
 
+  /// Saves the full list of food presets (used for Cloud Sync).
+  static Future<void> saveFoodPresetsList(List<Map<String, dynamic>> list) async {
+    await _reminderBox.put('food_presets', {'list': list});
+  }
+
 
   /// Clears only mock nutrition logs and workout logs.
   static Future<void> clearMockDataOnly() async {

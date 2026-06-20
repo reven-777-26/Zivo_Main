@@ -396,6 +396,12 @@ Future<dynamic> _showFoodDetailsDialog(
   String selectedMealKey = initialMealKey;
   bool isEditing = isDayEnded ? false : startInEditMode;
 
+  final String? imageUrl = item['imageUrl'];
+  final bool hasRealImage = imageUrl != null &&
+      imageUrl.isNotEmpty &&
+      !imageUrl.contains('aida-public') &&
+      !imageUrl.contains('photo-1546069901-ba9599a7e63c');
+
   Widget buildMacroCard(String label, String val, Color col, String emoji) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 14),
@@ -495,32 +501,54 @@ Future<dynamic> _showFoodDetailsDialog(
     builder: (context) {
       return StatefulBuilder(
         builder: (context, setState) {
-          final categories = [
+            Widget buildMiniMacroIndicator(String label, String value, Color color) {
+              return Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    "$label:",
+                    style: const TextStyle(
+                      color: AppTheme.textSecondary,
+                      fontSize: 9,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(width: 2),
+                  Text(
+                    value,
+                    style: TextStyle(
+                      color: color,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
+              );
+            }
+
+            final categories = [
             {'name': 'Breakfast', 'key': 'breakfast_cal', 'icon': Icons.egg_rounded},
             {'name': 'Lunch', 'key': 'lunch_cal', 'icon': Icons.restaurant_rounded},
             {'name': 'Dinner', 'key': 'dinner_cal', 'icon': Icons.soup_kitchen_rounded},
             {'name': 'Snacks', 'key': 'snacks_cal', 'icon': Icons.bakery_dining_rounded},
             {'name': 'Eating Out', 'key': 'outside_food_cal', 'icon': Icons.delivery_dining_rounded},
           ];
-
           return Dialog(
             backgroundColor: Colors.transparent,
             insetPadding: const EdgeInsets.symmetric(horizontal: 24),
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(24),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? const Color(0xFF1C1E1B)
-                      : AppTheme.glassBackground,
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(
-                    color: isDark
-                        ? const Color(0xFF323530)
-                        : AppTheme.glassBorder,
-                    width: 1.0,
+              borderRadius: BorderRadius.circular(28),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF0E0F0C) : Colors.white,
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(
+                      color: isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder,
+                      width: 1.0,
+                    ),
                   ),
-                ),
                   padding: const EdgeInsets.all(24),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -532,24 +560,24 @@ Future<dynamic> _showFoodDetailsDialog(
                         children: [
                           if (!isEditing)
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                               decoration: BoxDecoration(
-                                color: isDark ? AppTheme.accentCyan.withOpacity(0.12) : const Color(0xFFE2F6D5),
-                                borderRadius: BorderRadius.circular(9999),
+                                color: AppTheme.accentCyan.withOpacity(0.06),
+                                borderRadius: BorderRadius.circular(20),
                                 border: Border.all(
-                                  color: isDark ? AppTheme.accentCyan.withOpacity(0.3) : const Color(0xFFC5EDAB),
-                                  width: 1.2,
+                                  color: AppTheme.accentCyan.withOpacity(0.3),
+                                  width: 1.0,
                                 ),
                               ),
                               child: Text(
                                 selectedMealKey == 'outside_food_cal'
                                     ? 'EATING OUT'
                                     : selectedMealKey.replaceAll('_cal', '').replaceAll('_', ' ').toUpperCase(),
-                                style: TextStyle(
-                                  color: isDark ? AppTheme.accentCyan : const Color(0xFF054D28),
+                                style: const TextStyle(
+                                  color: AppTheme.accentCyan,
                                   fontWeight: FontWeight.w900,
-                                  fontSize: 10,
-                                  letterSpacing: 0.8,
+                                  fontSize: 9,
+                                  letterSpacing: 0.5,
                                 ),
                               ),
                             )
@@ -557,7 +585,7 @@ Future<dynamic> _showFoodDetailsDialog(
                             const Text(
                               'EDIT ENTRY',
                               style: TextStyle(
-                                color: AppTheme.accentPurple,
+                                color: AppTheme.accentCyan,
                                 fontWeight: FontWeight.w900,
                                 fontSize: 11,
                                 letterSpacing: 1.0,
@@ -568,7 +596,7 @@ Future<dynamic> _showFoodDetailsDialog(
                             child: Container(
                               padding: const EdgeInsets.all(6),
                               decoration: BoxDecoration(
-                                color: isDark ? Colors.white.withOpacity(0.04) : Colors.black.withOpacity(0.04),
+                                color: Colors.white.withOpacity(0.04),
                                 shape: BoxShape.circle,
                               ),
                               child: const Icon(
@@ -582,7 +610,68 @@ Future<dynamic> _showFoodDetailsDialog(
                       ),
                       const SizedBox(height: 18),
 
-
+                      if (isEditing) ...[
+                        const Text(
+                          'MEAL CATEGORY',
+                          style: TextStyle(
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1.0,
+                            color: AppTheme.textSecondary,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 6,
+                          children: categories.map((cat) {
+                            final isSelected = selectedMealKey == cat['key'];
+                            return GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  selectedMealKey = cat['key'] as String;
+                                });
+                              },
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 200),
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: isSelected
+                                      ? AppTheme.accentCyan
+                                      : Colors.white.withOpacity(0.03),
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(
+                                    color: isSelected
+                                        ? AppTheme.accentCyan
+                                        : Colors.white.withOpacity(0.08),
+                                    width: 1.0,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      cat['icon'] as IconData,
+                                      size: 11,
+                                      color: isSelected ? Colors.black : Colors.white70,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      cat['name'] as String,
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                        color: isSelected ? Colors.black : Colors.white70,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
 
                       // Meal Name
                       if (!isEditing)
@@ -611,19 +700,19 @@ Future<dynamic> _showFoodDetailsDialog(
                           style: TextStyle(fontWeight: FontWeight.bold, color: isDark ? Colors.white : AppTheme.textPrimary),
                           decoration: InputDecoration(
                             filled: true,
-                            fillColor: isDark ? Colors.white.withOpacity(0.02) : Colors.black.withOpacity(0.02),
+                            fillColor: isDark ? const Color(0xFF121214) : Colors.black.withOpacity(0.02),
                             contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: isDark ? const Color(0xFF323530) : AppTheme.textPrimary),
+                              borderSide: BorderSide(color: isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder),
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: isDark ? const Color(0xFF323530) : AppTheme.textPrimary),
+                              borderSide: BorderSide(color: isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(color: AppTheme.accentCyan),
+                              borderSide: const BorderSide(color: AppTheme.accentCyan, width: 1.5),
                             ),
                           ),
                         ),
@@ -649,24 +738,22 @@ Future<dynamic> _showFoodDetailsDialog(
                             ),
                           ],
                         ),
-
-                      if (item['imageUrl'] != null && (item['imageUrl'] as String).isNotEmpty) ...[
+                      if (hasRealImage) ...[
                         const SizedBox(height: 16),
                         ClipRRect(
                           borderRadius: BorderRadius.circular(16),
-                          child: Container(
-                            width: double.infinity,
-                            height: 140,
-                            decoration: BoxDecoration(
-                              border: Border.all(
-                                color: isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.06),
-                              ),
-                            ),
-                            child: () {
-                              final imgStr = item['imageUrl'] as String;
-                              if (imgStr.startsWith('http')) {
-                                return Image.network(imgStr, fit: BoxFit.cover);
-                              }
+                          child: () {
+                            final imgStr = imageUrl;
+                            Widget? imageWidget;
+                            if (imgStr.startsWith('http')) {
+                              imageWidget = Image.network(
+                                imgStr,
+                                fit: BoxFit.cover,
+                                height: 160,
+                                width: double.infinity,
+                                errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
+                              );
+                            } else {
                               try {
                                 String cleaned = imgStr;
                                 final commaIndex = cleaned.indexOf(',');
@@ -674,14 +761,19 @@ Future<dynamic> _showFoodDetailsDialog(
                                   cleaned = cleaned.substring(commaIndex + 1);
                                 }
                                 cleaned = cleaned.replaceAll(RegExp(r'\s+'), '');
-                                return Image.memory(base64Decode(cleaned), fit: BoxFit.cover);
-                              } catch (e) {
-                                return const Center(
-                                  child: Icon(Icons.broken_image_rounded, color: AppTheme.accentCoral),
+                                imageWidget = Image.memory(
+                                  base64Decode(cleaned),
+                                  fit: BoxFit.cover,
+                                  height: 160,
+                                  width: double.infinity,
+                                  errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
                                 );
+                              } catch (e) {
+                                imageWidget = const SizedBox.shrink();
                               }
-                            }(),
-                          ),
+                            }
+                            return imageWidget;
+                          }(),
                         ),
                       ],
                       const SizedBox(height: 20),
@@ -692,10 +784,10 @@ Future<dynamic> _showFoodDetailsDialog(
                           width: double.infinity,
                           padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
                           decoration: BoxDecoration(
-                            color: isDark ? AppTheme.accentCyan.withOpacity(0.06) : const Color(0xFFE2F6D5),
-                            borderRadius: BorderRadius.circular(24),
+                            color: isDark ? AppTheme.accentCyan.withOpacity(0.04) : const Color(0xFFE2F6D5),
+                            borderRadius: BorderRadius.circular(20),
                             border: Border.all(
-                              color: isDark ? AppTheme.accentCyan.withOpacity(0.25) : const Color(0xFFC5EDAB),
+                              color: isDark ? AppTheme.accentCyan.withOpacity(0.2) : const Color(0xFFC5EDAB),
                               width: 1.2,
                             ),
                           ),
@@ -707,7 +799,7 @@ Future<dynamic> _showFoodDetailsDialog(
                                   Container(
                                     padding: const EdgeInsets.all(8),
                                     decoration: BoxDecoration(
-                                      color: isDark ? AppTheme.accentCyan.withOpacity(0.12) : const Color(0xFFC5EDAB),
+                                      color: isDark ? AppTheme.accentCyan.withOpacity(0.1) : const Color(0xFFC5EDAB),
                                       borderRadius: BorderRadius.circular(10),
                                     ),
                                     child: const Center(
@@ -835,9 +927,10 @@ Future<dynamic> _showFoodDetailsDialog(
                           ],
                         ),
                       ],
-                      if (isEditing) ...[
+                      if (!isEditing && item['items'] != null && (item['items'] as List).isNotEmpty) ...[
+                        const SizedBox(height: 18),
                         const Text(
-                          'MEAL CATEGORY',
+                          'MEAL BREAKDOWN',
                           style: TextStyle(
                             fontSize: 9,
                             fontWeight: FontWeight.bold,
@@ -846,56 +939,118 @@ Future<dynamic> _showFoodDetailsDialog(
                           ),
                         ),
                         const SizedBox(height: 8),
-                        Wrap(
-                          spacing: 6,
-                          runSpacing: 6,
-                          children: categories.map((cat) {
-                            final isSelected = selectedMealKey == cat['key'];
-                            return GestureDetector(
-                               onTap: () {
-                                 setState(() {
-                                   selectedMealKey = cat['key'] as String;
-                                 });
-                               },
-                               child: AnimatedContainer(
-                                 duration: const Duration(milliseconds: 200),
-                                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                 decoration: BoxDecoration(
-                                   color: isSelected
-                                       ? AppTheme.accentCyan
-                                       : (isDark ? Colors.white.withOpacity(0.03) : Colors.black.withOpacity(0.03)),
-                                   borderRadius: BorderRadius.circular(24),
-                                   border: Border.all(
-                                     color: isSelected
-                                         ? AppTheme.accentCyan
-                                         : (isDark ? AppTheme.glassBorder : Colors.black.withOpacity(0.08)),
-                                     width: 1.0,
-                                   ),
-                                 ),
-                                 child: Row(
-                                   mainAxisSize: MainAxisSize.min,
-                                   children: [
-                                     Icon(
-                                       cat['icon'] as IconData,
-                                       size: 11,
-                                       color: isSelected ? Colors.black : (isDark ? Colors.white70 : AppTheme.textSecondary),
-                                     ),
-                                     const SizedBox(width: 4),
-                                     Text(
-                                       cat['name'] as String,
-                                       style: TextStyle(
-                                         fontSize: 10,
-                                         fontWeight: FontWeight.bold,
-                                         color: isSelected ? Colors.black : (isDark ? Colors.white70 : AppTheme.textPrimary),
-                                       ),
-                                     ),
-                                   ],
-                                 ),
-                               ),
-                             );
-                          }).toList(),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: isDark ? const Color(0xFF0C0D0B) : Colors.black.withOpacity(0.01),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: isDark ? const Color(0xFF232521) : AppTheme.glassBorder,
+                              width: 1.0,
+                            ),
+                          ),
+                          child: ListView.separated(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: (item['items'] as List).length,
+                            separatorBuilder: (context, index) => Divider(
+                              color: isDark ? Colors.white.withOpacity(0.04) : Colors.black.withOpacity(0.04),
+                              height: 12,
+                            ),
+                            itemBuilder: (context, index) {
+                              final rawItem = (item['items'] as List)[index];
+                              final name = rawItem['name'] ?? rawItem['foodName'] ?? 'Ingredient';
+                              final sizeVal = rawItem['servingSize'] != null ? (rawItem['servingSize'] as num).toDouble() : 1.0;
+                              final sizeStr = sizeVal % 1 == 0 ? sizeVal.toInt().toString() : sizeVal.toString();
+                              final unit = rawItem['servingUnit'] ?? 'piece';
+                              final cal = rawItem['calories'] ?? 0;
+                              final prot = rawItem['protein'] ?? 0;
+                              final carb = rawItem['carbs'] ?? 0;
+                              final fat = rawItem['fat'] ?? 0;
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 4.0),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 6,
+                                      height: 6,
+                                      decoration: const BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: AppTheme.accentCyan,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Text(
+                                                name,
+                                                style: TextStyle(
+                                                  color: isDark ? Colors.white : AppTheme.textPrimary,
+                                                  fontSize: 13,
+                                                  fontWeight: FontWeight.bold,
+                                                  letterSpacing: -0.2,
+                                                ),
+                                              ),
+                                              Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                                decoration: BoxDecoration(
+                                                  color: AppTheme.accentCyan.withOpacity(0.08),
+                                                  borderRadius: BorderRadius.circular(6),
+                                                ),
+                                                child: Text(
+                                                  "$sizeStr $unit",
+                                                  style: const TextStyle(
+                                                    color: AppTheme.accentCyan,
+                                                    fontSize: 10,
+                                                    fontWeight: FontWeight.w800,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Row(
+                                            children: [
+                                              Text(
+                                                "$cal kcal",
+                                                style: TextStyle(
+                                                  color: isDark ? Colors.white70 : Colors.black87,
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.w800,
+                                                ),
+                                              ),
+                                              const SizedBox(width: 8),
+                                              Container(
+                                                width: 3,
+                                                height: 3,
+                                                decoration: BoxDecoration(
+                                                  shape: BoxShape.circle,
+                                                  color: isDark ? Colors.white24 : Colors.black12,
+                                                ),
+                                              ),
+                                              const SizedBox(width: 8),
+                                              buildMiniMacroIndicator('P', '${prot}g', AppTheme.accentOrange),
+                                              const SizedBox(width: 8),
+                                              buildMiniMacroIndicator('C', '${carb}g', AppTheme.accentCyan),
+                                              const SizedBox(width: 8),
+                                              buildMiniMacroIndicator('F', '${fat}g', AppTheme.accentCoral),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
                         ),
-                        const SizedBox(height: 16),
                       ],
                       const SizedBox(height: 24),
 
@@ -972,10 +1127,11 @@ Future<dynamic> _showFoodDetailsDialog(
                                   }
                                   Navigator.of(context).pop();
                                 },
-                                child: Container(
-                                  height: 46,
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 200),
+                                  height: 48,
                                   decoration: BoxDecoration(
-                                    color: AppTheme.accentCoral.withOpacity(0.12),
+                                    color: isDark ? AppTheme.accentCoral.withOpacity(0.06) : Colors.red.withOpacity(0.03),
                                     borderRadius: BorderRadius.circular(24),
                                     border: Border.all(
                                       color: AppTheme.accentCoral.withOpacity(0.3),
@@ -1011,27 +1167,30 @@ Future<dynamic> _showFoodDetailsDialog(
                                   });
                                 },
                                 child: Container(
-                                  height: 46,
+                                  height: 48,
                                   decoration: BoxDecoration(
-                                    color: isDark ? AppTheme.accentCyan.withOpacity(0.12) : const Color(0xFFE2F6D5),
+                                    color: AppTheme.accentCyan,
                                     borderRadius: BorderRadius.circular(24),
-                                    border: Border.all(
-                                      color: isDark ? AppTheme.accentCyan.withOpacity(0.3) : const Color(0xFFC5EDAB),
-                                      width: 1.2,
-                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: AppTheme.accentCyan.withOpacity(0.2),
+                                        blurRadius: 10,
+                                        offset: const Offset(0, 3),
+                                      ),
+                                    ],
                                   ),
-                                  child: Center(
+                                  child: const Center(
                                     child: Row(
                                       mainAxisAlignment: MainAxisAlignment.center,
                                       children: [
-                                        Icon(Icons.edit_rounded, color: isDark ? AppTheme.accentCyan : const Color(0xFF054D28), size: 18),
-                                        const SizedBox(width: 8),
+                                        Icon(Icons.edit_rounded, color: Colors.black, size: 18),
+                                        SizedBox(width: 8),
                                         Text(
                                           "Edit Entry",
                                           style: TextStyle(
-                                            color: isDark ? AppTheme.accentCyan : const Color(0xFF054D28),
+                                            color: Colors.black,
                                             fontSize: 13,
-                                            fontWeight: FontWeight.bold,
+                                            fontWeight: FontWeight.w900,
                                           ),
                                         ),
                                       ],
@@ -1063,13 +1222,14 @@ Future<dynamic> _showFoodDetailsDialog(
                                     });
                                   }
                                 },
-                                child: Container(
-                                  height: 46,
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 200),
+                                  height: 48,
                                   decoration: BoxDecoration(
                                     color: isDark ? Colors.white.withOpacity(0.04) : Colors.black.withOpacity(0.03),
                                     borderRadius: BorderRadius.circular(24),
                                     border: Border.all(
-                                      color: isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.05),
+                                      color: isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.06),
                                       width: 1.2,
                                     ),
                                   ),
@@ -1156,18 +1316,25 @@ Future<dynamic> _showFoodDetailsDialog(
                                   Navigator.of(context).pop();
                                 },
                                 child: Container(
-                                  height: 46,
+                                  height: 48,
                                   decoration: BoxDecoration(
-                                    color: AppTheme.accentCyan,
+                                    gradient: AppTheme.primaryGradient,
                                     borderRadius: BorderRadius.circular(24),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: AppTheme.accentCyan.withOpacity(0.15),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 3),
+                                      ),
+                                    ],
                                   ),
                                   child: const Center(
                                     child: Text(
                                       "Save Changes",
                                       style: TextStyle(
-                                        color: AppTheme.textPrimary,
+                                        color: Colors.black,
                                         fontSize: 13,
-                                        fontWeight: FontWeight.w600,
+                                        fontWeight: FontWeight.w900,
                                       ),
                                     ),
                                   ),
@@ -1176,7 +1343,8 @@ Future<dynamic> _showFoodDetailsDialog(
                             ),
                           ],
                         ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -1185,4 +1353,4 @@ Future<dynamic> _showFoodDetailsDialog(
         );
       },
     );
-}
+  }

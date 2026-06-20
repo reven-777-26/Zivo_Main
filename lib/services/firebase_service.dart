@@ -318,26 +318,6 @@ class FirebaseService {
               }
             }
             updatedItems.add(item);
-
-            // Sync this logged item to the global AI training database collection
-            final String name = item['name'] ?? 'Unknown Meal';
-            final int cal = (item['calories'] ?? 0).toInt();
-            final int prot = (item['protein'] ?? 0).toInt();
-            final int carb = (item['carbs'] ?? 0).toInt();
-            final int fat = (item['fat'] ?? 0).toInt();
-            final String? finalUrl = item['imageUrl'] as String?;
-            
-            final docId = "${uid}_${date}_$i";
-            await firestore.collection('global_food_logs').doc(docId).set({
-              'foodName': name,
-              'calories': cal,
-              'protein': prot,
-              'carbs': carb,
-              'fat': fat,
-              if (finalUrl != null) 'imageUrl': finalUrl,
-              'timestamp': FieldValue.serverTimestamp(),
-              'userId': uid,
-            }, SetOptions(merge: true));
           }
           if (updatedAny) {
             metrics['logged_items'] = updatedItems;
@@ -370,6 +350,10 @@ class FirebaseService {
         templatesBatch.set(docRef, t);
       }
       await templatesBatch.commit();
+
+      // 8.1 Food Presets Sync
+      final presets = StorageService.getFoodPresets();
+      await userDoc.set({'food_presets': presets}, SetOptions(merge: true));
 
       // 9. App Settings Sync (accent color, macro goals, notification prefs)
       await userDoc.set({
@@ -575,6 +559,14 @@ class FirebaseService {
           if (bgUrl != null && bgUrl.isNotEmpty) {
             await StorageService.saveCustomBackground(bgUrl);
           }
+
+          // 6.3 Food Presets
+          final foodPresetsList = data['food_presets'] as List?;
+          if (foodPresetsList != null) {
+            await StorageService.saveFoodPresetsList(
+              foodPresetsList.map((e) => Map<String, dynamic>.from(e as Map)).toList(),
+            );
+          }
         }
       }
 
@@ -651,6 +643,18 @@ class FirebaseService {
       }, SetOptions(merge: true));
     } catch (e) {
       debugPrint("Error syncing single profile: $e");
+    }
+  }
+
+  /// Sync food presets to cloud
+  static Future<void> saveFoodPresetsCloud(List<Map<String, dynamic>> presets) async {
+    if (Firebase.apps.isEmpty || !isLoggedIn) return;
+    try {
+      await firestore.collection('users').doc(currentUser!.uid).set({
+        'food_presets': presets
+      }, SetOptions(merge: true));
+    } catch (e) {
+      debugPrint("Error syncing food presets: $e");
     }
   }
 
