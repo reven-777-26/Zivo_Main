@@ -828,9 +828,9 @@ class _ProfilePlaceholderScreenState
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final fieldBg = isDark
-        ? const Color(0xFF1C1E1B)
+        ? const Color(0xFF141618)
         : Colors.black.withOpacity(0.015);
-    final fieldBorder = isDark ? const Color(0xFF323530) : const Color(0xFFEADBFF);
+    final fieldBorder = isDark ? const Color(0xFF2C2C2E) : const Color(0xFFEADBFF);
     final textColor = isDark ? Colors.white : AppTheme.textPrimary;
 
     return GestureDetector(
@@ -1120,8 +1120,8 @@ class _ProfilePlaceholderScreenState
             GlassCard(
               width: double.infinity,
               padding: const EdgeInsets.all(20),
-              customBgColor: isDark ? const Color(0xFF1C1E1B) : AppTheme.glassBackground,
-              customBorder: Border.all(color: isDark ? const Color(0xFF323530) : AppTheme.glassBorder, width: 1.0),
+              customBgColor: isDark ? const Color(0xFF141618) : AppTheme.glassBackground,
+              customBorder: Border.all(color: isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder, width: 1.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -2283,10 +2283,10 @@ class _ProfilePlaceholderScreenState
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: isDark ? const Color(0xFF1C1E1B) : Colors.white,
+        backgroundColor: isDark ? const Color(0xFF141618) : Colors.white,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
-          side: BorderSide(color: isDark ? const Color(0xFF323530) : AppTheme.glassBorder, width: 1),
+          side: BorderSide(color: isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder, width: 1),
         ),
         title: Text(
           'Edit Profile Name',
@@ -2339,10 +2339,10 @@ class _ProfilePlaceholderScreenState
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: isDark ? const Color(0xFF1C1E1B) : Colors.white,
+        backgroundColor: isDark ? const Color(0xFF141618) : Colors.white,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
-          side: BorderSide(color: isDark ? const Color(0xFF323530) : AppTheme.glassBorder, width: 1),
+          side: BorderSide(color: isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder, width: 1),
         ),
         title: Text(
           'Rename Reminder',
@@ -2391,10 +2391,10 @@ class _ProfilePlaceholderScreenState
         builder: (dialogCtx, setDialogState) {
           final timeStr = _formatTimeOfDay(selectedTime);
           return AlertDialog(
-            backgroundColor: isDark ? const Color(0xFF1C1E1B) : Colors.white,
+            backgroundColor: isDark ? const Color(0xFF141618) : Colors.white,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(20),
-              side: BorderSide(color: isDark ? const Color(0xFF323530) : AppTheme.glassBorder, width: 1),
+              side: BorderSide(color: isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder, width: 1),
             ),
             title: Text(
               'Add Custom Reminder',
@@ -2660,9 +2660,9 @@ class _ProfilePlaceholderScreenState
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final fieldBg = isDark
-        ? const Color(0xFF1C1E1B)
+        ? const Color(0xFF141618)
         : Colors.black.withOpacity(0.015);
-    final fieldBorder = isDark ? const Color(0xFF323530) : AppTheme.glassBorder;
+    final fieldBorder = isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder;
     final textColor = isDark ? Colors.white : AppTheme.textPrimary;
 
     return Container(
@@ -2717,9 +2717,9 @@ class _ProfilePlaceholderScreenState
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final fieldBg = isDark
-        ? const Color(0xFF1C1E1B)
+        ? const Color(0xFF141618)
         : Colors.black.withOpacity(0.015);
-    final fieldBorder = isDark ? const Color(0xFF323530) : AppTheme.glassBorder;
+    final fieldBorder = isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder;
     final textColor = isDark ? Colors.white : AppTheme.textPrimary;
 
     return LayoutBuilder(
@@ -2732,7 +2732,7 @@ class _ProfilePlaceholderScreenState
           ),
           child: MenuAnchor(
             style: MenuStyle(
-              backgroundColor: WidgetStateProperty.all(isDark ? const Color(0xFF1C1E1B) : Colors.white),
+              backgroundColor: WidgetStateProperty.all(isDark ? const Color(0xFF141618) : Colors.white),
               surfaceTintColor: WidgetStateProperty.all(Colors.transparent),
               elevation: WidgetStateProperty.all(8),
               shadowColor: WidgetStateProperty.all(Colors.black.withOpacity(isDark ? 0.5 : 0.15)),
@@ -2976,8 +2976,8 @@ class _ProfilePlaceholderScreenState
 
   void _showSignOutDialog(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final dialogBg = isDark ? const Color(0xFF1C1E1B) : Colors.white;
-    final dialogBorder = isDark ? const Color(0xFF323530) : const Color(0xFFEADBFF);
+    final dialogBg = isDark ? const Color(0xFF141618) : Colors.white;
+    final dialogBorder = isDark ? const Color(0xFF2C2C2E) : const Color(0xFFEADBFF);
     final textColor = isDark ? Colors.white : AppTheme.textPrimary;
 
     showDialog(
@@ -3044,8 +3044,8 @@ class _ProfilePlaceholderScreenState
 
   void _showWipeLogsDialog(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final dialogBg = isDark ? const Color(0xFF1C1E1B) : Colors.white;
-    final dialogBorder = isDark ? const Color(0xFF323530) : const Color(0xFFEADBFF);
+    final dialogBg = isDark ? const Color(0xFF141618) : Colors.white;
+    final dialogBorder = isDark ? const Color(0xFF2C2C2E) : const Color(0xFFEADBFF);
     final textColor = isDark ? Colors.white : AppTheme.textPrimary;
 
     showDialog(
@@ -3120,8 +3120,8 @@ class _ProfilePlaceholderScreenState
 
   void _showDeleteAccountDialog(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final dialogBg = isDark ? const Color(0xFF1C1E1B) : Colors.white;
-    final dialogBorder = isDark ? const Color(0xFF323530) : const Color(0xFFEADBFF);
+    final dialogBg = isDark ? const Color(0xFF141618) : Colors.white;
+    final dialogBorder = isDark ? const Color(0xFF2C2C2E) : const Color(0xFFEADBFF);
     final textColor = isDark ? Colors.white : AppTheme.textPrimary;
 
     showDialog(

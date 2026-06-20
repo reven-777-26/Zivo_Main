@@ -240,7 +240,7 @@ class _UnifiedProductDetailScreenState extends ConsumerState<UnifiedProductDetai
       data: (report) {
         if (report == null) {
           return Scaffold(
-            backgroundColor: isDark ? const Color(0xFF000000) : AppTheme.obsidianBackground,
+            backgroundColor: isDark ? const Color(0xFF0E0F0C) : AppTheme.obsidianBackground,
             appBar: AppBar(
               backgroundColor: Colors.transparent,
               elevation: 0,
@@ -273,7 +273,7 @@ class _UnifiedProductDetailScreenState extends ConsumerState<UnifiedProductDetai
         );
 
         return Scaffold(
-          backgroundColor: isDark ? const Color(0xFF000000) : AppTheme.obsidianBackground,
+          backgroundColor: isDark ? const Color(0xFF0E0F0C) : AppTheme.obsidianBackground,
           appBar: AppBar(
             backgroundColor: Colors.transparent,
             elevation: 0,
@@ -1036,7 +1036,7 @@ class _UnifiedProductDetailScreenState extends ConsumerState<UnifiedProductDetai
         );
       },
       loading: () => Scaffold(
-        backgroundColor: isDark ? const Color(0xFF000000) : AppTheme.obsidianBackground,
+        backgroundColor: isDark ? const Color(0xFF0E0F0C) : AppTheme.obsidianBackground,
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -1052,7 +1052,7 @@ class _UnifiedProductDetailScreenState extends ConsumerState<UnifiedProductDetai
         ),
       ),
       error: (err, _) => Scaffold(
-        backgroundColor: isDark ? const Color(0xFF000000) : AppTheme.obsidianBackground,
+        backgroundColor: isDark ? const Color(0xFF0E0F0C) : AppTheme.obsidianBackground,
         body: Padding(
           padding: const EdgeInsets.all(24.0),
           child: Center(

@@ -349,9 +349,9 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF1C1E1B) : AppTheme.glassBackground,
+                  color: isDark ? const Color(0xFF141618) : AppTheme.glassBackground,
                   borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: isDark ? const Color(0xFF323530) : AppTheme.accentCyan.withOpacity(0.2), width: 1.0),
+                  border: Border.all(color: isDark ? const Color(0xFF2C2C2E) : AppTheme.accentCyan.withOpacity(0.2), width: 1.0),
                 ),
                 child: Row(
                   children: [

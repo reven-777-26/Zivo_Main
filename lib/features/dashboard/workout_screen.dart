@@ -86,10 +86,10 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: isDark ? const Color(0xFF1C1E1B) : Colors.white,
+        backgroundColor: isDark ? const Color(0xFF141618) : Colors.white,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
-          side: BorderSide(color: isDark ? const Color(0xFF323530) : AppTheme.glassBorder),
+          side: BorderSide(color: isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder),
         ),
         title: Row(
           children: [
@@ -612,10 +612,10 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
                             margin: const EdgeInsets.only(right: 12),
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: isDark ? const Color(0xFF1C1E1B) : Colors.white,
+                              color: isDark ? const Color(0xFF141618) : Colors.white,
                               borderRadius: BorderRadius.circular(10),
                               border: Border.all(
-                                color: isDark ? const Color(0xFF323530) : AppTheme.glassBorder, 
+                                color: isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder, 
                                 width: 1,
                               ),
                             ),
@@ -2191,13 +2191,13 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
       onTap: () {
         showModalBottomSheet(
           context: context,
-          backgroundColor: isDark ? const Color(0xFF1C1E1B) : Colors.white,
+          backgroundColor: isDark ? const Color(0xFF141618) : Colors.white,
           shape: RoundedRectangleBorder(
             borderRadius: const BorderRadius.only(
               topLeft: Radius.circular(20),
               topRight: Radius.circular(20),
             ),
-            side: BorderSide(color: isDark ? const Color(0xFF323530) : AppTheme.glassBorder, width: 1.0),
+            side: BorderSide(color: isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder, width: 1.0),
           ),
           builder: (ctx) {
             return Container(
@@ -2420,10 +2420,10 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
             width: double.infinity,
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF1C1E1B) : Colors.white,
+              color: isDark ? const Color(0xFF141618) : Colors.white,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: isDark ? const Color(0xFF323530) : AppTheme.glassBorder,
+                color: isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder,
                 width: 1.2,
               ),
               boxShadow: [
@@ -2526,7 +2526,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
           width: double.infinity,
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF1C1E1B) : Colors.white,
+            color: isDark ? const Color(0xFF141618) : Colors.white,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: isPaused 
@@ -3386,9 +3386,9 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
                   ),
                 ),
                 style: OutlinedButton.styleFrom(
-                  backgroundColor: isDark ? const Color(0xFF1C1E1B) : Colors.white,
+                  backgroundColor: isDark ? const Color(0xFF141618) : Colors.white,
                   side: BorderSide(
-                    color: isDark ? const Color(0xFF323530) : AppTheme.glassBorder,
+                    color: isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder,
                     width: 1.0,
                   ),
                   shape: RoundedRectangleBorder(
@@ -3774,8 +3774,8 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
             }).toList();
 
             final isDark = Theme.of(ctx).brightness == Brightness.dark;
-            final dialogBg = isDark ? const Color(0xFF1C1E1B) : Colors.white;
-            final dialogBorder = isDark ? const Color(0xFF323530) : const Color(0xFFEADBFF);
+            final dialogBg = isDark ? const Color(0xFF141618) : Colors.white;
+            final dialogBorder = isDark ? const Color(0xFF2C2C2E) : const Color(0xFFEADBFF);
             final textColor = isDark ? Colors.white : AppTheme.textPrimary;
 
             return AlertDialog(
@@ -4065,9 +4065,9 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
       backgroundColor: Colors.transparent,
       builder: (ctx) {
         final isDark = Theme.of(ctx).brightness == Brightness.dark;
-        final bg = isDark ? const Color(0xFF1C1E1B) : Colors.white;
+        final bg = isDark ? const Color(0xFF141618) : Colors.white;
         final textColor = isDark ? Colors.white : AppTheme.textPrimary;
-        final borderColor = isDark ? const Color(0xFF323530) : const Color(0xFFEADBFF);
+        final borderColor = isDark ? const Color(0xFF2C2C2E) : const Color(0xFFEADBFF);
 
         return StatefulBuilder(
           builder: (dialogCtx, setStateSheet) {
@@ -4420,9 +4420,9 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
       backgroundColor: Colors.transparent,
       builder: (ctx) {
         final isDark = Theme.of(ctx).brightness == Brightness.dark;
-        final bg = isDark ? const Color(0xFF1C1E1B) : Colors.white;
+        final bg = isDark ? const Color(0xFF141618) : Colors.white;
         final textColor = isDark ? Colors.white : AppTheme.textPrimary;
-        final borderColor = isDark ? const Color(0xFF323530) : const Color(0xFFEADBFF);
+        final borderColor = isDark ? const Color(0xFF2C2C2E) : const Color(0xFFEADBFF);
 
         return StatefulBuilder(
           builder: (dialogCtx, setStateSheet) {
@@ -5822,8 +5822,8 @@ class _GlassCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final effectiveRadius = borderRadius ?? BorderRadius.circular(18);
-    final cardBgColor = customBgColor ?? (isDark ? const Color(0xFF1C1E1B) : AppTheme.glassBackground);
-    final cardBorderColor = isDark ? const Color(0xFF323530) : AppTheme.glassBorder;
+    final cardBgColor = customBgColor ?? (isDark ? const Color(0xFF141618) : AppTheme.glassBackground);
+    final cardBorderColor = isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder;
     
     return Container(
       width: width,
