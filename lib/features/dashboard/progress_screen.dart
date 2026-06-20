@@ -662,40 +662,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                   currentWeight: currentWeight,
                 ),
               ),
-              const SizedBox(height: 24),
-
-              // AI Insights Header
-              Row(
-                children: [
-                  const Icon(Icons.psychology_rounded, color: AppTheme.accentCyan, size: 20),
-                  const SizedBox(width: 8),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'AI POWERED',
-                        style: TextStyle(
-                          fontSize: 9,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 1.4,
-                          color: AppTheme.accentCyan,
-                        ),
-                      ),
-                      Text(
-                        'AI Insights',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w900,
-                          color: isDark ? Colors.white : AppTheme.textPrimary,
-                          letterSpacing: -0.5,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-
+              const SizedBox(height: 20),
               _buildInsightsPanel(),
               const SizedBox(height: 20),
           ],
