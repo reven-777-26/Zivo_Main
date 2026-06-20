@@ -4433,6 +4433,7 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
                       'protein': int.tryParse(_reviewProteinController.text) ?? 0,
                       'carbs': int.tryParse(_reviewCarbsController.text) ?? 0,
                       'fat': int.tryParse(_reviewFatController.text) ?? 0,
+                      'items': _reviewBreakdownItems.map((e) => e.toJson()).toList(),
                     });
                     FirebaseService.saveFoodPresetsCloud(StorageService.getFoodPresets());
 
@@ -4649,14 +4650,19 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
                       // Preset Info
                       Expanded(
                         child: GestureDetector(
-                          onTap: () {
-                            // Populate manual entry controllers
+                            // Populate manual entry controllers and breakdown items
                             setState(() {
                               _manualNameController.text = name;
                               _manualCalController.text = cal.toString();
                               _manualProteinController.text = prot.toString();
                               _manualCarbsController.text = carb.toString();
                               _manualFatController.text = fat.toString();
+                              final List<dynamic> rawItems = preset['items'] ?? [];
+                              _manualBreakdownItems = rawItems
+                                  .map((e) => BreakdownItem.fromJson(Map<String, dynamic>.from(e as Map)))
+                                  .toList();
+                              _manualServingSizeController.text = "1";
+                              _selectedServingUnit = "serving";
                               _tabController.index = 4; // Switch to Manual tab
                             });
                             ScaffoldMessenger.of(context).showSnackBar(
@@ -4686,6 +4692,37 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
+                              if (preset['items'] != null && (preset['items'] as List).isNotEmpty) ...[
+                                const SizedBox(height: 8),
+                                Wrap(
+                                  spacing: 4,
+                                  runSpacing: 4,
+                                  children: (preset['items'] as List).map<Widget>((item) {
+                                    final itemName = item['name'] ?? 'Item';
+                                    final itemCal = item['calories'] ?? 0;
+                                    final itemSize = item['servingSize'] ?? 1;
+                                    final itemUnit = item['servingUnit'] ?? 'piece';
+                                    return Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: isDark ? Colors.white.withOpacity(0.04) : Colors.black.withOpacity(0.03),
+                                        borderRadius: BorderRadius.circular(6),
+                                        border: Border.all(
+                                          color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05),
+                                        ),
+                                      ),
+                                      child: Text(
+                                        "$itemName (${itemSize % 1 == 0 ? itemSize.toInt().toString() : itemSize.toString()} $itemUnit) • $itemCal kcal",
+                                        style: TextStyle(
+                                          color: isDark ? Colors.white70 : AppTheme.textSecondary,
+                                          fontSize: 9,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    );
+                                  }).toList(),
+                                ),
+                              ],
                             ],
                           ),
                         ),
@@ -4699,6 +4736,11 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
                             tooltip: "Quick Log Meal",
                             onPressed: () {
                               final selectedDate = ref.read(selectedDateProvider);
+                              final rawItemsList = preset['items'] as List?;
+                              final breakdownList = rawItemsList != null
+                                  ? List<Map<String, dynamic>>.from(
+                                      rawItemsList.map((e) => Map<String, dynamic>.from(e as Map)))
+                                  : null;
                               ref.read(dailyMetricsProvider(selectedDate).notifier).logMeal(
                                     mealKey: _selectedMealKey,
                                     calories: cal,
@@ -4706,6 +4748,7 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
                                     carbs: carb,
                                     fat: fat,
                                     foodName: name,
+                                    breakdownItems: breakdownList,
                                   );
 
                               ScaffoldMessenger.of(context).showSnackBar(
