@@ -65,6 +65,7 @@ class _PremiumPaywallScreenState extends State<PremiumPaywallScreen> {
           },
         );
       },
+    );
   }
 
   Future<void> _handlePurchase() async {
