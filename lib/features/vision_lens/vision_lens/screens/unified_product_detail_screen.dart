@@ -1053,7 +1053,7 @@ class _UnifiedProductDetailScreenState extends ConsumerState<UnifiedProductDetai
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: AppTheme.accentCyan.withOpacity(0.18), width: 1.0),
                 ),
-                child: const Icon(icon, color: AppTheme.accentCyan, size: 16),
+                child: Icon(icon, color: AppTheme.accentCyan, size: 16),
               ),
               const SizedBox(width: 10),
               Expanded(
