@@ -4650,6 +4650,7 @@ class _FoodLoggerDialogState extends ConsumerState<FoodLoggerDialog>
                       // Preset Info
                       Expanded(
                         child: GestureDetector(
+                          onTap: () {
                             // Populate manual entry controllers and breakdown items
                             setState(() {
                               _manualNameController.text = name;
