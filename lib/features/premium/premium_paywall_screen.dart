@@ -65,160 +65,6 @@ class _PremiumPaywallScreenState extends State<PremiumPaywallScreen> {
           },
         );
       },
-    );
-  }
-}
-
-class _PremiumWelcomeDialog extends StatefulWidget {
-  final VoidCallback onDismiss;
-  const _PremiumWelcomeDialog({required this.onDismiss});
-
-  @override
-  State<_PremiumWelcomeDialog> createState() => _PremiumWelcomeDialogState();
-}
-
-class _PremiumWelcomeDialogState extends State<_PremiumWelcomeDialog> {
-  late ConfettiController _dialogConfettiController;
-
-  @override
-  void initState() {
-    super.initState();
-    _dialogConfettiController = ConfettiController(duration: const Duration(seconds: 4));
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _dialogConfettiController.play();
-    });
-  }
-
-  @override
-  void dispose() {
-    _dialogConfettiController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      alignment: Alignment.center,
-      children: [
-        Dialog(
-          backgroundColor: Colors.transparent,
-          insetPadding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: const Color(0xFF161510), // Solid premium dark color
-              borderRadius: BorderRadius.circular(28),
-              border: Border.all(
-                color: const Color(0xFFFF8C00), // Pure Orange
-                width: 1.8,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFFFFD700).withOpacity(0.2), // Royal Gold glow
-                  blurRadius: 24,
-                  spreadRadius: 4,
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFD700).withOpacity(0.12),
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: const Color(0xFFFFD700), // Royal Gold border
-                      width: 1.5,
-                    ),
-                  ),
-                  child: const Text(
-                    '👑',
-                    style: TextStyle(fontSize: 48),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                const Text(
-                  'WELCOME TO PREMIUM',
-                  style: TextStyle(
-                    color: Color(0xFFFF8C00), // Orange
-                    fontSize: 12,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 2.0,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Zivo Premium Activated', // Updated text
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Color(0xFFFFD700), // Royal Gold text
-                    fontSize: 22,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: -0.5,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  'Thank you for joining Zivofit Premium! You now have unlimited access to all advanced tools, AI-powered insights, custom meal plans, and real-time logs syncing to your profile.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Color(0xFFCCCCCC),
-                    fontSize: 13,
-                    height: 1.5,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                ElevatedButton(
-                  onPressed: widget.onDismiss,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFFF8C00), // Orange
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 32),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(9999),
-                    ),
-                    shadowColor: const Color(0xFFFFD700),
-                    elevation: 5,
-                    minimumSize: const Size(double.infinity, 48),
-                  ),
-                  child: const Text(
-                    'START EXPLORING',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w900,
-                      fontSize: 13,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        IgnorePointer(
-          child: Align(
-            alignment: Alignment.topCenter,
-            child: ConfettiWidget(
-              confettiController: _dialogConfettiController,
-              blastDirectionality: BlastDirectionality.explosive,
-              shouldLoop: false,
-              colors: const [
-                Colors.green,
-                Colors.blue,
-                Colors.pink,
-                Colors.orange,
-                Colors.purple,
-                Colors.amber,
-                Color(0xFFFFD700), // Royal Gold
-                Color(0xFFFF8C00), // Orange
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
   }
 
   Future<void> _handlePurchase() async {
@@ -685,6 +531,159 @@ class _BenefitRow extends StatelessWidget {
                 ),
               ),
             ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _PremiumWelcomeDialog extends StatefulWidget {
+  final VoidCallback onDismiss;
+  const _PremiumWelcomeDialog({required this.onDismiss});
+
+  @override
+  State<_PremiumWelcomeDialog> createState() => _PremiumWelcomeDialogState();
+}
+
+class _PremiumWelcomeDialogState extends State<_PremiumWelcomeDialog> {
+  late ConfettiController _dialogConfettiController;
+
+  @override
+  void initState() {
+    super.initState();
+    _dialogConfettiController = ConfettiController(duration: const Duration(seconds: 4));
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _dialogConfettiController.play();
+    });
+  }
+
+  @override
+  void dispose() {
+    _dialogConfettiController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: const Color(0xFF161510), // Solid premium dark color
+              borderRadius: BorderRadius.circular(28),
+              border: Border.all(
+                color: const Color(0xFFFF8C00), // Pure Orange
+                width: 1.8,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFFFFD700).withOpacity(0.2), // Royal Gold glow
+                  blurRadius: 24,
+                  spreadRadius: 4,
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFD700).withOpacity(0.12),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: const Color(0xFFFFD700), // Royal Gold border
+                      width: 1.5,
+                    ),
+                  ),
+                  child: const Text(
+                    '👑',
+                    style: TextStyle(fontSize: 48),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                  'WELCOME TO PREMIUM',
+                  style: TextStyle(
+                    color: Color(0xFFFF8C00), // Orange
+                    fontSize: 12,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 2.0,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Zivo Premium Activated',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Color(0xFFFFD700), // Royal Gold text
+                    fontSize: 22,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Thank you for joining Zivofit Premium! You now have unlimited access to all advanced tools, AI-powered insights, custom meal plans, and real-time logs syncing to your profile.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Color(0xFFCCCCCC),
+                    fontSize: 13,
+                    height: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton(
+                  onPressed: widget.onDismiss,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFFF8C00), // Orange
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 32),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(9999),
+                    ),
+                    shadowColor: const Color(0xFFFFD700),
+                    elevation: 5,
+                    minimumSize: const Size(double.infinity, 48),
+                  ),
+                  child: const Text(
+                    'START EXPLORING',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 13,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        IgnorePointer(
+          child: Align(
+            alignment: Alignment.topCenter,
+            child: ConfettiWidget(
+              confettiController: _dialogConfettiController,
+              blastDirectionality: BlastDirectionality.explosive,
+              shouldLoop: false,
+              colors: const [
+                Colors.green,
+                Colors.blue,
+                Colors.pink,
+                Colors.orange,
+                Colors.purple,
+                Colors.amber,
+                Color(0xFFFFD700), // Royal Gold
+                Color(0xFFFF8C00), // Orange
+              ],
+            ),
           ),
         ),
       ],
