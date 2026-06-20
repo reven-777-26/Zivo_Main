@@ -323,10 +323,10 @@ class _VisionLensHomeScreenState extends ConsumerState<VisionLensHomeScreen> wit
                   padding: const EdgeInsets.all(32),
                   margin: const EdgeInsets.symmetric(horizontal: 40),
                   decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF1C1E1B) : AppTheme.glassBackground,
+                    color: isDark ? const Color(0xFF141618) : AppTheme.glassBackground,
                     borderRadius: BorderRadius.circular(24),
                     border: Border.all(
-                      color: isDark ? const Color(0xFF323530) : AppTheme.glassBorder,
+                      color: isDark ? const Color(0xFF2C2C2E) : AppTheme.glassBorder,
                       width: 1.0,
                     ),
                   ),
